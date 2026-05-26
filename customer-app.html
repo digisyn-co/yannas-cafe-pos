@@ -269,8 +269,19 @@ html,body{height:100%;background:var(--creme);color:var(--brown);font-family:'DM
     </div>
     <div class="screen-body">
       <div class="det-section">
-        <div class="field-label">YOUR NAME</div>
-        <input class="field-input" id="customer-name" placeholder="e.g. Maria Santos" maxlength="40" oninput="validateDetails()">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div>
+            <div class="field-label">FIRST NAME <span style="color:var(--red)">*</span></div>
+            <input class="field-input" id="customer-fname" placeholder="Maria" maxlength="30" oninput="validateDetails()" style="margin-bottom:0">
+          </div>
+          <div>
+            <div class="field-label">LAST NAME <span style="color:var(--red)">*</span></div>
+            <input class="field-input" id="customer-lname" placeholder="Santos" maxlength="30" oninput="validateDetails()" style="margin-bottom:0">
+          </div>
+        </div>
+        <div style="margin-bottom:16px"></div>
+        <div class="field-label">PHONE NUMBER <span style="color:var(--red)">*</span></div>
+        <input class="field-input" id="customer-phone" placeholder="09XX XXX XXXX" maxlength="13" type="tel" inputmode="numeric" oninput="validateDetails()">
         <div class="field-label">PAYMENT METHOD</div>
         <div class="pay-opts">
           <div class="pay-opt selected" id="pay-gcash" onclick="selectPay('GCash')">
@@ -526,8 +537,11 @@ function selectPay(method){
   document.getElementById('pay-maya').classList.toggle('selected',method==='Maya');
 }
 function validateDetails(){
-  const name=document.getElementById('customer-name').value.trim();
-  document.getElementById('details-cta').disabled=!name;
+  const fname=document.getElementById('customer-fname').value.trim();
+  const lname=document.getElementById('customer-lname').value.trim();
+  const phone=document.getElementById('customer-phone').value.trim();
+  const phoneOk=phone.replace(/\s/g,'').length>=10;
+  document.getElementById('details-cta').disabled=!(fname&&lname&&phoneOk);
 }
 
 // ── ETA ───────────────────────────────────────
@@ -570,8 +584,12 @@ function haversine(lat1,lon1,lat2,lon2){
 // ── PLACE ORDER ───────────────────────────────
 async function placeOrder(){
   if(!selectedEta){toast('Please select your ETA first');return;}
-  const name=document.getElementById('customer-name').value.trim();
-  if(!name){toast('Please enter your name');return;}
+  const fname=document.getElementById('customer-fname').value.trim();
+  const lname=document.getElementById('customer-lname').value.trim();
+  const phone=document.getElementById('customer-phone').value.trim();
+  const name=fname+' '+lname;
+  if(!fname||!lname){toast('Please enter your full name');return;}
+  if(phone.replace(/\s/g,'').length<10){toast('Please enter a valid phone number');return;}
 
   goTo('processing');
 
@@ -585,6 +603,7 @@ async function placeOrder(){
   const {data,error}=await sb.from('drive_thru_orders').insert({
     order_number:orderNumber,
     customer_name:name,
+    customer_phone:phone,
     items:cart.map(i=>({id:i.id,name:i.name,qty:i.qty,price:i.price,cat:i.cat,temp:i.temp||null})),
     total,
     payment_method:selectedPay,
