@@ -857,6 +857,114 @@ async function renderReports(){
     </div>`).join(''):'<div class="no-data">No sales yet</div>';
 }
 
+
+// ── DRIVE-THRU ────────────────────────────────
+async function loadDriveThruOrders(){
+  const today=new Date().toISOString().split('T')[0];
+  const {data}=await sb.from('drive_thru_orders').select('*')
+    .gte('created_at',today+'T00:00:00')
+    .not('status','eq','picked_up')
+    .order('arrival_time',{ascending:true});
+  if(data) driveThruOrders=data;
+  renderDriveThru();
+}
+
+async function updateDtStatus(id,status){
+  await sb.from('drive_thru_orders').update({status}).eq('id',id);
+  const o=driveThruOrders.find(x=>x.id===id);
+  if(o) o.status=status;
+  if(status==='picked_up') driveThruOrders=driveThruOrders.filter(x=>x.id!==id);
+  renderDriveThru();
+  toast(status==='preparing'?'Prep started 🔥':status==='ready'?'Order ready ✅':'Order picked up 👋');
+}
+
+function startDtTimer(){
+  if(dtTimerInterval) clearInterval(dtTimerInterval);
+  dtTimerInterval=setInterval(()=>{
+    const cards=document.querySelectorAll('.dt-card[data-id]');
+    cards.forEach(card=>{
+      const arrival=new Date(card.dataset.arrival);
+      const now=new Date();
+      const diffMs=arrival-now;
+      const timerEl=card.querySelector('.dt-timer');
+      const fillEl=card.querySelector('.dt-bar-fill');
+      const totalMs=parseInt(card.dataset.totalms);
+      if(!timerEl) return;
+      if(diffMs<=0){
+        timerEl.textContent='Arriving!';
+        timerEl.className='dt-timer red-t';
+        card.className='dt-card urgent';
+        if(fillEl) fillEl.style.width='100%';
+        return;
+      }
+      const mins=Math.floor(diffMs/60000);
+      const secs=Math.floor((diffMs%60000)/1000);
+      timerEl.textContent=mins+'m '+String(secs).padStart(2,'0')+'s';
+      const pct=Math.min(100,Math.round((1-(diffMs/totalMs))*100));
+      if(fillEl){fillEl.style.width=pct+'%';fillEl.style.background=diffMs<180000?'#D85A30':diffMs<420000?'#EF9F27':'#1D9E75';}
+      if(diffMs<180000){timerEl.className='dt-timer red-t';card.classList.add('urgent');card.classList.remove('soon');}
+      else if(diffMs<420000){timerEl.className='dt-timer amber-t';card.classList.add('soon');card.classList.remove('urgent');}
+      else{timerEl.className='dt-timer green-t';card.classList.remove('urgent','soon');}
+    });
+  },1000);
+}
+
+function dtNotifShow(){
+  const el=document.getElementById('dt-notif');
+  if(!el) return;
+  el.style.display='flex';
+  setTimeout(()=>el.style.display='none',5000);
+}
+
+function renderDriveThru(){
+  const grid=document.getElementById('dt-grid');
+  if(!grid) return;
+  const active=driveThruOrders.filter(o=>o.status!=='picked_up');
+  const badgeEl=document.getElementById('dt-badge');
+  const pending=active.filter(o=>o.status!=='ready').length;
+  if(badgeEl){badgeEl.style.display=pending>0?'flex':'none';badgeEl.textContent=pending;}
+  if(!active.length){
+    grid.innerHTML='<div class="dt-empty">No active drive-thru orders<br><span style="font-size:12px">Orders placed via the app will appear here in real-time</span></div>';
+    if(dtTimerInterval){clearInterval(dtTimerInterval);dtTimerInterval=null;}
+    return;
+  }
+  grid.innerHTML=active.map(o=>{
+    const arrival=new Date(o.arrival_time);
+    const created=new Date(o.created_at);
+    const totalMs=arrival-created;
+    const diffMs=arrival-new Date();
+    const mins=Math.max(0,Math.floor(diffMs/60000));
+    const secs=Math.max(0,Math.floor((diffMs%60000)/1000));
+    const timerTxt=diffMs<=0?'Arriving!':mins+'m '+String(secs).padStart(2,'0')+'s';
+    const timerCls=diffMs<180000?'red-t':diffMs<420000?'amber-t':'green-t';
+    const pct=Math.min(100,Math.round((1-(diffMs/totalMs))*100));
+    const barColor=diffMs<180000?'#D85A30':diffMs<420000?'#EF9F27':'#1D9E75';
+    const cardCls=o.status==='ready'?'dt-card ready-st':diffMs<180000?'dt-card urgent':diffMs<420000?'dt-card soon':'dt-card';
+    const statusCls=o.status==='preparing'?'st-preparing':o.status==='ready'?'st-ready':'st-incoming';
+    const statusTxt=o.status==='preparing'?'Preparing 🔥':o.status==='ready'?'Ready ✅':'Incoming 📱';
+    const itemsHtml=(o.items||[]).map(i=>`<div class="dt-item-row">${i.qty}× ${i.name}${i.temp?' ('+i.temp+')':''}</div>`).join('');
+    const actionBtn=o.status==='incoming'
+      ?`<button class="dt-btn dt-btn-prep" onclick="updateDtStatus('${o.id}','preparing')">🔥 Start Prep</button>`
+      :o.status==='preparing'
+      ?`<button class="dt-btn dt-btn-ready" onclick="updateDtStatus('${o.id}','ready')">✅ Mark Ready</button>`
+      :`<button class="dt-btn dt-btn-done" onclick="updateDtStatus('${o.id}','picked_up')">👋 Picked Up</button>`;
+    return `<div class="${cardCls}" data-id="${o.id}" data-arrival="${o.arrival_time}" data-totalms="${totalMs}">
+      <div class="dt-head">
+        <div><div class="dt-num">${o.order_number}</div><div class="dt-cust">${o.customer_name||'Customer'}</div></div>
+        <span class="dt-status-badge ${statusCls}">${statusTxt}</span>
+      </div>
+      <div class="dt-timer-wrap">
+        <div class="dt-eta-label">Time until arrival</div>
+        <div class="dt-timer ${timerCls}">${timerTxt}</div>
+      </div>
+      <div class="dt-bar-wrap"><div class="dt-bar"><div class="dt-bar-fill" style="width:${pct}%;background:${barColor}"></div></div></div>
+      <div class="dt-items">${itemsHtml}<div class="dt-total">Total: ₱${o.total.toLocaleString()} · ${o.payment_method}</div></div>
+      <div class="dt-actions">${actionBtn}</div>
+    </div>`;
+  }).join('');
+  startDtTimer();
+}
+
 // ── HELPERS ───────────────────────────────────
 function switchTab(tab){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
