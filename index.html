@@ -229,6 +229,46 @@ body{background:var(--bg3);color:var(--text);font-size:14px;font-family:'Segoe U
   }
   .no-print { display: none !important }
 }
+
+/* DRIVE-THRU */
+.dt-badge{position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;font-size:10px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 4px;display:none}
+.tab-wrap{position:relative;display:inline-block}
+.dt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.dt-empty{text-align:center;padding:60px 20px;color:var(--text3);font-size:14px}
+.dt-card{border:2px solid var(--border-col,#e0ded6);border-radius:var(--rl);background:var(--bg);overflow:hidden;transition:border-color .3s}
+.dt-card.urgent{--border-col:#F0997B;animation:pulse-border 1.5s infinite}
+.dt-card.soon{--border-col:#EF9F27}
+.dt-card.ready-st{--border-col:#1D9E75}
+@keyframes pulse-border{0%,100%{border-color:#F0997B}50%{border-color:#D85A30}}
+.dt-head{padding:12px 14px;border-bottom:0.5px solid #e0ded6;display:flex;justify-content:space-between;align-items:center}
+.dt-num{font-size:14px;font-weight:700}
+.dt-cust{font-size:12px;color:var(--text2)}
+.dt-status-badge{font-size:10px;padding:3px 9px;border-radius:10px;font-weight:600}
+.st-incoming{background:#E6F1FB;color:#185FA5}
+.st-preparing{background:#FAEEDA;color:#854F0B}
+.st-ready{background:#EAF3DE;color:#3B6D11}
+.dt-timer-wrap{padding:16px 14px 10px;text-align:center}
+.dt-eta-label{font-size:11px;color:var(--text2);margin-bottom:4px}
+.dt-timer{font-size:38px;font-weight:700;letter-spacing:-1px;line-height:1;transition:color .3s}
+.dt-timer.green-t{color:#1D9E75}
+.dt-timer.amber-t{color:#BA7517}
+.dt-timer.red-t{color:#A32D2D}
+.dt-bar-wrap{padding:0 14px;margin-bottom:12px}
+.dt-bar{height:6px;background:#F1EFE8;border-radius:3px;overflow:hidden}
+.dt-bar-fill{height:100%;border-radius:3px;transition:width .5s linear,background .3s}
+.dt-items{padding:0 14px 12px;border-top:0.5px solid #e0ded6;margin-top:4px;padding-top:10px}
+.dt-item-row{font-size:12px;color:var(--text2);padding:2px 0}
+.dt-total{font-size:13px;font-weight:700;color:var(--green);margin-top:4px}
+.dt-actions{padding:10px 14px;border-top:0.5px solid #e0ded6;display:flex;gap:6px}
+.dt-btn{flex:1;padding:8px;border-radius:var(--r);border:0.5px solid #e0ded6;cursor:pointer;font-size:12px;font-weight:600;transition:background .15s}
+.dt-btn-prep{background:#FAEEDA;color:#854F0B;border-color:#FAC775}
+.dt-btn-prep:hover{background:#FAC775}
+.dt-btn-ready{background:#EAF3DE;color:#3B6D11;border-color:#97C459}
+.dt-btn-ready:hover{background:#C0DD97}
+.dt-btn-done{background:var(--bg2);color:var(--text2)}
+.dt-btn-done:hover{background:#e0ded6}
+.dt-header-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.dt-notif{display:flex;align-items:center;gap:6px;font-size:12px;padding:6px 12px;border-radius:var(--r);background:var(--teal-l);color:var(--teal);border:0.5px solid #5DCAA5;display:none}
 </style>
 </head>
 <body>
@@ -250,6 +290,7 @@ body{background:var(--bg3);color:var(--text);font-size:14px;font-family:'Segoe U
       <button class="tab" onclick="switchTab('inventory')"><span class="tab-icon">📦</span><span class="tab-label"> Inventory</span></button>
       <button class="tab" onclick="switchTab('orders')"><span class="tab-icon">📋</span><span class="tab-label"> Orders</span></button>
       <button class="tab" onclick="switchTab('reports')"><span class="tab-icon">📊</span><span class="tab-label"> Reports</span></button>
+      <div class="tab-wrap"><button class="tab" onclick="switchTab('drivethr')"><span class="tab-icon">🚗</span><span class="tab-label"> Drive-Thru</span></button><span class="dt-badge" id="dt-badge">0</span></div>
     </div>
     <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2)">
       <span class="status-dot live"></span>
@@ -316,6 +357,18 @@ body{background:var(--bg3);color:var(--text);font-size:14px;font-family:'Segoe U
     </div>
   </div>
 </div>
+
+
+  <!-- Drive-Thru -->
+  <div class="page" id="page-drivethr">
+    <div class="dt-header-row">
+      <div style="font-size:16px;font-weight:700">🚗 Drive-Thru Orders</div>
+      <div class="dt-notif" id="dt-notif">🔔 New drive-thru order!</div>
+    </div>
+    <div class="dt-grid" id="dt-grid">
+      <div class="dt-empty">No active drive-thru orders<br><span style="font-size:12px">Orders placed via the app will appear here in real-time</span></div>
+    </div>
+  </div>
 
 <div id="modal-container"></div>
 <div class="toast" id="toast"></div>
@@ -388,6 +441,8 @@ async function init(){
   await setupInventory();
   setLoading('Loading orders…');
   await loadOrders();
+  setLoading('Loading drive-thru orders…');
+  await loadDriveThruOrders();
   setLoading('Starting live sync…');
   subscribeRealtime();
   document.getElementById('loading').style.display='none';
@@ -438,6 +493,25 @@ function subscribeRealtime(){
       const item=invData.find(i=>i.id===d.id);
       if(item) item.stock=d.stock;
       if(document.getElementById('page-inventory').classList.contains('active')) renderInventory();
+    }).subscribe();
+
+  sb.channel('dt-channel')
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'drive_thru_orders'},payload=>{
+      const d=payload.new;
+      driveThruOrders.push(d);
+      driveThruOrders.sort((a,b)=>new Date(a.arrival_time)-new Date(b.arrival_time));
+      renderDriveThru();
+      dtNotifShow();
+      toast('🚗 Drive-Thru order '+d.order_number+'!');
+      try{const ac=new AudioContext();const o=ac.createOscillator();const g=ac.createGain();o.connect(g);g.connect(ac.destination);o.frequency.value=880;g.gain.setValueAtTime(0.3,ac.currentTime);g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.4);o.start();o.stop(ac.currentTime+0.4);}catch(e){}
+    })
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'drive_thru_orders'},payload=>{
+      const d=payload.new;
+      const idx=driveThruOrders.findIndex(x=>x.id===d.id);
+      if(idx>=0) driveThruOrders[idx]=d;
+      else driveThruOrders.push(d);
+      if(d.status==='picked_up') driveThruOrders=driveThruOrders.filter(x=>x.id!==d.id);
+      renderDriveThru();
     }).subscribe();
 }
 
@@ -785,14 +859,17 @@ async function renderReports(){
 
 // ── HELPERS ───────────────────────────────────
 function switchTab(tab){
-  document.querySelectorAll('.tab').forEach((t,i)=>{
-    t.classList.toggle('active',['pos','inventory','orders','reports'][i]===tab);
-  });
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  const tabOrder=['pos','inventory','orders','reports','drivethr'];
+  const idx=tabOrder.indexOf(tab);
+  const allTabs=document.querySelectorAll('.tab');
+  if(allTabs[idx]) allTabs[idx].classList.add('active');
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+tab).classList.add('active');
   if(tab==='inventory') renderInventory();
   if(tab==='orders') renderOrders();
   if(tab==='reports') renderReports();
+  if(tab==='drivethr'){renderDriveThru();const b=document.getElementById('dt-badge');if(b)b.style.display='none';}
 }
 function setLoading(msg){document.getElementById('loading-msg').textContent=msg;}
 function updateClock(){document.getElementById('clock').textContent=new Date().toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'});}
