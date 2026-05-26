@@ -354,8 +354,16 @@ const INIT_INV=[
   {id:'chicken',name:"Chicken Thigh",unit:"g",stock:800,max:2000,cat:"Food"},
   {id:'beef',name:"Beef Sirloin",unit:"g",stock:400,max:1500,cat:"Food"},
   {id:'liver_spread',name:"Liver Spread",unit:"pcs",stock:3,max:10,cat:"Food"},
+  {id:'cucumber',name:"Cucumber",unit:"pcs",stock:10,max:30,cat:"Vegetables"},
+  {id:'tomatoes',name:"Tomatoes",unit:"pcs",stock:10,max:30,cat:"Vegetables"},
+  {id:'lettuce',name:"Lettuce",unit:"pcs",stock:5,max:20,cat:"Vegetables"},
+  {id:'onions',name:"Onions",unit:"pcs",stock:8,max:20,cat:"Vegetables"},
+  {id:'carrots',name:"Carrots",unit:"pcs",stock:6,max:20,cat:"Vegetables"},
+  {id:'pickled_carrots',name:"Pickled Carrots",unit:"g",stock:300,max:500,cat:"Vegetables"},
+  {id:'pickled_onions',name:"Pickled Onions",unit:"g",stock:200,max:400,cat:"Vegetables"},
   {id:'hot_cups',name:"Hot Cups",unit:"pcs",stock:80,max:200,cat:"Supplies"},
-  {id:'cold_cups',name:"Cold Cups",unit:"pcs",stock:60,max:200,cat:"Supplies"},
+  {id:'cold_cups_16',name:"Cold Cups 16oz",unit:"pcs",stock:60,max:200,cat:"Supplies"},
+  {id:'cold_cups_22',name:"Cold Cups 22oz",unit:"pcs",stock:60,max:200,cat:"Supplies"},
   {id:'paper_bags',name:"Paper Bags",unit:"pcs",stock:25,max:100,cat:"Supplies"},
 ];
 
@@ -597,9 +605,9 @@ async function deductInventory(items){
   const updates={};
   const adj=(id,amt)=>{const i=invData.find(x=>x.id===id);if(i){i.stock=Math.max(0,i.stock-amt);updates[id]=i.stock;}};
   items.forEach(o=>{
-    if(['Coffee','Combo'].includes(o.cat)){adj('robusta',50*o.qty);adj('fresh_milk',50*o.qty);adj('cold_cups',o.qty);}
-    if(['Tea'].includes(o.cat)){adj('jasmine_tea',2*o.qty);adj('cold_cups',o.qty);}
-    if(['Matcha'].includes(o.cat)){adj('matcha',2*o.qty);adj('fresh_milk',50*o.qty);adj('cold_cups',o.qty);}
+    if(['Coffee','Combo'].includes(o.cat)){adj('robusta',50*o.qty);adj('fresh_milk',50*o.qty);adj('cold_cups_16',o.qty);}
+    if(['Tea'].includes(o.cat)){adj('jasmine_tea',2*o.qty);adj('cold_cups_22',o.qty);}
+    if(['Matcha'].includes(o.cat)){adj('matcha',2*o.qty);adj('fresh_milk',50*o.qty);adj('cold_cups_16',o.qty);}
     if(['Food','Combo'].includes(o.cat)){adj('baguette',o.qty);adj('paper_bags',o.qty);}
   });
   for(const [id,stock] of Object.entries(updates)){
