@@ -401,6 +401,9 @@ const MENU=[ // Rice badge: br
   {id:19,name:"Pork Crunchy Egg Fried Rice",    cat:"Rice", price:130, badge:"br"},
   {id:20,name:"Chicken Crunchy Egg Fried Rice", cat:"Rice", price:115, badge:"br"},
   {id:21,name:"Beef Crunchy Egg Fried Rice",    cat:"Rice", price:145, badge:"br"},
+  {id:22,name:"Add-on: Bacon",              cat:"Rice", price:55,  badge:"br"},
+  {id:23,name:"Add-on: Tocino",             cat:"Rice", price:55,  badge:"br"},
+  {id:24,name:"Add-on: Tapa",               cat:"Rice", price:65,  badge:"br"},
 ];
 
 const INIT_INV=[
@@ -738,7 +741,12 @@ async function deductInventory(items){
     if(['Tea'].includes(o.cat)){adj('jasmine_tea',2*o.qty);adj('cold_cups_22',o.qty);}
     if(['Matcha'].includes(o.cat)){adj('matcha',2*o.qty);adj('fresh_milk',50*o.qty);adj('cold_cups_16',o.qty);}
     if(['Food','Combo'].includes(o.cat)){adj('baguette',o.qty);adj('paper_bags',o.qty);}
-    if(['Rice'].includes(o.cat)){adj('rice',250*o.qty);adj('eggs',2*o.qty);adj('spring_onion',1*o.qty);}
+    if(['Rice'].includes(o.cat)){
+      adj('rice',250*o.qty);adj('eggs',2*o.qty);adj('spring_onion',1*o.qty);
+      if(o.name.includes('Bacon'))  adj('bacon',1*o.qty);
+      if(o.name.includes('Tocino')) adj('tocino',1*o.qty);
+      if(o.name.includes('Tapa'))   adj('tapa',1*o.qty);
+    }
   });
   for(const [id,stock] of Object.entries(updates)){
     await sb.from('inventory').update({stock}).eq('id',id);
