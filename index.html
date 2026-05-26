@@ -431,7 +431,8 @@ const INIT_INV=[
   {id:'paper_bags',name:"Paper Bags",unit:"pcs",stock:25,max:100,cat:"Supplies"},
 ];
 
-let sb,order=[],activeCategory='All',currentPayMethod='Cash';
+let sb,invData=[],orderHistory=[],order=[],activeCategory='All',currentPayMethod='Cash';
+let driveThruOrders=[],dtTimerInterval=null;
 let invData=[],orderHistory=[];
 
 async function init(){
