@@ -474,13 +474,25 @@ async function setupInventory(){
 
 async function loadOrders(){
   const today=new Date().toISOString().split('T')[0];
+  // Walk-up POS orders
   const {data}=await sb.from('orders').select('*').gte('created_at',today+'T00:00:00').order('created_at',{ascending:false});
-  if(data) orderHistory=data.map(d=>({
+  const posOrders=(data||[]).map(d=>({
     id:d.order_number,
     time:new Date(d.created_at).toLocaleString('en-PH',{dateStyle:'short',timeStyle:'short'}),
     items:d.items,total:d.total,method:d.payment_method,
     created_at:d.created_at
   }));
+  // Completed drive-thru orders are sales too — fold them into the same history
+  const {data:dtData}=await sb.from('drive_thru_orders').select('*')
+    .gte('created_at',today+'T00:00:00').eq('status','picked_up')
+    .order('created_at',{ascending:false});
+  const dtOrders=(dtData||[]).map(d=>({
+    id:d.order_number,
+    time:new Date(d.created_at).toLocaleString('en-PH',{dateStyle:'short',timeStyle:'short'}),
+    items:d.items,total:d.total,method:d.payment_method,
+    created_at:d.created_at,drive:true
+  }));
+  orderHistory=[...posOrders,...dtOrders].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
 }
 
 function subscribeRealtime(){
@@ -518,7 +530,12 @@ function subscribeRealtime(){
       const idx=driveThruOrders.findIndex(x=>x.id===d.id);
       if(idx>=0) driveThruOrders[idx]=d;
       else driveThruOrders.push(d);
-      if(d.status==='picked_up') driveThruOrders=driveThruOrders.filter(x=>x.id!==d.id);
+      if(d.status==='picked_up'){
+        driveThruOrders=driveThruOrders.filter(x=>x.id!==d.id);
+        // Completed drive-thru order is now a recorded sale — refresh POS views
+        if(document.getElementById('page-orders').classList.contains('active')) renderOrders();
+        if(document.getElementById('page-reports').classList.contains('active')) renderReports();
+      }
       renderDriveThru();
     }).subscribe();
 }
@@ -820,7 +837,7 @@ async function renderOrders(){
   log.innerHTML=orderHistory.map(o=>`
     <div class="log-entry">
       <div class="log-head">
-        <span class="log-id">${o.id}</span>
+        <span class="log-id">${o.id}${o.drive?' <span style="font-size:11px;font-weight:600;color:#1D9E75">🚗 Drive-Thru</span>':''}</span>
         <span class="log-time">${o.time}</span>
       </div>
       <div class="log-items-text">${o.items.map(i=>`${i.qty}× ${i.name}`).join(' · ')}</div>
