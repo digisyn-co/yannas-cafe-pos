@@ -54,8 +54,6 @@ body{background:var(--bg3);color:var(--text);font-size:14px;font-family:'Segoe U
 .bt{background:var(--teal-l);color:var(--teal)}
 .bf{background:var(--bg3);color:#444}
 .bco{background:var(--purple-l);color:var(--purple)}
-.br{background:#FDF3E3;color:#C05900}
-.ba{background:#EDEAE3;color:#555}
 .bm{background:var(--green-l);color:var(--green)}
 .mname{font-size:12px;font-weight:600;margin-bottom:3px;line-height:1.3}
 .msize{font-size:10px;color:var(--text3);margin-bottom:4px}
@@ -231,46 +229,6 @@ body{background:var(--bg3);color:var(--text);font-size:14px;font-family:'Segoe U
   }
   .no-print { display: none !important }
 }
-
-/* DRIVE-THRU */
-.dt-badge{position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;font-size:10px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 4px;display:none}
-.tab-wrap{position:relative;display:inline-block}
-.dt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
-.dt-empty{text-align:center;padding:60px 20px;color:var(--text3);font-size:14px}
-.dt-card{border:2px solid var(--border-col,#e0ded6);border-radius:var(--rl);background:var(--bg);overflow:hidden;transition:border-color .3s}
-.dt-card.urgent{--border-col:#F0997B;animation:pulse-border 1.5s infinite}
-.dt-card.soon{--border-col:#EF9F27}
-.dt-card.ready-st{--border-col:#1D9E75}
-@keyframes pulse-border{0%,100%{border-color:#F0997B}50%{border-color:#D85A30}}
-.dt-head{padding:12px 14px;border-bottom:0.5px solid #e0ded6;display:flex;justify-content:space-between;align-items:center}
-.dt-num{font-size:14px;font-weight:700}
-.dt-cust{font-size:12px;color:var(--text2)}
-.dt-status-badge{font-size:10px;padding:3px 9px;border-radius:10px;font-weight:600}
-.st-incoming{background:#E6F1FB;color:#185FA5}
-.st-preparing{background:#FAEEDA;color:#854F0B}
-.st-ready{background:#EAF3DE;color:#3B6D11}
-.dt-timer-wrap{padding:16px 14px 10px;text-align:center}
-.dt-eta-label{font-size:11px;color:var(--text2);margin-bottom:4px}
-.dt-timer{font-size:38px;font-weight:700;letter-spacing:-1px;line-height:1;transition:color .3s}
-.dt-timer.green-t{color:#1D9E75}
-.dt-timer.amber-t{color:#BA7517}
-.dt-timer.red-t{color:#A32D2D}
-.dt-bar-wrap{padding:0 14px;margin-bottom:12px}
-.dt-bar{height:6px;background:#F1EFE8;border-radius:3px;overflow:hidden}
-.dt-bar-fill{height:100%;border-radius:3px;transition:width .5s linear,background .3s}
-.dt-items{padding:0 14px 12px;border-top:0.5px solid #e0ded6;margin-top:4px;padding-top:10px}
-.dt-item-row{font-size:12px;color:var(--text2);padding:2px 0}
-.dt-total{font-size:13px;font-weight:700;color:var(--green);margin-top:4px}
-.dt-actions{padding:10px 14px;border-top:0.5px solid #e0ded6;display:flex;gap:6px}
-.dt-btn{flex:1;padding:8px;border-radius:var(--r);border:0.5px solid #e0ded6;cursor:pointer;font-size:12px;font-weight:600;transition:background .15s}
-.dt-btn-prep{background:#FAEEDA;color:#854F0B;border-color:#FAC775}
-.dt-btn-prep:hover{background:#FAC775}
-.dt-btn-ready{background:#EAF3DE;color:#3B6D11;border-color:#97C459}
-.dt-btn-ready:hover{background:#C0DD97}
-.dt-btn-done{background:var(--bg2);color:var(--text2)}
-.dt-btn-done:hover{background:#e0ded6}
-.dt-header-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
-.dt-notif{display:flex;align-items:center;gap:6px;font-size:12px;padding:6px 12px;border-radius:var(--r);background:var(--teal-l);color:var(--teal);border:0.5px solid #5DCAA5;display:none}
 </style>
 </head>
 <body>
@@ -292,7 +250,6 @@ body{background:var(--bg3);color:var(--text);font-size:14px;font-family:'Segoe U
       <button class="tab" onclick="switchTab('inventory')"><span class="tab-icon">📦</span><span class="tab-label"> Inventory</span></button>
       <button class="tab" onclick="switchTab('orders')"><span class="tab-icon">📋</span><span class="tab-label"> Orders</span></button>
       <button class="tab" onclick="switchTab('reports')"><span class="tab-icon">📊</span><span class="tab-label"> Reports</span></button>
-      <div class="tab-wrap"><button class="tab" onclick="switchTab('drivethr')"><span class="tab-icon">🚗</span><span class="tab-label"> Drive-Thru</span></button><span class="dt-badge" id="dt-badge">0</span></div>
     </div>
     <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2)">
       <span class="status-dot live"></span>
@@ -360,18 +317,6 @@ body{background:var(--bg3);color:var(--text);font-size:14px;font-family:'Segoe U
   </div>
 </div>
 
-
-  <!-- Drive-Thru -->
-  <div class="page" id="page-drivethr">
-    <div class="dt-header-row">
-      <div style="font-size:16px;font-weight:700">🚗 Drive-Thru Orders</div>
-      <div class="dt-notif" id="dt-notif">🔔 New drive-thru order!</div>
-    </div>
-    <div class="dt-grid" id="dt-grid">
-      <div class="dt-empty">No active drive-thru orders<br><span style="font-size:12px">Orders placed via the app will appear here in real-time</span></div>
-    </div>
-  </div>
-
 <div id="modal-container"></div>
 <div class="toast" id="toast"></div>
 
@@ -379,8 +324,7 @@ body{background:var(--bg3);color:var(--text);font-size:14px;font-family:'Segoe U
 const SUPABASE_URL='https://dgjtpxdbztnokfbmfjbw.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRnanRweGRienRub2tmYm1mamJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3NjY5NDAsImV4cCI6MjA5NTM0Mjk0MH0.uUyk7ppnom9PI--Fs_5wdhqQD-dtAmpB5Gv1hup6dAk';
 
-const MENU=[ // Rice badge: br
-
+const MENU=[
   {id:1, name:"Black Coffee",          cat:"Coffee", hotPrice:105, coldPrice:120, badge:"bc", profit:true, hastemp:true},
   {id:2, name:"Salted Cream Coffee",   cat:"Coffee", hotPrice:145, coldPrice:160, badge:"bc", profit:true, hastemp:true},
   {id:3, name:"Coconut Coffee",        cat:"Coffee", hotPrice:160, coldPrice:175, badge:"bc", profit:true, hastemp:true},
@@ -399,65 +343,43 @@ const MENU=[ // Rice badge: br
   {id:16,name:"Pork + Salted Coffee",  cat:"Combo",  hotPrice:225, coldPrice:240, badge:"bco", hastemp:true},
   {id:17,name:"Chicken + Coconut Coffee",cat:"Combo",hotPrice:235, coldPrice:250, badge:"bco", hastemp:true},
   {id:18,name:"Beef + Black Coffee",   cat:"Combo",  hotPrice:245, coldPrice:260, badge:"bco", hastemp:true},
-  {id:19,name:"Pork Crunchy Egg Fried Rice",    cat:"Rice", price:130, badge:"br"},
-  {id:20,name:"Chicken Crunchy Egg Fried Rice", cat:"Rice", price:115, badge:"br"},
-  {id:21,name:"Beef Crunchy Egg Fried Rice",    cat:"Rice", price:145, badge:"br"},
-  {id:22,name:"Add-on: Bacon",              cat:"Add-ons", price:55,  badge:"ba"},
-  {id:23,name:"Add-on: Tocino",             cat:"Add-ons", price:55,  badge:"ba"},
-  {id:24,name:"Add-on: Tapa",               cat:"Add-ons", price:65,  badge:"ba"},
 ];
 
 const INIT_INV=[
-  // Coffee & Dairy
-  {id:'robusta',name:"Dark Roast Robusta",unit:"g",stock:2000,max:3000,cat:"Coffee"},
-  {id:'condensed',name:"Condensed Milk",unit:"ml",stock:800,max:1000,cat:"Coffee"},
-  {id:'fresh_milk',name:"Fresh Milk",unit:"ml",stock:1500,max:2000,cat:"Coffee"},
-  {id:'heavy_cream',name:"Heavy Cream",unit:"ml",stock:600,max:1000,cat:"Coffee"},
-  {id:'coconut_cream',name:"Coconut Cream",unit:"ml",stock:300,max:500,cat:"Coffee"},
-  {id:'eggs',name:"Eggs",unit:"pcs",stock:24,max:60,cat:"Coffee"},
-  {id:'sea_salt',name:"Sea Salt",unit:"g",stock:200,max:500,cat:"Coffee"},
-  {id:'white_sugar',name:"White Sugar",unit:"g",stock:500,max:1000,cat:"Coffee"},
-  // Tea & Matcha
-  {id:'jasmine_tea',name:"Jasmine Tea",unit:"g",stock:80,max:200,cat:"Tea & Matcha"},
-  {id:'black_tea',name:"Black Tea",unit:"g",stock:60,max:200,cat:"Tea & Matcha"},
-  {id:'green_tea',name:"Green Tea",unit:"g",stock:50,max:200,cat:"Tea & Matcha"},
-  {id:'matcha',name:"Matcha Powder",unit:"g",stock:40,max:100,cat:"Tea & Matcha"},
-  {id:'lychee_syrup',name:"Lychee Syrup",unit:"ml",stock:250,max:700,cat:"Tea & Matcha"},
-  {id:'strawberry',name:"Strawberry Puree",unit:"ml",stock:200,max:1000,cat:"Tea & Matcha"},
-  {id:'mango',name:"Mango Puree",unit:"ml",stock:150,max:1000,cat:"Tea & Matcha"},
-  {id:'passion',name:"Passion Fruit Syrup",unit:"ml",stock:80,max:1000,cat:"Tea & Matcha"},
-  {id:'simple_syrup',name:"Simple Syrup",unit:"ml",stock:300,max:500,cat:"Tea & Matcha"},
-  // Food — meat, bread & spreads
-  {id:'baguette',name:"Baguette / Loaf",unit:"pcs",stock:15,max:30,cat:"Food"},
-  {id:'pork',name:"Pork Shoulder",unit:"g",stock:1200,max:2000,cat:"Food"},
-  {id:'chicken',name:"Chicken Thigh",unit:"g",stock:800,max:2000,cat:"Food"},
-  {id:'beef',name:"Beef Sirloin",unit:"g",stock:400,max:1500,cat:"Food"},
-  {id:'bacon',name:"Bacon",unit:"g",stock:300,max:1000,cat:"Food"},
-  {id:'tocino',name:"Tocino",unit:"g",stock:320,max:1000,cat:"Food"},
-  {id:'tapa',name:"Tapa",unit:"g",stock:320,max:1000,cat:"Food"},
-  {id:'liver_spread',name:"Liver Spread",unit:"g",stock:255,max:510,cat:"Food"},
-  {id:'mayo',name:"Mayo Butter",unit:"ml",stock:220,max:440,cat:"Food"},
-  // Rice & Pantry
-  {id:'day_old_rice',name:"Day-Old Rice",unit:"g",stock:3000,max:6000,cat:"Rice & Pantry"},
-  {id:'soy_sauce',name:"Soy Sauce",unit:"ml",stock:500,max:1000,cat:"Rice & Pantry"},
-  {id:'cooking_oil',name:"Cooking Oil",unit:"ml",stock:500,max:1000,cat:"Rice & Pantry"},
-  // Vegetables
-  {id:'cucumber',name:"Cucumber",unit:"pcs",stock:10,max:30,cat:"Vegetables"},
-  {id:'onions',name:"Onions",unit:"g",stock:800,max:2000,cat:"Vegetables"},
-  {id:'carrots',name:"Carrots",unit:"g",stock:1000,max:2000,cat:"Vegetables"},
-  {id:'petchay',name:"Petchay",unit:"g",stock:300,max:600,cat:"Vegetables"},
-  {id:'spring_onions',name:"Spring Onions",unit:"g",stock:200,max:400,cat:"Vegetables"},
-  {id:'pickled_carrots',name:"Pickled Carrots",unit:"g",stock:300,max:500,cat:"Vegetables"},
-  {id:'pickled_onions',name:"Pickled Onions",unit:"g",stock:200,max:400,cat:"Vegetables"},
-  // Supplies
-  {id:'hot_cups',name:"Hot Cups 12oz",unit:"pcs",stock:80,max:200,cat:"Supplies"},
-  {id:'cold_cups_16',name:"Cold Cups 16oz",unit:"pcs",stock:60,max:200,cat:"Supplies"},
-  {id:'cold_cups_22',name:"Cold Cups 22oz",unit:"pcs",stock:60,max:200,cat:"Supplies"},
-  {id:'paper_bags',name:"Paper Bags",unit:"pcs",stock:25,max:100,cat:"Supplies"},
+  {id:'robusta',name:"Dark Roast Robusta",unit:"g",stock:2000,max:999999,cat:"Coffee"},
+  {id:'condensed',name:"Condensed Milk",unit:"g",stock:800,max:999999,cat:"Coffee"},
+  {id:'fresh_milk',name:"Fresh Milk",unit:"ml",stock:1500,max:999999,cat:"Coffee"},
+  {id:'heavy_cream',name:"Heavy Cream",unit:"ml",stock:600,max:999999,cat:"Coffee"},
+  {id:'coconut_cream',name:"Coconut Cream",unit:"ml",stock:300,max:999999,cat:"Coffee"},
+  {id:'eggs',name:"Eggs",unit:"pcs",stock:12,max:999999,cat:"Coffee"},
+  {id:'sea_salt',name:"Sea Salt",unit:"g",stock:200,max:999999,cat:"Coffee"},
+  {id:'jasmine_tea',name:"Jasmine Tea",unit:"g",stock:80,max:999999,cat:"Tea & Matcha"},
+  {id:'black_tea',name:"Black Tea",unit:"g",stock:60,max:999999,cat:"Tea & Matcha"},
+  {id:'matcha',name:"Matcha Powder",unit:"g",stock:40,max:999999,cat:"Tea & Matcha"},
+  {id:'lychee_syrup',name:"Lychee Syrup",unit:"ml",stock:250,max:999999,cat:"Tea & Matcha"},
+  {id:'strawberry',name:"Strawberry Puree",unit:"ml",stock:200,max:999999,cat:"Tea & Matcha"},
+  {id:'mango',name:"Mango Puree",unit:"ml",stock:150,max:999999,cat:"Tea & Matcha"},
+  {id:'passion',name:"Passion Fruit Syrup",unit:"ml",stock:80,max:999999,cat:"Tea & Matcha"},
+  {id:'baguette',name:"Baguette / Loaf",unit:"pcs",stock:15,max:999999,cat:"Food"},
+  {id:'pork',name:"Pork Shoulder",unit:"g",stock:1200,max:999999,cat:"Food"},
+  {id:'chicken',name:"Chicken Thigh",unit:"g",stock:800,max:999999,cat:"Food"},
+  {id:'beef',name:"Beef Sirloin",unit:"g",stock:400,max:999999,cat:"Food"},
+  {id:'liver_spread',name:"Liver Spread",unit:"pcs",stock:3,max:999999,cat:"Food"},
+  {id:'cucumber',name:"Cucumber",unit:"pcs",stock:10,max:999999,cat:"Vegetables"},
+  {id:'tomatoes',name:"Tomatoes",unit:"pcs",stock:10,max:999999,cat:"Vegetables"},
+  {id:'lettuce',name:"Lettuce",unit:"pcs",stock:5,max:999999,cat:"Vegetables"},
+  {id:'onions',name:"Onions",unit:"pcs",stock:8,max:999999,cat:"Vegetables"},
+  {id:'carrots',name:"Carrots",unit:"pcs",stock:6,max:999999,cat:"Vegetables"},
+  {id:'pickled_carrots',name:"Pickled Carrots",unit:"g",stock:300,max:999999,cat:"Vegetables"},
+  {id:'pickled_onions',name:"Pickled Onions",unit:"g",stock:200,max:999999,cat:"Vegetables"},
+  {id:'hot_cups',name:"Hot Cups",unit:"pcs",stock:80,max:999999,cat:"Supplies"},
+  {id:'cold_cups_16',name:"Cold Cups 16oz",unit:"pcs",stock:60,max:999999,cat:"Supplies"},
+  {id:'cold_cups_22',name:"Cold Cups 22oz",unit:"pcs",stock:60,max:999999,cat:"Supplies"},
+  {id:'paper_bags',name:"Paper Bags",unit:"pcs",stock:25,max:999999,cat:"Supplies"},
 ];
 
-let sb,invData=[],orderHistory=[],order=[],activeCategory='All',currentPayMethod='Cash';
-let driveThruOrders=[],dtTimerInterval=null;
+let sb,order=[],activeCategory='All',currentPayMethod='Cash';
+let invData=[],orderHistory=[];
 
 async function init(){
   setLoading('Connecting to database…');
@@ -466,8 +388,6 @@ async function init(){
   await setupInventory();
   setLoading('Loading orders…');
   await loadOrders();
-  setLoading('Loading drive-thru orders…');
-  await loadDriveThruOrders();
   setLoading('Starting live sync…');
   subscribeRealtime();
   document.getElementById('loading').style.display='none';
@@ -491,25 +411,13 @@ async function setupInventory(){
 
 async function loadOrders(){
   const today=new Date().toISOString().split('T')[0];
-  // Walk-up POS orders
   const {data}=await sb.from('orders').select('*').gte('created_at',today+'T00:00:00').order('created_at',{ascending:false});
-  const posOrders=(data||[]).map(d=>({
+  if(data) orderHistory=data.map(d=>({
     id:d.order_number,
     time:new Date(d.created_at).toLocaleString('en-PH',{dateStyle:'short',timeStyle:'short'}),
     items:d.items,total:d.total,method:d.payment_method,
     created_at:d.created_at
   }));
-  // Completed drive-thru orders are sales too — fold them into the same history
-  const {data:dtData}=await sb.from('drive_thru_orders').select('*')
-    .gte('created_at',today+'T00:00:00').eq('status','picked_up')
-    .order('created_at',{ascending:false});
-  const dtOrders=(dtData||[]).map(d=>({
-    id:d.order_number,
-    time:new Date(d.created_at).toLocaleString('en-PH',{dateStyle:'short',timeStyle:'short'}),
-    items:d.items,total:d.total,method:d.payment_method,
-    created_at:d.created_at,drive:true
-  }));
-  orderHistory=[...posOrders,...dtOrders].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
 }
 
 function subscribeRealtime(){
@@ -530,30 +438,6 @@ function subscribeRealtime(){
       const item=invData.find(i=>i.id===d.id);
       if(item) item.stock=d.stock;
       if(document.getElementById('page-inventory').classList.contains('active')) renderInventory();
-    }).subscribe();
-
-  sb.channel('dt-channel')
-    .on('postgres_changes',{event:'INSERT',schema:'public',table:'drive_thru_orders'},payload=>{
-      const d=payload.new;
-      driveThruOrders.push(d);
-      driveThruOrders.sort((a,b)=>new Date(a.arrival_time)-new Date(b.arrival_time));
-      renderDriveThru();
-      dtNotifShow();
-      toast('🚗 Drive-Thru order '+d.order_number+'!');
-      try{const ac=new AudioContext();const o=ac.createOscillator();const g=ac.createGain();o.connect(g);g.connect(ac.destination);o.frequency.value=880;g.gain.setValueAtTime(0.3,ac.currentTime);g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.4);o.start();o.stop(ac.currentTime+0.4);}catch(e){}
-    })
-    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'drive_thru_orders'},payload=>{
-      const d=payload.new;
-      const idx=driveThruOrders.findIndex(x=>x.id===d.id);
-      if(idx>=0) driveThruOrders[idx]=d;
-      else driveThruOrders.push(d);
-      if(d.status==='picked_up'){
-        driveThruOrders=driveThruOrders.filter(x=>x.id!==d.id);
-        // Completed drive-thru order is now a recorded sale — refresh POS views
-        if(document.getElementById('page-orders').classList.contains('active')) renderOrders();
-        if(document.getElementById('page-reports').classList.contains('active')) renderReports();
-      }
-      renderDriveThru();
     }).subscribe();
 }
 
@@ -769,72 +653,13 @@ async function confirmOrder(){
 
 async function deductInventory(items){
   const updates={};
-  const adj=(id,amt)=>{const i=invData.find(x=>x.id===id);if(i){i.stock=Math.max(0,Math.round((i.stock-amt)*100)/100);updates[id]=i.stock;}};
-
-  // Per-serving raw-ingredient usage from the Master Business & Recipe doc
-  // Coffee concentrate: 200g beans -> ~700ml => ~18g beans per 65ml drink serving
-  const cup=(temp)=>temp==='cold'?'cold_cups_16':'hot_cups';
-  const saltCream=(q)=>{ // batch ratio: cream500/milk200/cond40/salt8 = 748ml
-    adj('heavy_cream',0.668*q); adj('fresh_milk',0.267*q); adj('condensed',0.053*q); adj('sea_salt',0.0107*q);
-  };
-  const eggCustard=(q)=>{ // 60ml per drink; batch 6yolk/cond180/cream300/sugar60 ~540ml+6yolk
-    adj('eggs',q/540*6); adj('condensed',q/540*180); adj('heavy_cream',q/540*300); adj('white_sugar',q/540*60);
-  };
-
+  const adj=(id,amt)=>{const i=invData.find(x=>x.id===id);if(i){i.stock=Math.max(0,i.stock-amt);updates[id]=i.stock;}};
   items.forEach(o=>{
-    const n=o.qty, t=o.temp;
-    switch(o.id){
-      case 1: // Black Coffee
-        adj('robusta',18*n); adj(cup(t),n); break;
-      case 5: // Milk Coffee
-        adj('robusta',18*n); adj('condensed',38*n); adj(cup(t),n); break;
-      case 2: // Salted Cream Coffee
-        adj('robusta',18*n); saltCream(70*n); adj(cup(t),n); break;
-      case 3: // Coconut Coffee (mix 80ml: coconut400/milk150/cond50 of 600ml)
-        adj('robusta',18*n); adj('coconut_cream',80*0.667*n); adj('fresh_milk',80*0.25*n); adj('condensed',80*0.083*n); adj(cup(t),n); break;
-      case 4: // Egg Coffee
-        adj('robusta',18*n); eggCustard(60*n); adj(cup(t),n); break;
-      case 6: // Matcha Latte
-        adj('matcha',2*n); adj('fresh_milk',200*n); adj(cup(t),n); break;
-      case 7: // Salt Matcha
-        adj('matcha',2*n); adj('fresh_milk',150*n); saltCream(80*n); adj(cup(t),n); break;
-      case 8: // Egg Custard Matcha
-        adj('matcha',2*n); adj('fresh_milk',150*n); eggCustard(60*n); adj(cup(t),n); break;
-      case 9:  // Lychee Fruit Tea (jasmine)
-        adj('jasmine_tea',2*n); adj('lychee_syrup',25*n); adj('simple_syrup',12*n); adj('cold_cups_22',n); break;
-      case 10: // Strawberry Fruit Tea (green)
-        adj('green_tea',2*n); adj('strawberry',35*n); adj('simple_syrup',10*n); adj('cold_cups_22',n); break;
-      case 11: // Mango Fruit Tea (black)
-        adj('black_tea',2*n); adj('mango',40*n); adj('simple_syrup',12*n); adj('cold_cups_22',n); break;
-      case 12: // Passion Fruit Tea (green)
-        adj('green_tea',2*n); adj('passion',30*n); adj('simple_syrup',12*n); adj('cold_cups_22',n); break;
-      case 13: // BBQ Pork Sandwich
-        adj('baguette',n); adj('liver_spread',15*n); adj('mayo',15*n); adj('pickled_carrots',21*n); adj('pickled_onions',14*n); adj('cucumber',0.3*n); adj('pork',120*n); adj('paper_bags',n); break;
-      case 14: // Chicken BBQ Sandwich
-        adj('baguette',n); adj('liver_spread',15*n); adj('mayo',15*n); adj('pickled_carrots',21*n); adj('pickled_onions',14*n); adj('cucumber',0.3*n); adj('chicken',120*n); adj('paper_bags',n); break;
-      case 15: // Beef BBQ Sandwich
-        adj('baguette',n); adj('liver_spread',15*n); adj('mayo',15*n); adj('pickled_carrots',21*n); adj('pickled_onions',14*n); adj('cucumber',0.3*n); adj('beef',120*n); adj('paper_bags',n); break;
-      case 19: // Pork Fried Rice (250g rice + 62g for crunchy top + 2 eggs + oil + soy + veg + 110g pork)
-        adj('day_old_rice',312*n); adj('eggs',2*n); adj('cooking_oil',10*n); adj('soy_sauce',15*n); adj('onions',30*n); adj('petchay',30*n); adj('carrots',20*n); adj('spring_onions',5*n); adj('pork',110*n); adj('paper_bags',n); break;
-      case 20: // Chicken Fried Rice
-        adj('day_old_rice',312*n); adj('eggs',2*n); adj('cooking_oil',10*n); adj('soy_sauce',15*n); adj('onions',30*n); adj('petchay',30*n); adj('carrots',20*n); adj('spring_onions',5*n); adj('chicken',110*n); adj('paper_bags',n); break;
-      case 21: // Beef Fried Rice
-        adj('day_old_rice',312*n); adj('eggs',2*n); adj('cooking_oil',10*n); adj('soy_sauce',15*n); adj('onions',30*n); adj('petchay',30*n); adj('carrots',20*n); adj('spring_onions',5*n); adj('beef',110*n); adj('paper_bags',n); break;
-      case 22: adj('bacon',60*n); break;   // Add-on: Bacon
-      case 23: adj('tocino',80*n); break;  // Add-on: Tocino
-      case 24: adj('tapa',80*n); break;    // Add-on: Tapa
-      case 16: // Combo: Pork Sandwich + Salted Coffee
-        adj('robusta',18*n); saltCream(70*n); adj(cup(t),n);
-        adj('baguette',n); adj('liver_spread',15*n); adj('mayo',15*n); adj('pickled_carrots',21*n); adj('pickled_onions',14*n); adj('cucumber',0.3*n); adj('pork',120*n); adj('paper_bags',n); break;
-      case 17: // Combo: Chicken Sandwich + Coconut Coffee
-        adj('robusta',18*n); adj('coconut_cream',80*0.667*n); adj('fresh_milk',80*0.25*n); adj('condensed',80*0.083*n); adj(cup(t),n);
-        adj('baguette',n); adj('liver_spread',15*n); adj('mayo',15*n); adj('pickled_carrots',21*n); adj('pickled_onions',14*n); adj('cucumber',0.3*n); adj('chicken',120*n); adj('paper_bags',n); break;
-      case 18: // Combo: Beef Sandwich + Black Coffee
-        adj('robusta',18*n); adj(cup(t),n);
-        adj('baguette',n); adj('liver_spread',15*n); adj('mayo',15*n); adj('pickled_carrots',21*n); adj('pickled_onions',14*n); adj('cucumber',0.3*n); adj('beef',120*n); adj('paper_bags',n); break;
-    }
+    if(['Coffee','Combo'].includes(o.cat)){adj('robusta',50*o.qty);adj('fresh_milk',50*o.qty);adj('cold_cups_16',o.qty);}
+    if(['Tea'].includes(o.cat)){adj('jasmine_tea',2*o.qty);adj('cold_cups_22',o.qty);}
+    if(['Matcha'].includes(o.cat)){adj('matcha',2*o.qty);adj('fresh_milk',50*o.qty);adj('cold_cups_16',o.qty);}
+    if(['Food','Combo'].includes(o.cat)){adj('baguette',o.qty);adj('paper_bags',o.qty);}
   });
-
   for(const [id,stock] of Object.entries(updates)){
     await sb.from('inventory').update({stock}).eq('id',id);
   }
@@ -857,7 +682,7 @@ async function renderInventory(){
         const bc=pct>50?'sok':pct>20?'slow':'sout';
         const txt=pct>50?'OK':pct>20?'Low':'Out';
         return `<tr><td>${item.name}</td>
-          <td style="font-weight:600;font-size:12px">${Math.round(item.stock)} ${item.unit}</td>
+          <td style="font-weight:600;font-size:12px">${item.stock} ${item.unit}</td>
           <td><div class="sbar"><div class="sfill ${fc}" style="width:${pct}%"></div></div><span class="sbadge ${bc}">${txt}</span></td>
           <td><button class="adj-btn" onclick="showAdj('${item.id}')">Edit</button></td></tr>`;
       }).join('')}</tbody></table></div>`;
@@ -907,7 +732,7 @@ async function renderOrders(){
   log.innerHTML=orderHistory.map(o=>`
     <div class="log-entry">
       <div class="log-head">
-        <span class="log-id">${o.id}${o.drive?' <span style="font-size:11px;font-weight:600;color:#1D9E75">🚗 Drive-Thru</span>':''}</span>
+        <span class="log-id">${o.id}</span>
         <span class="log-time">${o.time}</span>
       </div>
       <div class="log-items-text">${o.items.map(i=>`${i.qty}× ${i.name}`).join(' · ')}</div>
@@ -958,127 +783,16 @@ async function renderReports(){
     </div>`).join(''):'<div class="no-data">No sales yet</div>';
 }
 
-
-// ── DRIVE-THRU ────────────────────────────────
-async function loadDriveThruOrders(){
-  const today=new Date().toISOString().split('T')[0];
-  const {data}=await sb.from('drive_thru_orders').select('*')
-    .gte('created_at',today+'T00:00:00')
-    .not('status','eq','picked_up')
-    .order('arrival_time',{ascending:true});
-  if(data) driveThruOrders=data;
-  renderDriveThru();
-}
-
-async function updateDtStatus(id,status){
-  await sb.from('drive_thru_orders').update({status}).eq('id',id);
-  const o=driveThruOrders.find(x=>x.id===id);
-  if(o) o.status=status;
-  if(status==='picked_up') driveThruOrders=driveThruOrders.filter(x=>x.id!==id);
-  renderDriveThru();
-  toast(status==='preparing'?'Prep started 🔥':status==='ready'?'Order ready ✅':'Order picked up 👋');
-}
-
-function startDtTimer(){
-  if(dtTimerInterval) clearInterval(dtTimerInterval);
-  dtTimerInterval=setInterval(()=>{
-    const cards=document.querySelectorAll('.dt-card[data-id]');
-    cards.forEach(card=>{
-      const arrival=new Date(card.dataset.arrival);
-      const now=new Date();
-      const diffMs=arrival-now;
-      const timerEl=card.querySelector('.dt-timer');
-      const fillEl=card.querySelector('.dt-bar-fill');
-      const totalMs=parseInt(card.dataset.totalms);
-      if(!timerEl) return;
-      if(diffMs<=0){
-        timerEl.textContent='Arriving!';
-        timerEl.className='dt-timer red-t';
-        card.className='dt-card urgent';
-        if(fillEl) fillEl.style.width='100%';
-        return;
-      }
-      const mins=Math.floor(diffMs/60000);
-      const secs=Math.floor((diffMs%60000)/1000);
-      timerEl.textContent=mins+'m '+String(secs).padStart(2,'0')+'s';
-      const pct=Math.min(100,Math.round((1-(diffMs/totalMs))*100));
-      if(fillEl){fillEl.style.width=pct+'%';fillEl.style.background=diffMs<180000?'#D85A30':diffMs<420000?'#EF9F27':'#1D9E75';}
-      if(diffMs<180000){timerEl.className='dt-timer red-t';card.classList.add('urgent');card.classList.remove('soon');}
-      else if(diffMs<420000){timerEl.className='dt-timer amber-t';card.classList.add('soon');card.classList.remove('urgent');}
-      else{timerEl.className='dt-timer green-t';card.classList.remove('urgent','soon');}
-    });
-  },1000);
-}
-
-function dtNotifShow(){
-  const el=document.getElementById('dt-notif');
-  if(!el) return;
-  el.style.display='flex';
-  setTimeout(()=>el.style.display='none',5000);
-}
-
-function renderDriveThru(){
-  const grid=document.getElementById('dt-grid');
-  if(!grid) return;
-  const active=driveThruOrders.filter(o=>o.status!=='picked_up');
-  const badgeEl=document.getElementById('dt-badge');
-  const pending=active.filter(o=>o.status!=='ready').length;
-  if(badgeEl){badgeEl.style.display=pending>0?'flex':'none';badgeEl.textContent=pending;}
-  if(!active.length){
-    grid.innerHTML='<div class="dt-empty">No active drive-thru orders<br><span style="font-size:12px">Orders placed via the app will appear here in real-time</span></div>';
-    if(dtTimerInterval){clearInterval(dtTimerInterval);dtTimerInterval=null;}
-    return;
-  }
-  grid.innerHTML=active.map(o=>{
-    const arrival=new Date(o.arrival_time);
-    const created=new Date(o.created_at);
-    const totalMs=arrival-created;
-    const diffMs=arrival-new Date();
-    const mins=Math.max(0,Math.floor(diffMs/60000));
-    const secs=Math.max(0,Math.floor((diffMs%60000)/1000));
-    const timerTxt=diffMs<=0?'Arriving!':mins+'m '+String(secs).padStart(2,'0')+'s';
-    const timerCls=diffMs<180000?'red-t':diffMs<420000?'amber-t':'green-t';
-    const pct=Math.min(100,Math.round((1-(diffMs/totalMs))*100));
-    const barColor=diffMs<180000?'#D85A30':diffMs<420000?'#EF9F27':'#1D9E75';
-    const cardCls=o.status==='ready'?'dt-card ready-st':diffMs<180000?'dt-card urgent':diffMs<420000?'dt-card soon':'dt-card';
-    const statusCls=o.status==='preparing'?'st-preparing':o.status==='ready'?'st-ready':'st-incoming';
-    const statusTxt=o.status==='preparing'?'Preparing 🔥':o.status==='ready'?'Ready ✅':'Incoming 📱';
-    const itemsHtml=(o.items||[]).map(i=>`<div class="dt-item-row">${i.qty}× ${i.name}${i.temp?' ('+i.temp+')':''}</div>`).join('');
-    const actionBtn=o.status==='incoming'
-      ?`<button class="dt-btn dt-btn-prep" onclick="updateDtStatus('${o.id}','preparing')">🔥 Start Prep</button>`
-      :o.status==='preparing'
-      ?`<button class="dt-btn dt-btn-ready" onclick="updateDtStatus('${o.id}','ready')">✅ Mark Ready</button>`
-      :`<button class="dt-btn dt-btn-done" onclick="updateDtStatus('${o.id}','picked_up')">👋 Picked Up</button>`;
-    return `<div class="${cardCls}" data-id="${o.id}" data-arrival="${o.arrival_time}" data-totalms="${totalMs}">
-      <div class="dt-head">
-        <div><div class="dt-num">${o.order_number}</div><div class="dt-cust">${o.customer_name||'Customer'}</div></div>
-        <span class="dt-status-badge ${statusCls}">${statusTxt}</span>
-      </div>
-      <div class="dt-timer-wrap">
-        <div class="dt-eta-label">Time until arrival</div>
-        <div class="dt-timer ${timerCls}">${timerTxt}</div>
-      </div>
-      <div class="dt-bar-wrap"><div class="dt-bar"><div class="dt-bar-fill" style="width:${pct}%;background:${barColor}"></div></div></div>
-      <div class="dt-items">${itemsHtml}<div class="dt-total">Total: ₱${o.total.toLocaleString()} · ${o.payment_method}</div></div>
-      <div class="dt-actions">${actionBtn}</div>
-    </div>`;
-  }).join('');
-  startDtTimer();
-}
-
 // ── HELPERS ───────────────────────────────────
 function switchTab(tab){
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  const tabOrder=['pos','inventory','orders','reports','drivethr'];
-  const idx=tabOrder.indexOf(tab);
-  const allTabs=document.querySelectorAll('.tab');
-  if(allTabs[idx]) allTabs[idx].classList.add('active');
+  document.querySelectorAll('.tab').forEach((t,i)=>{
+    t.classList.toggle('active',['pos','inventory','orders','reports'][i]===tab);
+  });
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+tab).classList.add('active');
   if(tab==='inventory') renderInventory();
   if(tab==='orders') renderOrders();
   if(tab==='reports') renderReports();
-  if(tab==='drivethr'){renderDriveThru();const b=document.getElementById('dt-badge');if(b)b.style.display='none';}
 }
 function setLoading(msg){document.getElementById('loading-msg').textContent=msg;}
 function updateClock(){document.getElementById('clock').textContent=new Date().toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'});}
