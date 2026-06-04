@@ -106,6 +106,11 @@ body{background:var(--bg);color:var(--text1);font-size:14px;font-family:var(--fo
 .pbtn-main{background:var(--gold-bg2);border-color:rgba(201,168,76,0.4);color:var(--gold);font-weight:700;grid-column:span 2;padding:11px;font-size:13px;letter-spacing:0.5px}
 .pbtn-main:hover{background:rgba(201,168,76,0.28)}
 .pbtn-main:disabled{opacity:0.4;cursor:not-allowed}
+.disc-row{display:flex;gap:6px;margin-bottom:8px}
+.disc-btn{flex:1;padding:6px 4px;border-radius:var(--r);border:1px dashed #3D3528;background:transparent;cursor:pointer;font-size:11px;font-weight:600;color:var(--text2);font-family:var(--font-body);transition:all .15s;letter-spacing:0.3px}
+.disc-btn:hover{border-color:var(--gold);color:var(--gold)}
+.disc-btn.active{background:rgba(201,168,76,0.15);border-color:var(--gold);color:var(--gold)}
+.disc-line{display:flex;justify-content:space-between;font-size:12px;color:#e57f7f;margin-bottom:3px;display:none}
 .clr-btn{background:none;border:none;cursor:pointer;color:var(--text3);font-size:12px;padding:2px 4px;transition:color .15s}
 .clr-btn:hover{color:var(--red)}
 
@@ -312,6 +317,11 @@ body{background:var(--bg);color:var(--text1);font-size:14px;font-family:var(--fo
         <div class="order-foot">
           <div class="sub-row"><span>Items</span><span id="item-count">0</span></div>
           <div class="sub-row"><span>Subtotal</span><span id="subtotal">₱0</span></div>
+          <div class="disc-row">
+            <button class="disc-btn" id="disc-pwd" onclick="toggleDiscount('PWD')">🪪 PWD</button>
+            <button class="disc-btn" id="disc-sc" onclick="toggleDiscount('SC')">👴 Senior</button>
+          </div>
+          <div class="disc-line" id="disc-line"><span id="disc-label">Discount (20%)</span><span id="disc-amt">−₱0</span></div>
           <div class="tot-row"><span>Total</span><span id="total-amt">₱0</span></div>
           <div class="pay-btns">
             <button class="pbtn" onclick="checkout('Cash')">💵 Cash</button>
@@ -414,7 +424,7 @@ const INIT_INV=[
   {id:'paper_bags',name:"Paper Bags",unit:"pcs",stock:0,max:999999,cat:"Supplies"},
 ];
 
-let sb,order=[],activeCategory='All',currentPayMethod='Cash';
+let sb,order=[],activeCategory='All',currentPayMethod='Cash',activeDiscount=null;
 let invData=[],orderHistory=[];
 let currentUser=null;
 
@@ -592,18 +602,28 @@ function addMoreItem(key){
   if(ex) ex.qty++;
   renderOrder();
 }
+function toggleDiscount(type){
+  activeDiscount=activeDiscount===type?null:type;
+  document.getElementById('disc-pwd').classList.toggle('active',activeDiscount==='PWD');
+  document.getElementById('disc-sc').classList.toggle('active',activeDiscount==='SC');
+  renderOrder();
+}
 function renderOrder(){
   const el=document.getElementById('order-items');
   const btn=document.getElementById('place-btn');
+  const discLine=document.getElementById('disc-line');
   if(!order.length){
     el.innerHTML='<div class="empty-order">Tap items to add</div>';
     document.getElementById('subtotal').textContent='₱0';
     document.getElementById('total-amt').textContent='₱0';
     document.getElementById('item-count').textContent='0';
+    discLine.style.display='none';
     btn.disabled=true;return;
   }
-  const total=order.reduce((s,o)=>s+o.price*o.qty,0);
+  const subtotal=order.reduce((s,o)=>s+o.price*o.qty,0);
   const count=order.reduce((s,o)=>s+o.qty,0);
+  const discAmt=activeDiscount?Math.round(subtotal*0.20):0;
+  const total=subtotal-discAmt;
   el.innerHTML=order.map(o=>`
     <div class="order-row">
       <div class="oname">${o.name}</div>
@@ -614,7 +634,14 @@ function renderOrder(){
       </div>
       <div class="oprice">₱${o.price*o.qty}</div>
     </div>`).join('');
-  document.getElementById('subtotal').textContent='₱'+total;
+  document.getElementById('subtotal').textContent='₱'+subtotal;
+  if(activeDiscount){
+    document.getElementById('disc-label').textContent=(activeDiscount==='PWD'?'PWD':'Senior Citizen')+' Discount (20%)';
+    document.getElementById('disc-amt').textContent='−₱'+discAmt;
+    discLine.style.display='flex';
+  } else {
+    discLine.style.display='none';
+  }
   document.getElementById('total-amt').textContent='₱'+total;
   document.getElementById('item-count').textContent=count+' item'+(count!==1?'s':'');
   btn.disabled=false;
@@ -628,7 +655,10 @@ function checkout(method){
 }
 
 function showReceiptModal(items,method,savedOrder){
-  const total=items.reduce((s,o)=>s+o.price*o.qty,0);
+  const subtotal=items.reduce((s,o)=>s+o.price*o.qty,0);
+  const discAmt=(!savedOrder&&activeDiscount)?Math.round(subtotal*0.20):(savedOrder&&savedOrder.discAmt||0);
+  const discType=(!savedOrder&&activeDiscount)||(savedOrder&&savedOrder.discType)||null;
+  const total=subtotal-discAmt;
   const now=savedOrder?savedOrder.time:new Date().toLocaleString('en-PH',{dateStyle:'medium',timeStyle:'short'});
   const orderNum=savedOrder?savedOrder.id:'NEW';
   const isCash=method==='Cash';
@@ -656,7 +686,8 @@ function showReceiptModal(items,method,savedOrder){
             <div style="font-size:10px;color:#999;padding:0 0 3px 0">@ ₱${o.price} each</div>
           `).join('')}
           <hr class="r-divider">
-          <div class="r-subtotal-row"><span>SUBTOTAL</span><span>₱${total}</span></div>
+          <div class="r-subtotal-row"><span>SUBTOTAL</span><span>₱${subtotal}</span></div>
+          ${discType?`<div class="r-subtotal-row" style="color:#e57f7f"><span>${discType==='PWD'?'PWD':'SENIOR CITIZEN'} DISC (20%)</span><span>−₱${discAmt}</span></div>`:''}
           <div class="r-total-row"><span>TOTAL</span><span>₱${total}</span></div>
           ${isCash?`
           <div class="r-payment-row" id="r-cash-line"><span>CASH</span><span id="r-cash-val">—</span></div>
@@ -675,7 +706,7 @@ function showReceiptModal(items,method,savedOrder){
           <div class="change-display"><span>Change</span><span class="change-val" id="change-out">—</span></div>
         </div>`:''}
         <div class="receipt-actions">
-          ${isNew?`<button class="btn-confirm" onclick="confirmOrder()">✓ Confirm & Save</button>`:''}
+          ${isNew?`<button class="btn-confirm" onclick="confirmOrder(${discAmt},'${discType||''}')">✓ Confirm & Save</button>`:''}
           <button class="btn-print" onclick="printReceipt()">🖨️ Print</button>
           <button class="btn-cancel" onclick="closeModal()">✕</button>
         </div>
@@ -702,8 +733,11 @@ function printReceipt(){
   printArea.style.display='none';
 }
 
-async function confirmOrder(){
-  const total=order.reduce((s,o)=>s+o.price*o.qty,0);
+async function confirmOrder(discAmt,discType){
+  discAmt=discAmt||0;
+  discType=discType||null;
+  const subtotal=order.reduce((s,o)=>s+o.price*o.qty,0);
+  const total=subtotal-discAmt;
   const num=orderHistory.length+1;
   const orderNum='#'+String(num).padStart(4,'0');
 
@@ -714,19 +748,23 @@ async function confirmOrder(){
   const {error}=await sb.from('orders').insert({
     order_number:orderNum,
     items:order.map(o=>({id:o.id,name:o.displayName||o.name,qty:o.qty,price:o.price,cat:o.cat,temp:o.temp||null})),
-    total,payment_method:currentPayMethod
+    total,payment_method:currentPayMethod,
+    ...(discAmt?{discount_type:discType,discount_amount:discAmt}:{})
   });
   if(error){toast('Save failed — check connection');console.error(error);return;}
 
   await deductInventory([...order]);
 
   const now=new Date().toLocaleString('en-PH',{dateStyle:'short',timeStyle:'short'});
-  orderHistory.unshift({id:orderNum,time:now,items:[...order],total,method:currentPayMethod});
+  orderHistory.unshift({id:orderNum,time:now,items:[...order],total,method:currentPayMethod,discAmt,discType});
 
   // Auto-print after confirming
   printReceipt();
 
   order=[];
+  activeDiscount=null;
+  document.getElementById('disc-pwd').classList.remove('active');
+  document.getElementById('disc-sc').classList.remove('active');
   renderOrder();
   closeModal();
   toast('Order '+orderNum+' saved & printed ✓');
