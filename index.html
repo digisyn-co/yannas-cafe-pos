@@ -453,6 +453,7 @@ const MENU=[
   {id:10,name:"Strawberry Fruit Tea",  cat:"Tea",    price:110, badge:"bt"},
   {id:11,name:"Mango Fruit Tea",       cat:"Tea",    price:110, badge:"bt"},
   {id:12,name:"Passion Fruit Tea",     cat:"Tea",    price:110, badge:"bt"},
+  {id:19,name:"Crunchy Fried Rice",    cat:"Food",   price:150, badge:"bf"},
   {id:13,name:"BBQ Pork Sandwich",     cat:"Food",   price:140, badge:"bf"},
   {id:14,name:"Chicken BBQ Sandwich",  cat:"Food",   price:130, badge:"bf"},
   {id:15,name:"Beef BBQ Sandwich",     cat:"Food",   price:155, badge:"bf"},
@@ -548,8 +549,8 @@ async function loadApp(){
   await setupInventory();
   setLoading('Loading orders…');
   await loadOrders();
-  setLoading('Starting live sync…');
-  subscribeRealtime();
+  setLoading('Almost ready…');
+  setTimeout(()=>subscribeRealtime(),800);
   document.getElementById('loading').style.display='none';
   document.getElementById('app').style.display='block';
   applyRoleUI();
@@ -597,24 +598,30 @@ async function loadOrders(filter){
 }
 
 function subscribeRealtime(){
-  sb.channel('orders-channel')
-    .on('postgres_changes',{event:'INSERT',schema:'public',table:'orders'},payload=>{
-      const d=payload.new;
-      const entry={id:d.order_number,time:new Date(d.created_at).toLocaleString('en-PH',{dateStyle:'short',timeStyle:'short'}),items:d.items,total:d.total,method:d.payment_method,created_at:d.created_at};
-      if(!orderHistory.find(o=>o.id===entry.id)){
-        orderHistory.unshift(entry);
-        if(document.getElementById('page-orders').classList.contains('active')) renderOrders();
-        if(document.getElementById('page-reports').classList.contains('active')) renderReports();
-        toast('New order '+entry.id);
-      }
-    }).subscribe();
-  sb.channel('inventory-channel')
-    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'inventory'},payload=>{
-      const d=payload.new;
-      const item=invData.find(i=>i.id===d.id);
-      if(item) item.stock=d.stock;
-      if(document.getElementById('page-inventory').classList.contains('active')) renderInventory();
-    }).subscribe();
+  try {
+    sb.channel('orders-channel')
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'orders'},payload=>{
+        const d=payload.new;
+        const entry={id:d.order_number,time:new Date(d.created_at).toLocaleString('en-PH',{dateStyle:'short',timeStyle:'short'}),items:d.items,total:d.total,method:d.payment_method,voided:d.voided||false,order_type:d.order_type||'Dine-in',created_at:d.created_at};
+        if(!orderHistory.find(o=>o.id===entry.id)){
+          orderHistory.unshift(entry);
+          if(document.getElementById('page-orders').classList.contains('active')) renderOrders();
+          if(document.getElementById('page-reports').classList.contains('active')) renderReports();
+          toast('New order '+entry.id);
+        }
+      }).subscribe((status,err)=>{
+        if(err) console.warn('Realtime orders:',err);
+      });
+    sb.channel('inventory-channel')
+      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'inventory'},payload=>{
+        const d=payload.new;
+        const item=invData.find(i=>i.id===d.id);
+        if(item) item.stock=d.stock;
+        if(document.getElementById('page-inventory').classList.contains('active')) renderInventory();
+      }).subscribe((status,err)=>{
+        if(err) console.warn('Realtime inventory:',err);
+      });
+  } catch(e){ console.warn('Realtime unavailable:',e); }
 }
 
 // ── MENU ──────────────────────────────────────
