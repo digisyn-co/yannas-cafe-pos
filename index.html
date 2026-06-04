@@ -341,6 +341,7 @@ body{background:var(--bg);color:var(--text1);font-size:14px;font-family:var(--fo
           <div class="disc-row">
             <button class="disc-btn" id="disc-pwd" onclick="toggleDiscount('PWD')">🪪 PWD</button>
             <button class="disc-btn" id="disc-sc" onclick="toggleDiscount('SC')">👴 Senior</button>
+            <button class="disc-btn" id="disc-friendly" onclick="toggleDiscount('FRIENDLY')">🤝 Friendly</button>
           </div>
           <div class="disc-line" id="disc-line"><span id="disc-label">Discount (20%)</span><span id="disc-amt">−₱0</span></div>
           <div class="tot-row"><span>Total</span><span id="total-amt">₱0</span></div>
@@ -632,6 +633,7 @@ function toggleDiscount(type){
     discountData=null;
     document.getElementById('disc-pwd').classList.remove('active');
     document.getElementById('disc-sc').classList.remove('active');
+    document.getElementById('disc-friendly').classList.remove('active');
     renderOrder();
     return;
   }
@@ -640,6 +642,33 @@ function toggleDiscount(type){
 
 function openDiscountModal(type){
   const subtotal=order.reduce((s,o)=>s+o.price*o.qty,0);
+
+  if(type==='FRIENDLY'){
+    const discAmt=Math.round(subtotal*0.20);
+    const total=subtotal-discAmt;
+    document.getElementById('modal-container').innerHTML=`
+      <div class="modal-bg" id="disc-modal-bg">
+        <div class="disc-modal">
+          <h3>🤝 Friendly / Employee Discount</h3>
+          <div class="dm-sub">20% off the full bill</div>
+          <div class="dm-id-entry" style="margin-bottom:14px">
+            <label>NAME</label>
+            <input type="text" id="dm-friendly-name" placeholder="Customer / Employee Name" autocomplete="off"/>
+          </div>
+          <div class="dm-total-preview">
+            <div class="dtp-row"><span>Subtotal</span><span>₱${subtotal}</span></div>
+            <div class="dtp-row"><span>Discount (20%)</span><span style="color:#e57f7f">−₱${discAmt}</span></div>
+            <div class="dtp-row total"><span>Total</span><span>₱${total}</span></div>
+          </div>
+          <div class="dm-actions">
+            <button class="dm-cancel" onclick="closeModal()">Cancel</button>
+            <button class="dm-apply" onclick="applyFriendlyDiscount(${discAmt})">Apply Discount</button>
+          </div>
+        </div>
+      </div>`;
+    return;
+  }
+
   const label=type==='PWD'?'PWD':'Senior Citizen';
   // Build modal
   document.getElementById('modal-container').innerHTML=`
@@ -729,6 +758,17 @@ function dmUpdatePreview(){
   window._dmDiscAmt=discAmt;
 }
 
+function applyFriendlyDiscount(discAmt){
+  const name=(document.getElementById('dm-friendly-name')?.value||'').trim();
+  if(!name){toast('Please enter a name for the friendly discount');return;}
+  discountData={type:'FRIENDLY',ids:[{name,idNum:'—'}],pax:1,discAmt};
+  document.getElementById('disc-pwd').classList.remove('active');
+  document.getElementById('disc-sc').classList.remove('active');
+  document.getElementById('disc-friendly').classList.add('active');
+  closeModal();
+  renderOrder();
+}
+
 function applyDiscount(type){
   const n=window._dmIdCount||1;
   const ids=[];
@@ -746,6 +786,7 @@ function applyDiscount(type){
   };
   document.getElementById('disc-pwd').classList.toggle('active',type==='PWD');
   document.getElementById('disc-sc').classList.toggle('active',type==='SC');
+  document.getElementById('disc-friendly').classList.remove('active');
   closeModal();
   renderOrder();
 }
@@ -778,8 +819,10 @@ function renderOrder(){
     </div>`).join('');
   document.getElementById('subtotal').textContent='₱'+subtotal;
   if(discountData){
-    const label=discountData.type==='PWD'?'PWD':'Senior Citizen';
-    document.getElementById('disc-label').textContent=`${label} Discount (${discountData.ids.length} ID${discountData.ids.length>1?'s':''}, 20%)`;
+    const labelMap={PWD:'PWD',SC:'Senior Citizen',FRIENDLY:'Friendly / Employee'};
+    const label=labelMap[discountData.type]||discountData.type;
+    const idInfo=discountData.type==='FRIENDLY'?discountData.ids[0].name:`${discountData.ids.length} ID${discountData.ids.length>1?'s':''}`;
+    document.getElementById('disc-label').textContent=`${label} Discount (${idInfo}, 20%)`;
     document.getElementById('disc-amt').textContent='−₱'+discAmt;
     discLine.style.display='flex';
   } else {
@@ -807,12 +850,14 @@ function showReceiptModal(items,method,savedOrder){
   const isCash=method==='Cash';
   const isNew=!savedOrder;
 
+  const discTypeLabel=dd?(dd.type==='PWD'?'PWD':dd.type==='SC'?'SENIOR CITIZEN':'FRIENDLY / EMPLOYEE'):'';
+  const discIdInfo=dd?(dd.type==='FRIENDLY'?dd.ids[0].name:`${dd.ids.length} ID${dd.ids.length>1?'s':''}`):'';  
   const discReceiptHtml=dd?`
     <div class="r-subtotal-row" style="color:#e57f7f;margin-top:2px">
-      <span>${dd.type==='PWD'?'PWD':'SENIOR CITIZEN'} DISC (${dd.ids.length} ID${dd.ids.length>1?'s':''}, 20%)</span>
+      <span>${discTypeLabel} DISC (${discIdInfo}, 20%)</span>
       <span>−₱${discAmt}</span>
     </div>
-    ${dd.ids.map((id,i)=>`<div style="font-size:9px;color:#999;padding:0 0 1px 0">${dd.type} #${i+1}: ${id.name} · ${id.idNum}</div>`).join('')}`:'';
+    ${dd.type!=='FRIENDLY'?dd.ids.map((id,i)=>`<div style="font-size:9px;color:#999;padding:0 0 1px 0">${dd.type} #${i+1}: ${id.name} · ${id.idNum}</div>`).join(''):''}`:'';
 
   document.getElementById('modal-container').innerHTML=`
     <div class="modal-bg" id="receipt-modal">
@@ -915,6 +960,7 @@ async function confirmOrder(){
   discountData=null;
   document.getElementById('disc-pwd').classList.remove('active');
   document.getElementById('disc-sc').classList.remove('active');
+  document.getElementById('disc-friendly').classList.remove('active');
   renderOrder();
   closeModal();
   toast('Order '+orderNum+' saved & printed ✓');
