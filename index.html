@@ -111,6 +111,27 @@ body{background:var(--bg);color:var(--text1);font-size:14px;font-family:var(--fo
 .disc-btn:hover{border-color:var(--gold);color:var(--gold)}
 .disc-btn.active{background:rgba(201,168,76,0.15);border-color:var(--gold);color:var(--gold)}
 .disc-line{display:flex;justify-content:space-between;font-size:12px;color:#e57f7f;margin-bottom:3px;display:none}
+/* Discount ID Modal */
+.disc-modal{background:var(--bg2);border-radius:12px;padding:20px;width:340px;max-width:94vw;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.5)}
+.disc-modal h3{margin:0 0 4px;font-size:15px;color:var(--text1)}
+.disc-modal .dm-sub{font-size:11px;color:var(--text2);margin-bottom:14px}
+.dm-pax-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:14px;border-bottom:0.5px solid #2E2820}
+.dm-pax-row label{font-size:12px;color:var(--text2);flex:1}
+.dm-pax-ctrl{display:flex;align-items:center;gap:8px}
+.dm-pax-ctrl button{width:28px;height:28px;border-radius:6px;border:0.5px solid #3D3528;background:var(--bg3);color:var(--text1);cursor:pointer;font-size:16px;line-height:1}
+.dm-pax-ctrl span{min-width:20px;text-align:center;font-weight:700;font-size:14px}
+.dm-id-entry{margin-bottom:10px;padding:10px;background:var(--bg3);border-radius:8px}
+.dm-id-entry label{font-size:10px;color:var(--gold);font-weight:600;letter-spacing:0.5px;display:block;margin-bottom:6px}
+.dm-id-entry input{width:100%;box-sizing:border-box;background:var(--bg1);border:0.5px solid #3D3528;border-radius:6px;padding:6px 8px;color:var(--text1);font-size:12px;font-family:var(--font-body);margin-bottom:6px}
+.dm-id-entry input:last-child{margin-bottom:0}
+.dm-id-entry input:focus{outline:none;border-color:var(--gold)}
+.dm-total-preview{background:rgba(201,168,76,0.08);border:0.5px solid rgba(201,168,76,0.3);border-radius:8px;padding:10px 12px;margin:14px 0;font-size:12px}
+.dm-total-preview .dtp-row{display:flex;justify-content:space-between;margin-bottom:4px;color:var(--text2)}
+.dm-total-preview .dtp-row.total{color:var(--gold);font-weight:700;font-size:14px;margin-bottom:0;border-top:0.5px solid rgba(201,168,76,0.3);padding-top:6px;margin-top:6px}
+.dm-actions{display:flex;gap:8px;margin-top:4px}
+.dm-actions button{flex:1;padding:10px;border-radius:var(--r);border:none;cursor:pointer;font-family:var(--font-body);font-size:12px;font-weight:600}
+.dm-apply{background:var(--gold);color:#1a1a1a}
+.dm-cancel{background:var(--bg3);color:var(--text2);border:0.5px solid #3D3528 !important;border:none}
 .clr-btn{background:none;border:none;cursor:pointer;color:var(--text3);font-size:12px;padding:2px 4px;transition:color .15s}
 .clr-btn:hover{color:var(--red)}
 
@@ -424,7 +445,7 @@ const INIT_INV=[
   {id:'paper_bags',name:"Paper Bags",unit:"pcs",stock:0,max:999999,cat:"Supplies"},
 ];
 
-let sb,order=[],activeCategory='All',currentPayMethod='Cash',activeDiscount=null;
+let sb,order=[],activeCategory='All',currentPayMethod='Cash';
 let invData=[],orderHistory=[];
 let currentUser=null;
 
@@ -602,12 +623,133 @@ function addMoreItem(key){
   if(ex) ex.qty++;
   renderOrder();
 }
+// ── DISCOUNT MODAL ────────────────────────────
+let discountData=null; // {type, ids:[{name,idNum}], pax, discAmt}
+
 function toggleDiscount(type){
-  activeDiscount=activeDiscount===type?null:type;
-  document.getElementById('disc-pwd').classList.toggle('active',activeDiscount==='PWD');
-  document.getElementById('disc-sc').classList.toggle('active',activeDiscount==='SC');
+  // If already active same type, clear it
+  if(discountData&&discountData.type===type){
+    discountData=null;
+    document.getElementById('disc-pwd').classList.remove('active');
+    document.getElementById('disc-sc').classList.remove('active');
+    renderOrder();
+    return;
+  }
+  openDiscountModal(type);
+}
+
+function openDiscountModal(type){
+  const subtotal=order.reduce((s,o)=>s+o.price*o.qty,0);
+  const label=type==='PWD'?'PWD':'Senior Citizen';
+  // Build modal
+  document.getElementById('modal-container').innerHTML=`
+    <div class="modal-bg" id="disc-modal-bg">
+      <div class="disc-modal">
+        <h3>🪪 ${label} Discount</h3>
+        <div class="dm-sub">20% off per qualifying ID holder (RA 10754 / RA 9994)</div>
+        <div class="dm-pax-row">
+          <label>Total customers in this order</label>
+          <div class="dm-pax-ctrl">
+            <button onclick="dmChangePax(-1)">−</button>
+            <span id="dm-pax">1</span>
+            <button onclick="dmChangePax(1)">+</button>
+          </div>
+        </div>
+        <div class="dm-pax-row" style="border-bottom:none;margin-bottom:10px">
+          <label>Number of ${label} ID holders</label>
+          <div class="dm-pax-ctrl">
+            <button onclick="dmChangeIds(-1)">−</button>
+            <span id="dm-idcount">1</span>
+            <button onclick="dmChangeIds(1)">+</button>
+          </div>
+        </div>
+        <div id="dm-id-fields"></div>
+        <div class="dm-total-preview" id="dm-preview"></div>
+        <div class="dm-actions">
+          <button class="dm-cancel" onclick="closeModal()">Cancel</button>
+          <button class="dm-apply" onclick="applyDiscount('${type}')">Apply Discount</button>
+        </div>
+      </div>
+    </div>`;
+  window._dmPax=1;
+  window._dmIdCount=1;
+  window._dmType=type;
+  window._dmSubtotal=subtotal;
+  dmRenderFields();
+  dmUpdatePreview();
+}
+
+function dmChangePax(d){
+  const min=window._dmIdCount||1;
+  window._dmPax=Math.max(min,( window._dmPax||1)+d);
+  document.getElementById('dm-pax').textContent=window._dmPax;
+  dmUpdatePreview();
+}
+
+function dmChangeIds(d){
+  const max=window._dmPax||1;
+  const prev=window._dmIdCount||1;
+  window._dmIdCount=Math.max(1,Math.min(max,prev+d));
+  // If idcount > pax, bump pax too
+  if(window._dmIdCount>window._dmPax) window._dmPax=window._dmIdCount;
+  document.getElementById('dm-idcount').textContent=window._dmIdCount;
+  document.getElementById('dm-pax').textContent=window._dmPax;
+  dmRenderFields();
+  dmUpdatePreview();
+}
+
+function dmRenderFields(){
+  const n=window._dmIdCount||1;
+  const label=window._dmType==='PWD'?'PWD':'Senior Citizen';
+  let html='';
+  for(let i=0;i<n;i++){
+    html+=`<div class="dm-id-entry">
+      <label>${label.toUpperCase()} #${i+1}</label>
+      <input type="text" id="dm-name-${i}" placeholder="Full Name" autocomplete="off"/>
+      <input type="text" id="dm-idnum-${i}" placeholder="ID Number" autocomplete="off"/>
+    </div>`;
+  }
+  document.getElementById('dm-id-fields').innerHTML=html;
+}
+
+function dmUpdatePreview(){
+  const subtotal=window._dmSubtotal||0;
+  const pax=window._dmPax||1;
+  const idCount=window._dmIdCount||1;
+  // Proportional: discount applies to (idCount/pax) share of bill
+  const discBase=Math.round(subtotal*(idCount/pax));
+  const discAmt=Math.round(discBase*0.20);
+  const total=subtotal-discAmt;
+  const label=window._dmType==='PWD'?'PWD':'Senior Citizen';
+  document.getElementById('dm-preview').innerHTML=`
+    <div class="dtp-row"><span>Subtotal</span><span>₱${subtotal}</span></div>
+    <div class="dtp-row"><span>${label} share (${idCount}/${pax} pax)</span><span>₱${discBase}</span></div>
+    <div class="dtp-row"><span>Discount (20% of share)</span><span style="color:#e57f7f">−₱${discAmt}</span></div>
+    <div class="dtp-row total"><span>Total</span><span>₱${total}</span></div>`;
+  window._dmDiscAmt=discAmt;
+}
+
+function applyDiscount(type){
+  const n=window._dmIdCount||1;
+  const ids=[];
+  for(let i=0;i<n;i++){
+    const name=(document.getElementById(`dm-name-${i}`)?.value||'').trim();
+    const idNum=(document.getElementById(`dm-idnum-${i}`)?.value||'').trim();
+    if(!name||!idNum){toast(`Please fill in name & ID number for ${type==='PWD'?'PWD':'Senior Citizen'} #${i+1}`);return;}
+    ids.push({name,idNum});
+  }
+  discountData={
+    type,
+    ids,
+    pax:window._dmPax||1,
+    discAmt:window._dmDiscAmt||0
+  };
+  document.getElementById('disc-pwd').classList.toggle('active',type==='PWD');
+  document.getElementById('disc-sc').classList.toggle('active',type==='SC');
+  closeModal();
   renderOrder();
 }
+
 function renderOrder(){
   const el=document.getElementById('order-items');
   const btn=document.getElementById('place-btn');
@@ -622,7 +764,7 @@ function renderOrder(){
   }
   const subtotal=order.reduce((s,o)=>s+o.price*o.qty,0);
   const count=order.reduce((s,o)=>s+o.qty,0);
-  const discAmt=activeDiscount?Math.round(subtotal*0.20):0;
+  const discAmt=discountData?discountData.discAmt:0;
   const total=subtotal-discAmt;
   el.innerHTML=order.map(o=>`
     <div class="order-row">
@@ -635,8 +777,9 @@ function renderOrder(){
       <div class="oprice">₱${o.price*o.qty}</div>
     </div>`).join('');
   document.getElementById('subtotal').textContent='₱'+subtotal;
-  if(activeDiscount){
-    document.getElementById('disc-label').textContent=(activeDiscount==='PWD'?'PWD':'Senior Citizen')+' Discount (20%)';
+  if(discountData){
+    const label=discountData.type==='PWD'?'PWD':'Senior Citizen';
+    document.getElementById('disc-label').textContent=`${label} Discount (${discountData.ids.length} ID${discountData.ids.length>1?'s':''}, 20%)`;
     document.getElementById('disc-amt').textContent='−₱'+discAmt;
     discLine.style.display='flex';
   } else {
@@ -656,13 +799,20 @@ function checkout(method){
 
 function showReceiptModal(items,method,savedOrder){
   const subtotal=items.reduce((s,o)=>s+o.price*o.qty,0);
-  const discAmt=(!savedOrder&&activeDiscount)?Math.round(subtotal*0.20):(savedOrder&&savedOrder.discAmt||0);
-  const discType=(!savedOrder&&activeDiscount)||(savedOrder&&savedOrder.discType)||null;
+  const dd=(!savedOrder&&discountData)||(savedOrder&&savedOrder.discountData)||null;
+  const discAmt=dd?dd.discAmt:0;
   const total=subtotal-discAmt;
   const now=savedOrder?savedOrder.time:new Date().toLocaleString('en-PH',{dateStyle:'medium',timeStyle:'short'});
   const orderNum=savedOrder?savedOrder.id:'NEW';
   const isCash=method==='Cash';
   const isNew=!savedOrder;
+
+  const discReceiptHtml=dd?`
+    <div class="r-subtotal-row" style="color:#e57f7f;margin-top:2px">
+      <span>${dd.type==='PWD'?'PWD':'SENIOR CITIZEN'} DISC (${dd.ids.length} ID${dd.ids.length>1?'s':''}, 20%)</span>
+      <span>−₱${discAmt}</span>
+    </div>
+    ${dd.ids.map((id,i)=>`<div style="font-size:9px;color:#999;padding:0 0 1px 0">${dd.type} #${i+1}: ${id.name} · ${id.idNum}</div>`).join('')}`:'';
 
   document.getElementById('modal-container').innerHTML=`
     <div class="modal-bg" id="receipt-modal">
@@ -687,7 +837,7 @@ function showReceiptModal(items,method,savedOrder){
           `).join('')}
           <hr class="r-divider">
           <div class="r-subtotal-row"><span>SUBTOTAL</span><span>₱${subtotal}</span></div>
-          ${discType?`<div class="r-subtotal-row" style="color:#e57f7f"><span>${discType==='PWD'?'PWD':'SENIOR CITIZEN'} DISC (20%)</span><span>−₱${discAmt}</span></div>`:''}
+          ${discReceiptHtml}
           <div class="r-total-row"><span>TOTAL</span><span>₱${total}</span></div>
           ${isCash?`
           <div class="r-payment-row" id="r-cash-line"><span>CASH</span><span id="r-cash-val">—</span></div>
@@ -706,7 +856,7 @@ function showReceiptModal(items,method,savedOrder){
           <div class="change-display"><span>Change</span><span class="change-val" id="change-out">—</span></div>
         </div>`:''}
         <div class="receipt-actions">
-          ${isNew?`<button class="btn-confirm" onclick="confirmOrder(${discAmt},'${discType||''}')">✓ Confirm & Save</button>`:''}
+          ${isNew?`<button class="btn-confirm" onclick="confirmOrder()">✓ Confirm & Save</button>`:''}
           <button class="btn-print" onclick="printReceipt()">🖨️ Print</button>
           <button class="btn-cancel" onclick="closeModal()">✕</button>
         </div>
@@ -733,9 +883,9 @@ function printReceipt(){
   printArea.style.display='none';
 }
 
-async function confirmOrder(discAmt,discType){
-  discAmt=discAmt||0;
-  discType=discType||null;
+async function confirmOrder(){
+  const dd=discountData;
+  const discAmt=dd?dd.discAmt:0;
   const subtotal=order.reduce((s,o)=>s+o.price*o.qty,0);
   const total=subtotal-discAmt;
   const num=orderHistory.length+1;
@@ -749,20 +899,20 @@ async function confirmOrder(discAmt,discType){
     order_number:orderNum,
     items:order.map(o=>({id:o.id,name:o.displayName||o.name,qty:o.qty,price:o.price,cat:o.cat,temp:o.temp||null})),
     total,payment_method:currentPayMethod,
-    ...(discAmt?{discount_type:discType,discount_amount:discAmt}:{})
+    ...(dd?{discount_type:dd.type,discount_amount:dd.discAmt,discount_ids:dd.ids,discount_pax:dd.pax}:{})
   });
   if(error){toast('Save failed — check connection');console.error(error);return;}
 
   await deductInventory([...order]);
 
   const now=new Date().toLocaleString('en-PH',{dateStyle:'short',timeStyle:'short'});
-  orderHistory.unshift({id:orderNum,time:now,items:[...order],total,method:currentPayMethod,discAmt,discType});
+  orderHistory.unshift({id:orderNum,time:now,items:[...order],total,method:currentPayMethod,discountData:dd?{...dd}:null});
 
   // Auto-print after confirming
   printReceipt();
 
   order=[];
-  activeDiscount=null;
+  discountData=null;
   document.getElementById('disc-pwd').classList.remove('active');
   document.getElementById('disc-sc').classList.remove('active');
   renderOrder();
