@@ -344,7 +344,8 @@ body{background:var(--bg);color:var(--text1);font-size:14px;font-family:var(--fo
       <span class="status-dot live"></span>
       <span>Live</span>
       <span id="clock" style="margin-left:4px"></span>
-      <button onclick="doLogout()" style="margin-left:8px;padding:4px 10px;font-size:11px;border:0.5px solid #3D3528;border-radius:6px;background:transparent;color:var(--text2);cursor:pointer;font-family:var(--font-body);letter-spacing:0.3px;transition:all .15s">Logout</button>
+      <button id="printer-btn" onclick="thermalPort?disconnectThermalPrinter():connectThermalPrinter()" style="margin-left:4px;padding:4px 10px;font-size:11px;border:0.5px solid #3D3528;border-radius:6px;background:transparent;color:var(--text2);cursor:pointer;font-family:var(--font-body);letter-spacing:0.3px;transition:all .15s">🖨️ Printer</button>
+      <button onclick="doLogout()" style="margin-left:4px;padding:4px 10px;font-size:11px;border:0.5px solid #3D3528;border-radius:6px;background:transparent;color:var(--text2);cursor:pointer;font-family:var(--font-body);letter-spacing:0.3px;transition:all .15s">Logout</button>
     </div>
   </div>
 
@@ -1039,7 +1040,146 @@ function calcChange(total){
   document.getElementById('change-out').textContent=changeVal;
 }
 
-function printReceipt(){
+// ── THERMAL PRINTER (Web Serial API) ──────────────────────────────────────
+let thermalPort=null;
+let thermalWriter=null;
+
+async function connectThermalPrinter(){
+  if(!('serial' in navigator)){
+    toast('Web Serial not supported — use Chrome or Edge');
+    return;
+  }
+  try{
+    thermalPort=await navigator.serial.requestPort();
+    await thermalPort.open({baudRate:9600});
+    thermalWriter=thermalPort.writable.getWriter();
+    toast('🖨️ Printer connected');
+    const btn=document.getElementById('printer-btn');
+    if(btn){btn.textContent='🖨️ Printer ✓';btn.style.color='var(--gold)';}
+  }catch(e){
+    if(e.name!=='NotFoundError') toast('Printer connection failed: '+e.message);
+  }
+}
+
+async function disconnectThermalPrinter(){
+  try{
+    if(thermalWriter){await thermalWriter.releaseLock();thermalWriter=null;}
+    if(thermalPort){await thermalPort.close();thermalPort=null;}
+    const btn=document.getElementById('printer-btn');
+    if(btn){btn.textContent='🖨️ Printer';btn.style.color='';}
+    toast('Printer disconnected');
+  }catch(e){console.error(e);}
+}
+
+function escpos(receipt){
+  // Build ESC/POS byte commands for 58mm thermal printer
+  const enc=new TextEncoder();
+  const ESC=0x1B,GS=0x1D;
+  const INIT=[ESC,0x40];
+  const ALIGN_C=[ESC,0x61,0x01];
+  const ALIGN_L=[ESC,0x61,0x00];
+  const BOLD_ON=[ESC,0x45,0x01];
+  const BOLD_OFF=[ESC,0x45,0x00];
+  const DOUBLE_ON=[GS,0x21,0x11];
+  const DOUBLE_OFF=[GS,0x21,0x00];
+  const LF=[0x0A];
+  const CUT=[GS,0x56,0x41,0x03]; // partial cut with feed
+
+  const bytes=[];
+  const w=(arr)=>bytes.push(...arr);
+  const t=(str)=>bytes.push(...enc.encode(str));
+  const line=(str='')=>{t(str);w(LF);}
+  const div=()=>line('--------------------------------');
+
+  w(INIT);
+  // Header
+  w(ALIGN_C);w(DOUBLE_ON);w(BOLD_ON);
+  line("YANNA'S");
+  w(DOUBLE_OFF);w(BOLD_OFF);
+  line('VIETNAMESE COFFEE');
+  line('Passi-San Rafael Rd. Brgy Quinolpan');
+  line('San Enrique, Iloilo');
+  div();
+  // Order info
+  w(BOLD_ON);line('ORDER '+receipt.orderNum);w(BOLD_OFF);
+  line(receipt.time+'  '+receipt.method);
+  div();
+  // Items header
+  // Col widths for 32-char 58mm paper
+  const colW=32;
+  const pad=(str,len,right=false)=>{
+    str=String(str).substring(0,len);
+    return right?str.padStart(len):str.padEnd(len);
+  };
+  line(pad('ITEM',20)+pad('QTY',4,true)+pad('AMT',8,true));
+  div();
+  receipt.items.forEach(o=>{
+    const name=String(o.name).substring(0,20);
+    const qty=String(o.qty).padStart(4);
+    const amt=('P'+o.price*o.qty).padStart(8);
+    line(name+qty+amt);
+    line('  @ P'+o.price+' each');
+  });
+  div();
+  // Totals
+  const totLine=(label,val)=>{
+    line(pad(label,22)+String('P'+val).padStart(10));
+  };
+  totLine('SUBTOTAL',receipt.subtotal);
+  if(receipt.discAmt>0) totLine('DISCOUNT',-receipt.discAmt);
+  w(BOLD_ON);totLine('TOTAL',receipt.total);w(BOLD_OFF);
+  if(receipt.method==='Cash'&&receipt.cash){
+    totLine('CASH',receipt.cash);
+    const change=receipt.cash-receipt.total;
+    totLine('CHANGE',change>=0?change:'(SHORT P'+Math.abs(change)+')');
+  }
+  div();
+  // Footer
+  w(ALIGN_C);
+  line('Thank you for your visit!');
+  line('Please come again');
+  w(LF);w(LF);w(LF);
+  w(CUT);
+  return new Uint8Array(bytes);
+}
+
+async function printReceipt(){
+  // Gather receipt data from DOM
+  const rc=document.getElementById('receipt-content');
+  const orderNum=(rc?.querySelector('.r-order-num')?.textContent||'').replace('ORDER ','').trim();
+  const metaSpans=rc?.querySelectorAll('.r-meta span');
+  const time=metaSpans?.[0]?.textContent||'';
+  const method=metaSpans?.[1]?.textContent||'';
+  const items=[];
+  rc?.querySelectorAll('.r-item-row').forEach(row=>{
+    const name=row.querySelector('.r-item-name')?.textContent||'';
+    const qty=parseInt(row.querySelector('.r-item-qty')?.textContent||'1');
+    const priceText=row.querySelector('.r-item-price')?.textContent||'0';
+    const total=parseFloat(priceText.replace('₱',''))||0;
+    const price=qty?total/qty:0;
+    items.push({name,qty,price});
+  });
+  const subtotalText=rc?.querySelector('.r-subtotal-row span:last-child')?.textContent||'0';
+  const subtotal=parseFloat(subtotalText.replace('₱',''))||0;
+  const totalText=rc?.querySelector('.r-total-row span:last-child')?.textContent||'0';
+  const total=parseFloat(totalText.replace('₱',''))||0;
+  const discAmt=subtotal-total;
+  const cashVal=rc?.querySelector('#r-cash-val')?.textContent||'';
+  const cash=cashVal&&cashVal!=='—'?parseFloat(cashVal.replace('₱',''))||0:null;
+
+  // Try thermal first
+  if(thermalWriter){
+    try{
+      const data=escpos({orderNum,time,method,items,subtotal,total,discAmt,cash});
+      await thermalWriter.write(data);
+      toast('🖨️ Printed!');
+      return;
+    }catch(e){
+      toast('Thermal print error — falling back to browser print');
+      console.error(e);
+    }
+  }
+  // Fallback: browser print dialog
   const content=document.getElementById('receipt-content').innerHTML;
   const printArea=document.getElementById('print-area');
   printArea.innerHTML=content;
