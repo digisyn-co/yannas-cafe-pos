@@ -344,7 +344,8 @@ body{background:var(--bg);color:var(--text1);font-size:14px;font-family:var(--fo
       <span class="status-dot live"></span>
       <span>Live</span>
       <span id="clock" style="margin-left:4px"></span>
-      <button onclick="doLogout()" style="margin-left:8px;padding:4px 10px;font-size:11px;border:0.5px solid #3D3528;border-radius:6px;background:transparent;color:var(--text2);cursor:pointer;font-family:var(--font-body);letter-spacing:0.3px;transition:all .15s">Logout</button>
+      <button id="printer-btn" onclick="thermalPort?disconnectThermalPrinter():connectThermalPrinter()" style="margin-left:4px;padding:4px 10px;font-size:11px;border:0.5px solid #3D3528;border-radius:6px;background:transparent;color:var(--text2);cursor:pointer;font-family:var(--font-body);letter-spacing:0.3px;transition:all .15s">🖨️ Connect Printer</button>
+      <button onclick="doLogout()" style="margin-left:4px;padding:4px 10px;font-size:11px;border:0.5px solid #3D3528;border-radius:6px;background:transparent;color:var(--text2);cursor:pointer;font-family:var(--font-body);letter-spacing:0.3px;transition:all .15s">Logout</button>
     </div>
   </div>
 
@@ -1050,7 +1051,7 @@ async function connectThermalPrinter(){
   }
   try{
     thermalPort=await navigator.serial.requestPort();
-    await thermalPort.open({baudRate:9600});
+    await thermalPort.open({baudRate:115200});
     thermalWriter=thermalPort.writable.getWriter();
     toast('🖨️ Printer connected');
     const btn=document.getElementById('printer-btn');
@@ -1178,38 +1179,8 @@ async function printReceipt(){
       console.error(e);
     }
   }
-  // Fallback: silent popup print sized for 58mm thermal paper
-  const rcContent=document.getElementById('receipt-content').innerHTML;
-  const css=[
-    '@page{size:58mm auto;margin:2mm}',
-    'body{width:54mm;font-family:"Courier New",monospace;font-size:11px;color:#000;background:#fff;margin:0;padding:0}',
-    'img{max-width:100%}',
-    '.r-logo img{width:60px;height:60px;object-fit:contain;display:block;margin:0 auto 4px}',
-    '.r-shopname{font-size:13px;font-weight:700;text-align:center;letter-spacing:1px}',
-    '.r-tagline,.r-address{font-size:9px;text-align:center;color:#333}',
-    '.r-divider{border:none;border-top:1px dashed #000;margin:4px 0}',
-    '.r-order-num{font-size:13px;font-weight:700;text-align:center}',
-    '.r-meta{display:flex;justify-content:space-between;font-size:9px;color:#333}',
-    '.r-items-head{display:flex;font-size:9px;font-weight:700;border-bottom:1px dashed #000;padding-bottom:2px}',
-    '.r-items-head span:first-child{flex:1}',
-    '.r-item-row{display:flex;font-size:10px;padding:2px 0}',
-    '.r-item-name{flex:1}',
-    '.r-item-qty{width:24px;text-align:center}',
-    '.r-item-price{width:44px;text-align:right}',
-    '.r-subtotal-row,.r-total-row,.r-payment-row,.r-change-row{display:flex;justify-content:space-between;font-size:10px;padding:1px 0}',
-    '.r-total-row{font-weight:700;font-size:12px}',
-    '.r-footer{text-align:center;font-size:9px;margin-top:4px}',
-    '.cash-section,.receipt-actions,.btn-confirm,.btn-cancel{display:none!important}'
-  ].join('');
-  const w=window.open('','_blank','width=220,height=600');
-  const doc=w.document;
-  doc.open();
-  doc.write('<!DOCTYPE html><html><head><style>'+css+'</style></head><body>');
-  doc.write(rcContent);
-  doc.write('</body></html>');
-  doc.close();
-  w.focus();
-  setTimeout(function(){w.print();w.close();},400);
+  // No printer connected — show toast reminder
+  toast('Printer not connected — tap 🖨️ Connect Printer first');
 }
 
 async function confirmOrder(){
