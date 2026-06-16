@@ -1051,13 +1051,30 @@ async function connectThermalPrinter(){
   }
   try{
     thermalPort=await navigator.serial.requestPort();
-    await thermalPort.open({baudRate:115200});
+    // Try common baud rates for thermal printers
+    const bauds=[9600,19200,38400,57600,115200];
+    let opened=false;
+    for(const baud of bauds){
+      try{
+        await thermalPort.open({baudRate:baud});
+        opened=true;
+        console.log('Printer opened at baud rate:',baud);
+        break;
+      }catch(e){
+        console.warn('Baud',baud,'failed:',e.message);
+        try{await thermalPort.close();}catch(_){}
+      }
+    }
+    if(!opened){toast('Could not open printer at any baud rate');thermalPort=null;return;}
     thermalWriter=thermalPort.writable.getWriter();
+    // Send init command to test connection
+    await thermalWriter.write(new Uint8Array([0x1B,0x40]));
     toast('🖨️ Printer connected');
     const btn=document.getElementById('printer-btn');
     if(btn){btn.textContent='🖨️ Printer ✓';btn.style.color='var(--gold)';}
   }catch(e){
-    if(e.name!=='NotFoundError') toast('Printer connection failed: '+e.message);
+    if(e.name!=='NotFoundError') toast('Connection failed: '+e.message);
+    thermalPort=null;thermalWriter=null;
   }
 }
 
