@@ -1213,26 +1213,40 @@ async function confirmOrder(){
   if(short.length && !confirm('Low / out of stock:\n• '+short.join('\n• ')+'\n\nPlace the order anyway?')) return;
   __savingOrder=true;
   const cBtn=document.querySelector('#receipt-content .btn-confirm'); if(cBtn){cBtn.disabled=true;cBtn.textContent='Saving…';}
-  const num=orderHistory.length+1;
-  const orderNum='#'+String(num).padStart(4,'0');
+  const cashInVal=parseFloat(document.getElementById('cash-in')?.value)||0;
+  const tendered=(currentPayMethod==='Cash'&&cashInVal>0)?cashInVal:null;
+  const changeGiven=(tendered!=null)?Math.round((tendered-total)*100)/100:null;
+  const itemsPayload=order.map(o=>({id:o.id,name:o.displayName||o.name,qty:o.qty,price:o.price,cat:o.cat,temp:o.temp||null,note:o.note||null}));
+  const discPayload=dd?{discount_type:dd.type,discount_amount:dd.discAmt,discount_ids:dd.ids,discount_pax:dd.pax}:{};
+  const cashierEmail=currentUser?.email||null;
+  const cashierName=cashierEmail?cashierEmail.split('@')[0]:null;
 
-  // Update order number on receipt before saving
+  // Preferred: let the DB assign a unique sequential order_number (needs supabase_migration.sql) + extended columns.
+  let orderNum=null,saveErr=null;
+  let res=await sb.from('orders').insert({
+    items:itemsPayload,total,payment_method:currentPayMethod,order_type:currentOrderType,
+    cash_tendered:tendered,change_given:changeGiven,cashier_email:cashierEmail,cashier_name:cashierName,...discPayload
+  }).select('order_number').single();
+  if(res.error){
+    const msg=((res.error.message||'')+' '+(res.error.code||'')+' '+(res.error.details||''));
+    const schemaIssue=/column|does not exist|42703|schema cache|could not find/i.test(msg);
+    if(schemaIssue){
+      // DB not migrated yet → fall back to client-side number + legacy columns only (keeps POS working)
+      orderNum='#'+String(orderHistory.length+1).padStart(4,'0');
+      res=await sb.from('orders').insert({order_number:orderNum,items:itemsPayload,total,payment_method:currentPayMethod,order_type:currentOrderType,...discPayload}).select('order_number').single();
+      saveErr=res.error;
+    } else { saveErr=res.error; }
+  }
+  orderNum=res.data?.order_number||orderNum;
+  if(saveErr||!orderNum){toast('Save failed — check connection');console.error(saveErr);__savingOrder=false;if(cBtn){cBtn.disabled=false;cBtn.textContent='✓ Confirm & Save';}return;}
   const orderNumEl=document.querySelector('#receipt-content .r-order-num');
   if(orderNumEl) orderNumEl.textContent='ORDER '+orderNum;
-
-  const {error}=await sb.from('orders').insert({
-    order_number:orderNum,
-    items:order.map(o=>({id:o.id,name:o.displayName||o.name,qty:o.qty,price:o.price,cat:o.cat,temp:o.temp||null,note:o.note||null})),
-    total,payment_method:currentPayMethod,order_type:currentOrderType,
-    ...(dd?{discount_type:dd.type,discount_amount:dd.discAmt,discount_ids:dd.ids,discount_pax:dd.pax}:{})
-  });
-  if(error){toast('Save failed — check connection');console.error(error);__savingOrder=false;if(cBtn){cBtn.disabled=false;cBtn.textContent='✓ Confirm & Save';}return;}
 
   await deductInventory([...order]);
   updateLowStockBadge();
 
   const now=new Date().toLocaleString('en-PH',{dateStyle:'short',timeStyle:'short'});
-  orderHistory.unshift({id:orderNum,time:now,items:[...order],total,method:currentPayMethod,discountData:dd?{...dd}:null});
+  orderHistory.unshift({id:orderNum,time:now,items:[...order],total,method:currentPayMethod,discountData:dd?{...dd}:null,cashier:cashierName,tendered,change:changeGiven});
 
   // Auto-print after confirming
   printReceipt();
