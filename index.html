@@ -1236,14 +1236,39 @@ async function confirmOrder(){
   toast('Order '+orderNum+' saved & printed ✓');
 }
 
+// Per-item recipe (ingredient usage per single serving). Edit amounts here to match your prep.
+// Cups/packaging are added automatically below based on category & temperature.
+const RECIPE={
+  1:{robusta:19},                                                   // Black Coffee
+  2:{robusta:19,heavy_cream:40,fresh_milk:15,sea_salt:1,condensed:3},// Salted Cream Coffee
+  3:{robusta:19,coconut_cream:40,condensed:20,fresh_milk:20},        // Coconut Coffee
+  4:{robusta:19,eggs:1,condensed:20},                               // Egg Coffee
+  5:{robusta:19,condensed:35},                                      // Vietnamese Milk Coffee
+  6:{matcha:2,fresh_milk:210},                                      // Matcha Latte
+  7:{matcha:2,heavy_cream:30,fresh_milk:40,sea_salt:1,condensed:3}, // Salt Matcha
+  8:{matcha:2,eggs:1,condensed:30,heavy_cream:50},                  // Egg Custard Matcha
+  9:{jasmine_tea:2,lychee_syrup:25},                                // Lychee Fruit Tea
+  10:{jasmine_tea:2,strawberry:35},                                 // Strawberry Fruit Tea
+  11:{black_tea:2,mango:40},                                        // Mango Fruit Tea
+  12:{jasmine_tea:2,passion:30},                                    // Passion Fruit Tea
+  13:{baguette:1,pork:110,pickled_carrots:20,pickled_onions:10,cucumber:0.25,liver_spread:0.1}, // BBQ Pork Sandwich
+  14:{baguette:1,chicken:110,pickled_carrots:20,pickled_onions:10,cucumber:0.25},                // Chicken BBQ Sandwich
+  15:{baguette:1,beef:110,pickled_carrots:20,pickled_onions:10,cucumber:0.25},                   // Beef BBQ Sandwich
+  19:{pork:110,eggs:2,onions:0.2},                                  // Pork Crunchy Egg Fried Rice
+  20:{chicken:110,eggs:2,onions:0.2},                               // Chicken Crunchy Egg Fried Rice
+  21:{beef:110,eggs:2,onions:0.2}                                   // Beef Crunchy Egg Fried Rice
+};
+
 async function deductInventory(items){
   const updates={};
-  const adj=(id,amt)=>{const i=invData.find(x=>x.id===id);if(i){i.stock=Math.max(0,i.stock-amt);updates[id]=i.stock;}};
+  const adj=(id,amt)=>{if(!amt)return;const i=invData.find(x=>x.id===id);if(i){i.stock=Math.max(0,Math.round((i.stock-amt)*100)/100);updates[id]=i.stock;}};
   items.forEach(o=>{
-    if(['Coffee','Combo'].includes(o.cat)){adj('robusta',50*o.qty);adj('fresh_milk',50*o.qty);adj('cold_cups_16',o.qty);}
-    if(['Tea'].includes(o.cat)){adj('jasmine_tea',2*o.qty);adj('cold_cups_22',o.qty);}
-    if(['Matcha'].includes(o.cat)){adj('matcha',2*o.qty);adj('fresh_milk',50*o.qty);adj('cold_cups_16',o.qty);}
-    if(['Food','Combo'].includes(o.cat)){adj('baguette',o.qty);adj('paper_bags',o.qty);}
+    const r=RECIPE[o.id];
+    if(r){for(const ing in r) adj(ing, r[ing]*o.qty);}
+    // cups & packaging
+    if(o.cat==='Coffee'||o.cat==='Matcha') adj(o.temp==='hot'?'hot_cups':'cold_cups_16',o.qty);
+    else if(o.cat==='Tea') adj('cold_cups_22',o.qty);
+    if(o.cat==='Food') adj('paper_bags',o.qty);
   });
   for(const [id,stock] of Object.entries(updates)){
     await sb.from('inventory').update({stock}).eq('id',id);
