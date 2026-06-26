@@ -93,7 +93,7 @@ body{background:var(--bg);color:var(--text1);font-size:14px;font-family:var(--fo
 .order-row:last-child{border-bottom:none}
 .oname{flex:1;font-size:12px;line-height:1.3;font-weight:500;color:var(--text1)}
 .qty-ctrl{display:flex;align-items:center;gap:3px}
-.qb{width:22px;height:22px;border-radius:50%;border:0.5px solid #3D3528;background:transparent;cursor:pointer;font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center;color:var(--text2)}
+.qb{width:30px;height:30px;border-radius:50%;border:0.5px solid #3D3528;background:transparent;cursor:pointer;font-size:17px;line-height:1;display:flex;align-items:center;justify-content:center;color:var(--text2)}
 .qb:hover{background:var(--bg3);color:var(--gold)}
 .qn{font-size:13px;font-weight:600;min-width:16px;text-align:center;color:var(--text1)}
 .oprice{font-size:12px;font-weight:600;color:var(--gold);min-width:42px;text-align:right}
@@ -690,7 +690,7 @@ function removeItem(key){
   if(--order[idx].qty<=0) order.splice(idx,1);
   renderOrder();
 }
-function clearOrder(){order=[];renderOrder();}
+function clearOrder(){order=[];discountData=null;['disc-pwd','disc-sc','disc-friendly'].forEach(id=>document.getElementById(id)?.classList.remove('active'));renderOrder();}
 function addMoreItem(key){
   const ex=order.find(o=>o.key===key);
   if(ex) ex.qty++;
@@ -927,9 +927,9 @@ function renderOrder(){
       <div class="oname">${o.name}</div>
       <div class="qty-ctrl">
         <button class="note-btn ${o.note?'has-note':''}" title="${o.note||'Add note'}" onclick="addItemNote(${o.id})">✎</button>
-        <button class="qb" onclick="removeItem(${o.id})">−</button>
+        <button class="qb" onclick="removeItem('${o.key}')">−</button>
         <span class="qn">${o.qty}</span>
-        <button class="qb" onclick="addItem(${o.id})">+</button>
+        <button class="qb" onclick="addMoreItem('${o.key}')">+</button>
       </div>
       <div class="oprice">₱${o.price*o.qty}</div>
       ${o.note?`<div class="item-note" style="width:100%;padding-left:2px">📝 ${o.note}</div>`:''}
@@ -987,7 +987,8 @@ function showReceiptModal(items,method,savedOrder){
           <div class="r-address">Passi - San Rafael Rd. Brgy Quinolpan<br>San Enrique, Iloilo</div>
           <hr class="r-divider">
           <div class="r-order-num">ORDER ${orderNum}</div>
-          <div class="r-meta"><span>${now}</span><span>${method}</span></div>
+          ${currentUser?`<div class="r-meta" style="justify-content:center"><span>Cashier: ${(currentUser.email||'').split('@')[0]}</span></div>`:''}
+          <div class="r-meta"><span>${now} · ${currentOrderType}</span><span>${method}</span></div>
           <hr class="r-divider">
           <div class="r-items-head"><span>ITEM</span><span style="width:28px;text-align:center">QTY</span><span style="width:52px;text-align:right">AMOUNT</span></div>
           ${items.map(o=>`
@@ -1197,11 +1198,21 @@ async function printReceipt(){
   toast('Printer not connected — tap 🖨️ Connect Printer first');
 }
 
+let __savingOrder=false;
 async function confirmOrder(){
+  if(__savingOrder) return;
   const dd=discountData;
   const discAmt=dd?dd.discAmt:0;
   const subtotal=order.reduce((s,o)=>s+o.price*o.qty,0);
   const total=subtotal-discAmt;
+  if(currentPayMethod==='Cash'){
+    const cashIn=parseFloat(document.getElementById('cash-in')?.value)||0;
+    if(cashIn>0 && cashIn<total && !confirm(`Cash entered (₱${cashIn}) is short by ₱${(total-cashIn).toFixed(2)}.\nPlace the order anyway?`)) return;
+  }
+  const short=checkStock(order);
+  if(short.length && !confirm('Low / out of stock:\n• '+short.join('\n• ')+'\n\nPlace the order anyway?')) return;
+  __savingOrder=true;
+  const cBtn=document.querySelector('#receipt-content .btn-confirm'); if(cBtn){cBtn.disabled=true;cBtn.textContent='Saving…';}
   const num=orderHistory.length+1;
   const orderNum='#'+String(num).padStart(4,'0');
 
@@ -1215,9 +1226,10 @@ async function confirmOrder(){
     total,payment_method:currentPayMethod,order_type:currentOrderType,
     ...(dd?{discount_type:dd.type,discount_amount:dd.discAmt,discount_ids:dd.ids,discount_pax:dd.pax}:{})
   });
-  if(error){toast('Save failed — check connection');console.error(error);return;}
+  if(error){toast('Save failed — check connection');console.error(error);__savingOrder=false;if(cBtn){cBtn.disabled=false;cBtn.textContent='✓ Confirm & Save';}return;}
 
   await deductInventory([...order]);
+  updateLowStockBadge();
 
   const now=new Date().toLocaleString('en-PH',{dateStyle:'short',timeStyle:'short'});
   orderHistory.unshift({id:orderNum,time:now,items:[...order],total,method:currentPayMethod,discountData:dd?{...dd}:null});
@@ -1234,6 +1246,7 @@ async function confirmOrder(){
   const pb=document.getElementById('place-btn');if(pb){pb.textContent='Place Order · '+currentPayMethod;}
   closeModal();
   toast('Order '+orderNum+' saved & printed ✓');
+  __savingOrder=false;
 }
 
 // Per-item recipe (ingredient usage per single serving). Edit amounts here to match your prep.
@@ -1258,6 +1271,28 @@ const RECIPE={
   20:{chicken:110,eggs:2,onions:0.2},                               // Chicken Crunchy Egg Fried Rice
   21:{beef:110,eggs:2,onions:0.2}                                   // Beef Crunchy Egg Fried Rice
 };
+
+function reqMap(items){
+  const need={};const add=(id,a)=>{if(!a)return;need[id]=(need[id]||0)+a;};
+  items.forEach(o=>{
+    const r=RECIPE[o.id]; if(r) for(const ing in r) add(ing,r[ing]*o.qty);
+    if(o.cat==='Coffee'||o.cat==='Matcha') add(o.temp==='hot'?'hot_cups':'cold_cups_16',o.qty);
+    else if(o.cat==='Tea') add('cold_cups_22',o.qty);
+    if(o.cat==='Food') add('paper_bags',o.qty);
+  });
+  return need;
+}
+function checkStock(items){
+  if(!invData||!invData.some(i=>i.stock>0)) return []; // inventory not in use → don't nag
+  const need=reqMap(items);const short=[];
+  for(const id in need){const i=invData.find(x=>x.id===id); if(i && i.stock<need[id]) short.push(`${i.name} (need ${need[id]}${i.unit}, have ${i.stock}${i.unit})`);}
+  return short;
+}
+async function reverseInventory(items){
+  const need=reqMap(items);const updates={};
+  for(const id in need){const i=invData.find(x=>x.id===id); if(i){i.stock=Math.round((i.stock+need[id])*100)/100; updates[id]=i.stock;}}
+  for(const [id,stock] of Object.entries(updates)){ try{await sb.from('inventory').update({stock}).eq('id',id);}catch(e){console.error(e);} }
+}
 
 async function deductInventory(items){
   const updates={};
@@ -1380,10 +1415,15 @@ async function confirmVoid(orderId){
 }
 async function doVoid(orderId){
   const reason=(document.getElementById('void-reason')?.value||'').trim()||'No reason given';
+  let ord=null;
+  try{const {data}=await sb.from('orders').select('items,voided').eq('order_number',orderId).single();ord=data;}catch(e){}
+  if(ord&&ord.voided){toast('Order '+orderId+' is already voided');closeModal();renderOrders();return;}
   const {error}=await sb.from('orders').update({voided:true,void_reason:reason}).eq('order_number',orderId);
   if(error){toast('Void failed: '+error.message);return;}
+  if(ord&&Array.isArray(ord.items)) await reverseInventory(ord.items);
+  updateLowStockBadge();
   closeModal();
-  toast('Order '+orderId+' voided ✓');
+  toast('Order '+orderId+' voided & stock restored ✓');
   renderOrders();
 }
 
@@ -1480,6 +1520,7 @@ function showZReport(){
 function printZReport(){
   const content=document.querySelector('#modal-container .modal').innerHTML;
   const w=window.open('','_blank','width=400,height=600');
+  if(!w){toast('Pop-up blocked — allow pop-ups to print the Z-report');return;}
   w.document.write(`<html><body style="font-family:monospace;padding:20px">${content}</body></html>`);
   w.print();w.close();
 }
@@ -1506,6 +1547,15 @@ function setLoading(msg){document.getElementById('loading-msg').textContent=msg;
 function updateClock(){document.getElementById('clock').textContent=new Date().toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'});}
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2800);}
 
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    const a=document.activeElement;
+    if(a&&(a.id==='login-email'||a.id==='login-password')){e.preventDefault();doLogin();}
+    else if(a&&a.id==='cash-in'){e.preventDefault();const b=document.querySelector('#receipt-content .btn-confirm');if(b&&!b.disabled)confirmOrder();}
+  } else if(e.key==='Escape'){
+    const mc=document.getElementById('modal-container'); if(mc&&mc.innerHTML.trim())closeModal();
+  }
+});
 init().catch(e=>{setLoading('Error: '+e.message);console.error(e);});
 </script>
 </body>
