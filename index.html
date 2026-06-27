@@ -1058,6 +1058,16 @@ const BT_PRINTER_SERVICES=[
   'e7810a71-73ae-499d-8c15-faa9aef0c3f2'
 ];
 
+function isAndroid(){ return /Android/i.test(navigator.userAgent); }
+
+// Classic-Bluetooth printers (POS-5890) cannot be reached by the browser directly.
+// The free RawBT Android app bridges the gap: it receives raw ESC/POS bytes via the
+// "rawbt:base64,<data>" URL scheme and forwards them to the printer paired in RawBT.
+function sendViaRawBT(data){
+  let bin=''; for(let i=0;i<data.length;i++) bin+=String.fromCharCode(data[i]);
+  window.location.href='rawbt:base64,'+btoa(bin);
+}
+
 function printerConnected(){ return !!btChar || !!thermalWriter; }
 
 function setPrinterBtn(connected){
@@ -1150,6 +1160,15 @@ async function connectSerialPrinter(){
 
 // ── Unified connect / disconnect (the \uD83D\uDDA8\uFE0F button) ─────────────
 async function connectPrinter(){
+  // Android: Classic-BT printers (POS-5890) print via the RawBT app — no in-browser connect.
+  if(isAndroid()){
+    alert('Bluetooth printing on Android:\n\n'
+      +'1. Install the free \"RawBT\" app from Google Play.\n'
+      +'2. Open RawBT and select your POS-5890 as the Bluetooth printer.\n'
+      +'3. Come back here — orders then print automatically.\n\n'
+      +'(First print may ask which app to use — pick RawBT and tick Always.)');
+    return;
+  }
   if('bluetooth' in navigator){
     if(await connectBluetoothPrinter()) toast('\uD83D\uDDA8\uFE0F Printer connected');
   } else if('serial' in navigator){
@@ -1299,10 +1318,11 @@ async function printReceipt(){
   const cashVal=rc?.querySelector('#r-cash-val')?.textContent||'';
   const cash=cashVal&&cashVal!=='—'?parseFloat(cashVal.replace('₱',''))||0:null;
 
-  // Send to whichever printer transport is connected (Bluetooth or Serial)
+  const data=escpos({orderNum,time,method,items,subtotal,total,discAmt,cash});
+
+  // 1) Live BLE / Serial transport (desktop printers, or BLE printers)
   if(printerConnected()){
     try{
-      const data=escpos({orderNum,time,method,items,subtotal,total,discAmt,cash});
       await sendToPrinter(data);
       toast('🖨️ Printed!');
       return true;
@@ -1312,8 +1332,16 @@ async function printReceipt(){
       return false;
     }
   }
-  // No printer connected — show toast reminder
-  toast('Printer not connected — tap 🖨️ Connect Printer first');
+  // 2) Android + Classic-Bluetooth printer (e.g. POS-5890): route through the RawBT app.
+  if(isAndroid()){
+    try{
+      sendViaRawBT(data);
+      toast('🖨️ Sent to printer (RawBT)');
+      return true;
+    }catch(e){ console.error(e); }
+  }
+  // 3) Nothing available
+  toast('Printer not connected — install RawBT (Android) or tap 🖨️ Connect Printer');
   return false;
 }
 
