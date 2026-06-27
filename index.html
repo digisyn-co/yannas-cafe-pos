@@ -1063,9 +1063,18 @@ function isAndroid(){ return /Android/i.test(navigator.userAgent); }
 // Classic-Bluetooth printers (POS-5890) cannot be reached by the browser directly.
 // The free RawBT Android app bridges the gap: it receives raw ESC/POS bytes via the
 // "rawbt:base64,<data>" URL scheme and forwards them to the printer paired in RawBT.
+function concatBytes(a,b){ const out=new Uint8Array(a.length+b.length); out.set(a,0); out.set(b,a.length); return out; }
+
 function sendViaRawBT(data){
   let bin=''; for(let i=0;i<data.length;i++) bin+=String.fromCharCode(data[i]);
-  window.location.href='rawbt:base64,'+btoa(bin);
+  const url='rawbt:base64,'+btoa(bin);
+  // Launch RawBT via a hidden iframe so it also fires automatically after Confirm & Save
+  // (no page navigation, and not tied to a fresh tap like window.location would be).
+  const ifr=document.createElement('iframe');
+  ifr.style.display='none';
+  document.body.appendChild(ifr);
+  try{ ifr.src=url; }catch(_){ window.location.href=url; }
+  setTimeout(()=>{ try{ifr.remove();}catch(_){ } },4000);
 }
 
 function printerConnected(){ return !!btChar || !!thermalWriter; }
@@ -1222,7 +1231,7 @@ async function autoReconnectThermalPrinter(){
   }
 }
 
-function escpos(receipt){
+function escpos(receipt,copyLabel){
   // Build ESC/POS byte commands for 58mm thermal printer
   const enc=new TextEncoder();
   const ESC=0x1B,GS=0x1D;
@@ -1243,6 +1252,8 @@ function escpos(receipt){
   const div=()=>line('--------------------------------');
 
   w(INIT);
+  // Copy label (CUSTOMER / KITCHEN)
+  if(copyLabel){ w(ALIGN_C);w(BOLD_ON);line(copyLabel);w(BOLD_OFF);line(); }
   // Header
   w(ALIGN_C);w(DOUBLE_ON);w(BOLD_ON);
   line("YANNA'S");
@@ -1318,13 +1329,15 @@ async function printReceipt(){
   const cashVal=rc?.querySelector('#r-cash-val')?.textContent||'';
   const cash=cashVal&&cashVal!=='—'?parseFloat(cashVal.replace('₱',''))||0:null;
 
-  const data=escpos({orderNum,time,method,items,subtotal,total,discAmt,cash});
+  const receipt={orderNum,time,method,items,subtotal,total,discAmt,cash};
+  // Two copies in a single print job: one for the customer, one for the kitchen.
+  const data=concatBytes(escpos(receipt,'*** CUSTOMER COPY ***'),escpos(receipt,'*** KITCHEN COPY ***'));
 
   // 1) Live BLE / Serial transport (desktop printers, or BLE printers)
   if(printerConnected()){
     try{
       await sendToPrinter(data);
-      toast('🖨️ Printed!');
+      toast('🖨️ Printed 2 copies (customer + kitchen)');
       return true;
     }catch(e){
       toast('Print error — check printer / reconnect');
@@ -1336,7 +1349,7 @@ async function printReceipt(){
   if(isAndroid()){
     try{
       sendViaRawBT(data);
-      toast('🖨️ Sent to printer (RawBT)');
+      toast('🖨️ Sent 2 copies to printer (customer + kitchen)');
       return true;
     }catch(e){ console.error(e); }
   }
