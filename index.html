@@ -49,6 +49,67 @@ body{background:var(--bg);color:var(--text1);font-size:14px;font-family:var(--fo
   .menu-panel{padding-bottom:220px}
   .tabs .tab-label{display:none}
 }
+
+/* ── PORTRAIT TABLET OPTIMIZATION (cashier tablets) ─────────────────────── */
+@media (orientation:portrait) and (min-width:601px) and (max-width:1200px){
+  .page{padding:18px;max-width:100%}
+  /* Single column: menu fills the width, order cart docks to the bottom */
+  .pos-wrap{grid-template-columns:1fr;height:auto}
+  .menu-panel{padding-bottom:46vh}
+  .order-panel{position:fixed;bottom:0;left:0;right:0;height:auto;max-height:64vh;
+    border-radius:var(--rl) var(--rl) 0 0;z-index:40;box-shadow:0 -6px 30px rgba(0,0,0,0.6)}
+
+  /* Better use of space: roomier, finger-sized menu grid */
+  .menu-grid{grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+  .menu-card{padding:16px;border-radius:14px}
+  .cat-bar{gap:8px;margin-bottom:14px}
+  .cat-btn{padding:10px 18px;font-size:14px}
+  .menu-search{padding:13px 14px;font-size:16px;margin-bottom:12px}
+
+  /* Bigger, clearer text */
+  .mname{font-size:15px;margin-bottom:5px}
+  .msize{font-size:12px}
+  .mprice{font-size:19px}
+  .mbadge{font-size:12px;padding:3px 9px}
+  .hc-btns{gap:8px;margin-top:8px}
+  .hc-btn{padding:11px 6px}
+  .hc-label{font-size:12px}
+  .hc-price{font-size:16px}
+  .hc-size{font-size:11px}
+  .topbar{padding:12px 18px}
+  .tabs .tab{padding:10px 16px;font-size:14px}
+
+  /* Order cart: readable rows + big, fast checkout */
+  .order-head{padding:14px 16px}
+  .order-head h3{font-size:18px}
+  .order-row{padding:9px 4px}
+  .oname{font-size:15px}
+  .oprice{font-size:15px;min-width:56px}
+  .qb{width:42px;height:42px;font-size:23px}
+  .qn{font-size:17px;min-width:24px}
+  .empty-order{font-size:15px;padding:26px 0}
+  .order-foot{padding:14px 16px}
+  .sub-row{font-size:14px}
+  .tot-row{font-size:23px;margin-bottom:14px}
+  .order-type-row{gap:8px;margin-bottom:10px}
+  .ot-btn{padding:12px 4px;font-size:14px}
+  .disc-row{gap:8px}
+  .disc-btn{padding:12px 4px;font-size:13px}
+  .pay-btns{gap:10px}
+  .pbtn{padding:14px;font-size:15px}
+  .pbtn-main{padding:18px;font-size:19px}        /* large Place Order / Pay = faster checkout */
+
+  /* Checkout / receipt modal: wider, bigger cash entry + confirm */
+  .receipt-modal-inner{max-width:480px}
+  .receipt-preview{padding:26px 24px}
+  .cash-section{padding:16px 22px}
+  .cash-section label{font-size:14px}
+  .cash-section input{padding:14px 12px;font-size:20px}
+  .change-display{font-size:17px}
+  .receipt-actions{padding:16px 22px;gap:12px}
+  .receipt-actions button{padding:16px;font-size:16px}
+}
+
 .menu-panel{overflow-y:auto}
 .cat-bar{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
 .cat-btn{padding:5px 12px;border-radius:20px;border:0.5px solid var(--border);background:transparent;cursor:pointer;font-size:11px;color:var(--text2);white-space:nowrap;letter-spacing:0.4px;transition:all .15s;font-family:var(--font-body)}
