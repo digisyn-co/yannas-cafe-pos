@@ -1398,7 +1398,17 @@ async function confirmOrder(){
     } else { saveErr=res.error; }
   }
   orderNum=res.data?.order_number||orderNum;
-  if(saveErr||!orderNum){toast('Save failed — check connection');console.error(saveErr);__savingOrder=false;if(cBtn){cBtn.disabled=false;cBtn.textContent='✓ Confirm & Save';}return;}
+  if(saveErr||!orderNum){
+    const em=(saveErr&&(saveErr.message||saveErr.details||saveErr.code))||'unknown error';
+    const blob=JSON.stringify(saveErr||{});
+    const rls=/row-level security|violates row-level|permission denied|42501|not authorized|JWT|401/i.test(blob);
+    console.error('ORDER SAVE ERROR:',saveErr);
+    alert((rls
+      ? 'Order was NOT saved — the Supabase database is blocking writes (Row-Level Security).\n\nA write policy needs to be added in Supabase. Show this to your developer:\n\n'
+      : 'Order was NOT saved.\n\n')+'Details: '+em);
+    toast(rls?'Save blocked by database (RLS)':'Save failed: '+em);
+    __savingOrder=false;if(cBtn){cBtn.disabled=false;cBtn.textContent='✓ Confirm & Save';}return;
+  }
   const orderNumEl=document.querySelector('#receipt-content .r-order-num');
   if(orderNumEl) orderNumEl.textContent='ORDER '+orderNum;
 
@@ -1419,6 +1429,7 @@ async function confirmOrder(){
   renderOrder();
   const pb=document.getElementById('place-btn');if(pb){pb.textContent='Place Order · '+currentPayMethod;}
   closeModal();
+  refreshActiveView();
   toast(__printed?('Order '+orderNum+' saved & printed ✓'):('Order '+orderNum+' saved ✓ — NOT printed (tap 🖨️ Connect Printer)'));
   __savingOrder=false;
 }
@@ -1707,6 +1718,14 @@ function updateLowStockBadge(){
 }
 
 // ── HELPERS ───────────────────────────────────
+function refreshActiveView(){
+  const a=document.querySelector('.page.active');
+  const id=a?a.id:'';
+  if(id==='page-orders') renderOrders();
+  else if(id==='page-reports') renderReports();
+  else if(id==='page-inventory') renderInventory().then(()=>updateLowStockBadge());
+}
+
 function switchTab(tab){
   document.querySelectorAll('.tab').forEach((t,i)=>{
     t.classList.toggle('active',['pos','inventory','orders','reports'][i]===tab);
