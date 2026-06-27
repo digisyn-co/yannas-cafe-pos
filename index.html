@@ -344,7 +344,7 @@ body{background:var(--bg);color:var(--text1);font-size:14px;font-family:var(--fo
       <span class="status-dot live"></span>
       <span>Live</span>
       <span id="clock" style="margin-left:4px"></span>
-      <button id="printer-btn" onclick="thermalPort?disconnectThermalPrinter():connectThermalPrinter()" style="margin-left:4px;padding:4px 10px;font-size:11px;border:0.5px solid #3D3528;border-radius:6px;background:transparent;color:var(--text2);cursor:pointer;font-family:var(--font-body);letter-spacing:0.3px;transition:all .15s">🖨️ Connect Printer</button>
+      <button id="printer-btn" onclick="printerConnected()?disconnectPrinter():connectPrinter()" style="margin-left:4px;padding:4px 10px;font-size:11px;border:0.5px solid #3D3528;border-radius:6px;background:transparent;color:var(--text2);cursor:pointer;font-family:var(--font-body);letter-spacing:0.3px;transition:all .15s">🖨️ Connect Printer</button>
       <button onclick="doLogout()" style="margin-left:4px;padding:4px 10px;font-size:11px;border:0.5px solid #3D3528;border-radius:6px;background:transparent;color:var(--text2);cursor:pointer;font-family:var(--font-body);letter-spacing:0.3px;transition:all .15s">Logout</button>
     </div>
   </div>
@@ -558,6 +558,7 @@ async function loadApp(){
   updateClock();
   setInterval(updateClock,10000);
   toast('Connected ✓');
+  autoReconnectThermalPrinter();
 }
 
 async function setupInventory(){
@@ -1038,52 +1039,168 @@ function calcChange(total){
   document.getElementById('change-out').textContent=changeVal;
 }
 
-// ── THERMAL PRINTER (Web Serial API) ──────────────────────────────────────
-let thermalPort=null;
-let thermalWriter=null;
+// ── THERMAL PRINTER ────────────────────────────────────
+// Supports BOTH Web Bluetooth (Android / mobile Chrome — the cashier tablets)
+// and Web Serial (desktop Chrome/Edge with a USB or COM-port printer).
+// The active transport is whichever one connected.
 
-async function connectThermalPrinter(){
-  if(!('serial' in navigator)){
-    toast('Web Serial not supported — use Chrome or Edge');
+let thermalPort=null, thermalWriter=null;          // Serial (desktop)
+let btDevice=null, btChar=null;                     // Bluetooth (Android tablet → POS-5890 etc.)
+
+// Common BLE services on cheap 58/80mm ESC/POS printers. We list them all so the
+// chooser can reach whichever one this unit uses; the writable characteristic is
+// then discovered at runtime (these printers are not standardized).
+const BT_PRINTER_SERVICES=[
+  0x18F0, 0xFFE0, 0xFF00, 0xAE30, 0x49535343,
+  '000018f0-0000-1000-8000-00805f9b34fb',
+  '0000ffe0-0000-1000-8000-00805f9b34fb',
+  '49535343-fe7d-4ae5-8fa9-9fafd205e455', // ISSC / Microchip transparent UART
+  'e7810a71-73ae-499d-8c15-faa9aef0c3f2'
+];
+
+function printerConnected(){ return !!btChar || !!thermalWriter; }
+
+function setPrinterBtn(connected){
+  const btn=document.getElementById('printer-btn');
+  if(!btn) return;
+  btn.textContent=connected?'\uD83D\uDDA8\uFE0F Printer ✓':'\uD83D\uDDA8\uFE0F Connect Printer';
+  btn.style.color=connected?'var(--gold)':'';
+}
+
+const __sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+// Send raw ESC/POS bytes over whichever transport is connected.
+async function sendToPrinter(data){
+  if(btChar){
+    const CHUNK=180; // keep BLE writes under the printer's buffer
+    const noResp=btChar.properties && btChar.properties.writeWithoutResponse;
+    for(let i=0;i<data.length;i+=CHUNK){
+      const slice=data.slice(i,i+CHUNK);
+      if(noResp && btChar.writeValueWithoutResponse) await btChar.writeValueWithoutResponse(slice);
+      else await btChar.writeValue(slice);
+      await __sleep(20);
+    }
     return;
   }
+  if(thermalWriter){ await thermalWriter.write(data); return; }
+  throw new Error('No printer connected');
+}
+
+// ── Bluetooth (primary on the cashier tablets) ─────────────────
+async function connectBluetoothPrinter(){
   try{
-    thermalPort=await navigator.serial.requestPort();
-    // Try common baud rates for thermal printers
-    const bauds=[9600,19200,38400,57600,115200];
-    let opened=false;
-    for(const baud of bauds){
-      try{
-        await thermalPort.open({baudRate:baud});
-        opened=true;
-        console.log('Printer opened at baud rate:',baud);
-        break;
-      }catch(e){
-        console.warn('Baud',baud,'failed:',e.message);
-        try{await thermalPort.close();}catch(_){}
-      }
-    }
-    if(!opened){toast('Could not open printer at any baud rate');thermalPort=null;return;}
-    thermalWriter=thermalPort.writable.getWriter();
-    // Send init command to test connection
-    await thermalWriter.write(new Uint8Array([0x1B,0x40]));
-    toast('🖨️ Printer connected');
-    const btn=document.getElementById('printer-btn');
-    if(btn){btn.textContent='🖨️ Printer ✓';btn.style.color='var(--gold)';}
+    const device=await navigator.bluetooth.requestDevice({
+      acceptAllDevices:true, optionalServices:BT_PRINTER_SERVICES
+    });
+    return await openBluetoothPrinter(device,{silent:false});
   }catch(e){
-    if(e.name!=='NotFoundError') toast('Connection failed: '+e.message);
-    thermalPort=null;thermalWriter=null;
+    if(e.name!=='NotFoundError') toast('Bluetooth connect failed: '+e.message);
+    return false;
   }
 }
 
-async function disconnectThermalPrinter(){
+async function openBluetoothPrinter(device,{silent=false}={}){
+  const server=await device.gatt.connect();
+  let found=null;
+  const services=await server.getPrimaryServices();
+  for(const svc of services){
+    let chars=[];
+    try{ chars=await svc.getCharacteristics(); }catch(_){ continue; }
+    for(const c of chars){ if(c.properties.write||c.properties.writeWithoutResponse){ found=c; break; } }
+    if(found) break;
+  }
+  if(!found){ if(!silent) toast('No writable characteristic found on printer'); try{device.gatt.disconnect();}catch(_){ } return false; }
+  btChar=found; btDevice=device;
+  device.removeEventListener('gattserverdisconnected',onBtDisconnected);
+  device.addEventListener('gattserverdisconnected',onBtDisconnected);
+  await sendToPrinter(new Uint8Array([0x1B,0x40])); // init / wake
+  setPrinterBtn(true);
+  return true;
+}
+
+function onBtDisconnected(){
+  btChar=null; setPrinterBtn(false); toast('\uD83D\uDDA8\uFE0F Printer disconnected');
+  if(btDevice){ openBluetoothPrinter(btDevice,{silent:true}).catch(()=>{}); } // try silent re-link
+}
+
+// ── Serial (desktop fallback) ─────────────────────────────
+async function openThermalPort(port,{silent=false}={}){
+  const bauds=[9600,19200,38400,57600,115200];
+  let opened=false;
+  for(const baud of bauds){
+    try{ await port.open({baudRate:baud}); opened=true; break; }
+    catch(e){ try{await port.close();}catch(_){ } }
+  }
+  if(!opened){ if(!silent) toast('Could not open printer at any baud rate'); return false; }
+  thermalPort=port; thermalWriter=port.writable.getWriter();
+  await thermalWriter.write(new Uint8Array([0x1B,0x40]));
+  setPrinterBtn(true);
+  return true;
+}
+
+async function connectSerialPrinter(){
   try{
+    const port=await navigator.serial.requestPort();
+    return await openThermalPort(port);
+  }catch(e){
+    if(e.name!=='NotFoundError') toast('Connection failed: '+e.message);
+    return false;
+  }
+}
+
+// ── Unified connect / disconnect (the \uD83D\uDDA8\uFE0F button) ─────────────
+async function connectPrinter(){
+  if('bluetooth' in navigator){
+    if(await connectBluetoothPrinter()) toast('\uD83D\uDDA8\uFE0F Printer connected');
+  } else if('serial' in navigator){
+    if(await connectSerialPrinter()) toast('\uD83D\uDDA8\uFE0F Printer connected');
+  } else {
+    toast('Printing needs Chrome on Android, or Chrome/Edge on desktop');
+  }
+}
+
+async function disconnectPrinter(){
+  try{
+    if(btDevice){ btDevice.removeEventListener('gattserverdisconnected',onBtDisconnected); try{btDevice.gatt.disconnect();}catch(_){ } }
+    btChar=null; btDevice=null;
     if(thermalWriter){await thermalWriter.releaseLock();thermalWriter=null;}
     if(thermalPort){await thermalPort.close();thermalPort=null;}
-    const btn=document.getElementById('printer-btn');
-    if(btn){btn.textContent='🖨️ Printer';btn.style.color='';}
+    setPrinterBtn(false);
     toast('Printer disconnected');
   }catch(e){console.error(e);}
+}
+
+// Reconnect to a previously authorized printer on page load (no chooser when possible).
+async function autoReconnectThermalPrinter(){
+  // Bluetooth: reuse a previously granted device (Android Chrome supports getDevices()).
+  if('bluetooth' in navigator && navigator.bluetooth.getDevices){
+    try{
+      const devs=await navigator.bluetooth.getDevices();
+      for(const d of (devs||[])){
+        try{ if(await openBluetoothPrinter(d,{silent:true})){ toast('\uD83D\uDDA8\uFE0F Printer reconnected'); break; } }catch(_){ }
+      }
+    }catch(e){ console.warn('BT auto-reconnect failed:',e.message); }
+  }
+  // Serial: reuse a previously granted port + plug/unplug events (desktop).
+  if('serial' in navigator){
+    if(!navigator.serial.__yannaHooked){
+      navigator.serial.__yannaHooked=true;
+      navigator.serial.addEventListener('connect',async ev=>{
+        if(!thermalWriter && await openThermalPort(ev.target,{silent:true})) toast('\uD83D\uDDA8\uFE0F Printer reconnected');
+      });
+      navigator.serial.addEventListener('disconnect',ev=>{
+        if(ev.target===thermalPort){
+          try{thermalWriter&&thermalWriter.releaseLock();}catch(_){}
+          thermalWriter=null;thermalPort=null;setPrinterBtn(false);
+          toast('\uD83D\uDDA8\uFE0F Printer disconnected');
+        }
+      });
+    }
+    try{
+      const ports=await navigator.serial.getPorts();
+      if(!printerConnected() && ports && ports.length && await openThermalPort(ports[0],{silent:true})) toast('\uD83D\uDDA8\uFE0F Printer reconnected');
+    }catch(e){ console.warn('Serial auto-reconnect failed:',e.message); }
+  }
 }
 
 function escpos(receipt){
@@ -1182,20 +1299,22 @@ async function printReceipt(){
   const cashVal=rc?.querySelector('#r-cash-val')?.textContent||'';
   const cash=cashVal&&cashVal!=='—'?parseFloat(cashVal.replace('₱',''))||0:null;
 
-  // Try thermal first
-  if(thermalWriter){
+  // Send to whichever printer transport is connected (Bluetooth or Serial)
+  if(printerConnected()){
     try{
       const data=escpos({orderNum,time,method,items,subtotal,total,discAmt,cash});
-      await thermalWriter.write(data);
+      await sendToPrinter(data);
       toast('🖨️ Printed!');
-      return;
+      return true;
     }catch(e){
-      toast('Thermal print error — falling back to browser print');
+      toast('Print error — check printer / reconnect');
       console.error(e);
+      return false;
     }
   }
   // No printer connected — show toast reminder
   toast('Printer not connected — tap 🖨️ Connect Printer first');
+  return false;
 }
 
 let __savingOrder=false;
@@ -1249,7 +1368,7 @@ async function confirmOrder(){
   orderHistory.unshift({id:orderNum,time:now,items:[...order],total,method:currentPayMethod,discountData:dd?{...dd}:null,cashier:cashierName,tendered,change:changeGiven});
 
   // Auto-print after confirming
-  printReceipt();
+  const __printed=await printReceipt();
 
   order=[];
   discountData=null;
@@ -1259,7 +1378,7 @@ async function confirmOrder(){
   renderOrder();
   const pb=document.getElementById('place-btn');if(pb){pb.textContent='Place Order · '+currentPayMethod;}
   closeModal();
-  toast('Order '+orderNum+' saved & printed ✓');
+  toast(__printed?('Order '+orderNum+' saved & printed ✓'):('Order '+orderNum+' saved ✓ — NOT printed (tap 🖨️ Connect Printer)'));
   __savingOrder=false;
 }
 
