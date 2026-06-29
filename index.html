@@ -1666,7 +1666,6 @@ async function renderOrders(){
 
 
 // Manager password required to void an order. TODO: change from this placeholder.
-const VOID_PASSWORD='walapassword'; // fallback only until verify_manager_pin() exists in Supabase
 
 async function confirmVoid(orderId){
   document.getElementById('modal-container').innerHTML=`
@@ -1688,12 +1687,9 @@ async function doVoid(orderId){
   let __pinOk=false;
   try{
     const {data:vp,error:ve}=await sb.rpc('verify_manager_pin',{p_pin:pass});
-    if(ve && /function|does not exist|schema cache|could not find|42883/i.test(((ve.message||'')+' '+(ve.code||'')))){
-      __pinOk = (pass===VOID_PASSWORD);          // SQL not applied yet — temporary fallback
-    } else {
-      __pinOk = (vp===true);
-    }
-  }catch(e){ __pinOk = (pass===VOID_PASSWORD); }
+    if(ve){ toast('Could not verify PIN — please try again'); console.error('verify_manager_pin',ve); return; }
+    __pinOk = (vp===true);
+  }catch(e){ toast('Could not verify PIN — please try again'); console.error(e); return; }
   if(!__pinOk){ toast('Incorrect manager password'); const pf=document.getElementById('void-pass'); if(pf){pf.value='';pf.focus();} return; }
   const reason=(document.getElementById('void-reason')?.value||'').trim()||'No reason given';
   let ord=null;
