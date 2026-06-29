@@ -55,7 +55,7 @@ body{background:var(--bg);color:var(--text1);font-size:14px;font-family:var(--fo
   .page{padding:18px;max-width:100%}
   /* Single column: menu fills the width, order cart docks to the bottom */
   .pos-wrap{grid-template-columns:1fr;height:auto}
-  .menu-panel{padding-bottom:46vh}
+  .menu-panel{padding-bottom:70vh}
   .order-panel{position:fixed;bottom:0;left:0;right:0;height:auto;max-height:64vh;
     border-radius:var(--rl) var(--rl) 0 0;z-index:40;box-shadow:0 -6px 30px rgba(0,0,0,0.6)}
 
@@ -649,7 +649,7 @@ function getDateRange(filter){
 async function loadOrders(filter){
   filter=filter||'today';
   const {from,to}=getDateRange(filter);
-  const {data}=await sb.from('orders').select('*').gte('created_at',from+'T00:00:00').lte('created_at',to+'T23:59:59').order('created_at',{ascending:false});
+  const {data}=await sb.from('orders').select('*').gte('created_at',from+'T00:00:00+08:00').lte('created_at',to+'T23:59:59+08:00').order('created_at',{ascending:false});
   if(data) orderHistory=data.map(d=>({
     id:d.order_number,
     time:new Date(d.created_at).toLocaleString('en-PH',{dateStyle:'short',timeStyle:'short'}),
@@ -666,7 +666,7 @@ function subscribeRealtime(){
     sb.channel('orders-channel')
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'orders'},payload=>{
         const d=payload.new;
-        const entry={id:d.order_number,time:new Date(d.created_at).toLocaleString('en-PH',{dateStyle:'short',timeStyle:'short'}),items:d.items,total:d.total,method:d.payment_method,voided:d.voided||false,order_type:d.order_type||'Dine-in',created_at:d.created_at};
+        const entry={id:d.order_number,time:new Date(d.created_at).toLocaleString('en-PH',{dateStyle:'short',timeStyle:'short'}),items:d.items,total:d.total,method:d.payment_method,voided:d.voided||false,order_type:d.order_type||'Dine-in',created_at:d.created_at,discountData:d.discount_ids?{type:d.discount_type,ids:d.discount_ids,pax:d.discount_pax||1,discAmt:d.discount_amount||0}:null,cashier:d.cashier_name||null,tendered:d.cash_tendered??null,change:d.change_given??null};
         if(!orderHistory.find(o=>o.id===entry.id)){
           orderHistory.unshift(entry);
           if(document.getElementById('page-orders').classList.contains('active')) renderOrders();
@@ -1445,12 +1445,14 @@ async function confirmOrder(){
   const total=subtotal-discAmt;
   if(currentPayMethod==='Cash'){
     const cashIn=parseFloat(document.getElementById('cash-in')?.value)||0;
-    if(cashIn>0 && cashIn<total && !confirm(`Cash entered (₱${cashIn}) is short by ₱${(total-cashIn).toFixed(2)}.\nPlace the order anyway?`)) return;
+    if(cashIn===0){ if(!confirm('No cash amount entered.\nRecord this Cash order with no tender/change?')) return; }
+    else if(cashIn<total && !confirm(`Cash entered (₱${cashIn}) is short by ₱${(total-cashIn).toFixed(2)}.\nPlace the order anyway?`)) return;
   }
   const short=checkStock(order);
   if(short.length && !confirm('Low / out of stock:\n• '+short.join('\n• ')+'\n\nPlace the order anyway?')) return;
   __savingOrder=true;
   const cBtn=document.querySelector('#receipt-content .btn-confirm'); if(cBtn){cBtn.disabled=true;cBtn.textContent='Saving…';}
+  try{
   const cashInVal=parseFloat(document.getElementById('cash-in')?.value)||0;
   const tendered=(currentPayMethod==='Cash'&&cashInVal>0)?cashInVal:null;
   const changeGiven=(tendered!=null)?Math.round((tendered-total)*100)/100:null;
@@ -1509,7 +1511,7 @@ async function confirmOrder(){
   closeModal();
   refreshActiveView();
   toast(__printed?('Order '+orderNum+' saved & printed ✓'):('Order '+orderNum+' saved ✓ — NOT printed (tap 🖨️ Connect Printer)'));
-  __savingOrder=false;
+  }finally{ __savingOrder=false; if(cBtn){cBtn.disabled=false;cBtn.textContent='✓ Confirm & Save';} }
 }
 
 // Per-item recipe (ingredient usage per single serving). Edit amounts here to match your prep.
@@ -1656,7 +1658,7 @@ async function renderOrders(){
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
           <span class="log-method">${o.method}</span>
           ${o.voided?'<span class="voided-badge">VOIDED</span>':`<button class="void-btn" onclick='confirmVoid("${o.id}")'>Void</button>`}
-          <button class="reprint-btn" onclick='reprintOrder(${JSON.stringify(o).replace(/'/g,"&#39;")})'>🖨️ Reprint</button>
+          <button class="reprint-btn" onclick="reprintById('${esc(o.id)}')">🖨️ Reprint</button>
         </div>
       </div>
     </div>`).join('');
@@ -1688,8 +1690,9 @@ async function doVoid(orderId){
   let ord=null;
   try{const {data}=await sb.from('orders').select('items,voided').eq('order_number',orderId).single();ord=data;}catch(e){}
   if(ord&&ord.voided){toast('Order '+orderId+' is already voided');closeModal();renderOrders();return;}
-  const {error}=await sb.from('orders').update({voided:true,void_reason:reason}).eq('order_number',orderId);
+  const {data:flipped,error}=await sb.from('orders').update({voided:true,void_reason:reason}).eq('order_number',orderId).eq('voided',false).select('order_number');
   if(error){toast('Void failed: '+error.message);return;}
+  if(!flipped||!flipped.length){toast('Order '+orderId+' was already voided');closeModal();renderOrders();return;}
   if(ord&&Array.isArray(ord.items)) await reverseInventory(ord.items);
   updateLowStockBadge();
   closeModal();
@@ -1697,6 +1700,7 @@ async function doVoid(orderId){
   renderOrders();
 }
 
+function reprintById(id){ const o=orderHistory.find(x=>String(x.id)===String(id)); if(o) reprintOrder(o); }
 function reprintOrder(o){
   showReceiptModal(o.items,o.method,o);
 }
@@ -1898,6 +1902,7 @@ function queueIncoming(o){
   if(pop && !pop.dataset.open) showNextIncoming();
 }
 
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function money(n){ return '₱'+(Number(n)||0).toLocaleString(); }
 
 function showNextIncoming(){
@@ -1905,16 +1910,16 @@ function showNextIncoming(){
   const o=onlineActive.find(x=>x.id===incomingQueue[0]);
   if(!o){ pop.dataset.open=''; pop.innerHTML=''; return; }
   pop.dataset.open='1';
-  const items=(o.items||[]).map(it=>`<div style="display:flex;justify-content:space-between;font-size:15px;padding:4px 0"><span>${it.qty}× ${it.name||''}${it.temp?' · '+it.temp:''}</span><span>${money(it.price*it.qty)}</span></div>`).join('');
+  const items=(o.items||[]).map(it=>`<div style="display:flex;justify-content:space-between;font-size:15px;padding:4px 0"><span>${it.qty}× ${esc(it.name||'')}${it.temp?' · '+it.temp:''}</span><span>${money(it.price*it.qty)}</span></div>`).join('');
   pop.innerHTML=`<div style="position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;z-index:500;padding:16px">
     <div style="background:var(--bg2);border:1px solid var(--gold);border-radius:16px;max-width:440px;width:100%;max-height:88vh;overflow:auto;box-shadow:0 16px 60px rgba(0,0,0,.6)">
       <div style="background:var(--gold-bg2);padding:16px 20px;border-bottom:1px solid #3D3528">
         <div style="font-size:12px;letter-spacing:1px;color:var(--gold);font-weight:700">🛵 NEW ONLINE ORDER${incomingQueue.length>1?' · '+incomingQueue.length+' waiting':''}</div>
-        <div style="font-size:22px;font-weight:800;color:var(--text1);margin-top:2px">${o.order_number}</div>
+        <div style="font-size:22px;font-weight:800;color:var(--text1);margin-top:2px">${esc(o.order_number)}</div>
       </div>
       <div style="padding:18px 20px">
-        <div style="font-size:16px;font-weight:700;color:var(--text1)">${o.customer_name||'Customer'}</div>
-        <div style="font-size:13px;color:var(--text2);margin-bottom:6px">${o.customer_phone||''}</div>
+        <div style="font-size:16px;font-weight:700;color:var(--text1)">${esc(o.customer_name||'Customer')}</div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:6px">${esc(o.customer_phone||'')}</div>
         <div style="font-size:13px;color:var(--text2)">ETA ${o.eta_minutes!=null?o.eta_minutes+' min':'—'}${o.arrival_time?' · arrive '+o.arrival_time:''} · ${o.payment_method||'Online'} (paid)</div>
         <div style="border-top:1px solid #2E2820;margin:12px 0"></div>
         ${items}
@@ -1944,11 +1949,16 @@ async function printTwoCopies(receipt){
   return false;
 }
 
+const __busyOnline=new Set();
 async function acceptIncoming(id){
-  const o=onlineActive.find(x=>x.id===id); if(!o) return;
+  if(__busyOnline.has(id)) return; __busyOnline.add(id);
+  const o=onlineActive.find(x=>x.id===id); if(!o){ __busyOnline.delete(id); return; }
   const itemsPayload=(o.items||[]).map(it=>({id:it.id,name:it.name,qty:it.qty,price:it.price,cat:it.cat,temp:it.temp?String(it.temp).toLowerCase():null}));
-  // 1) advance customer status → preparing (live update on the customer app)
-  try{ await sb.from('drive_thru_orders').update({status:'preparing'}).eq('id',id); o.status='preparing'; }catch(e){ console.error('status',e); }
+  // 1) Idempotent claim: incoming→preparing only if still incoming (prevents double-accept across taps/devices)
+  let __claimed=false;
+  try{ const {data:cl}=await sb.from('drive_thru_orders').update({status:'preparing'}).eq('id',id).eq('status','incoming').select('id'); __claimed=!!(cl&&cl.length); }catch(e){ console.error('status',e); __claimed=true; }
+  o.status='preparing';
+  if(!__claimed){ toast('Order '+(o.order_number||'')+' already handled'); incomingQueue=incomingQueue.filter(x=>x!==id); closeIncomingPopup(); updateOnlineBadge(); __busyOnline.delete(id); if(incomingQueue.length) showNextIncoming(); return; }
   // 2) record as a POS sale so it shows in Orders + Reports
   try{ await sb.from('orders').insert({order_number:o.order_number,items:itemsPayload,total:o.total,payment_method:o.payment_method||'Online',order_type:'Drive-thru'}); }catch(e){ console.error('record sale',e); }
   // 3) deduct inventory
@@ -1970,7 +1980,7 @@ async function acceptIncoming(id){
   };
   const printed=await printTwoCopies(receipt);
   incomingQueue=incomingQueue.filter(x=>x!==id);
-  updateOnlineBadge(); closeIncomingPopup();
+  updateOnlineBadge(); closeIncomingPopup(); __busyOnline.delete(id);
   toast(printed?('Accepted '+o.order_number+' — printed ✓'):('Accepted '+o.order_number+' — NOT printed (check printer)'));
   if(incomingQueue.length) showNextIncoming();
 }
@@ -1983,8 +1993,8 @@ function openOnlinePanel(){
     else if(o.status==='preparing'){ act=`<button onclick="markReady('${o.id}')" style="padding:10px 14px;border-radius:8px;border:0.5px solid var(--gold);background:var(--gold-bg2);color:var(--gold);font-weight:700;cursor:pointer">Mark Ready</button>`; clr='#BA7517'; }
     else { act=`<button onclick="markPickedUp('${o.id}')" style="padding:10px 14px;border-radius:8px;border:none;background:#2D7A4F;color:#fff;font-weight:700;cursor:pointer">Picked up</button>`; clr='#2D7A4F'; }
     return `<div style="display:flex;align-items:center;gap:10px;justify-content:space-between;padding:12px;border:0.5px solid #2E2820;border-radius:10px;margin-bottom:8px">
-      <div><div style="font-weight:700;color:var(--text1)">${o.order_number} · ${money(o.total)}</div>
-      <div style="font-size:12px;color:var(--text2)">${o.customer_name||''} · <span style="color:${clr};font-weight:700;text-transform:uppercase">${o.status}</span></div></div>
+      <div><div style="font-weight:700;color:var(--text1)">${esc(o.order_number)} · ${money(o.total)}</div>
+      <div style="font-size:12px;color:var(--text2)">${esc(o.customer_name||'')} · <span style="color:${clr};font-weight:700;text-transform:uppercase">${o.status}</span></div></div>
       ${act}</div>`;
   }).join(''):'<div style="text-align:center;color:var(--text3);padding:28px 0">No active online orders</div>';
   document.getElementById('modal-container').innerHTML=`<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal" style="max-width:460px;max-height:84vh;overflow:auto">
