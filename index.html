@@ -496,7 +496,7 @@ body{background:var(--bg);color:var(--text1);font-size:14px;font-family:var(--fo
 </div>
 
 <div id="modal-container"></div>
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
 const SUPABASE_URL='https://dgjtpxdbztnokfbmfjbw.supabase.co';
@@ -1016,10 +1016,10 @@ function renderOrder(){
     <div class="order-row" style="flex-wrap:wrap">
       <div class="oname">${esc(o.name)}</div>
       <div class="qty-ctrl">
-        <button class="note-btn ${o.note?'has-note':''}" title="${esc(o.note||'Add note')}" onclick="addItemNote(${o.id})">✎</button>
-        <button class="qb" onclick="removeItem('${o.key}')">−</button>
+        <button class="note-btn ${o.note?'has-note':''}" title="${esc(o.note||'Add note')}" onclick="addItemNote(${o.id})" aria-label="Item note">✎</button>
+        <button class="qb" onclick="removeItem('${o.key}')" aria-label="Remove one">−</button>
         <span class="qn">${o.qty}</span>
-        <button class="qb" onclick="addMoreItem('${o.key}')">+</button>
+        <button class="qb" onclick="addMoreItem('${o.key}')" aria-label="Add one">+</button>
       </div>
       <div class="oprice">₱${o.price*o.qty}</div>
       ${o.note?`<div class="item-note" style="width:100%;padding-left:2px">📝 ${esc(o.note)}</div>`:''}
@@ -1836,7 +1836,9 @@ function refreshActiveView(){
   else if(id==='page-inventory') renderInventory().then(()=>updateLowStockBadge());
 }
 
+let __reportsUnlocked=false;
 function switchTab(tab){
+  if(tab==='reports' && !__reportsUnlocked){ openReportsLock(); return; }
   document.querySelectorAll('.tab').forEach((t,i)=>{
     t.classList.toggle('active',['pos','inventory','orders','reports'][i]===tab);
   });
@@ -1845,6 +1847,31 @@ function switchTab(tab){
   if(tab==='inventory'){renderInventory().then(()=>updateLowStockBadge());}
   if(tab==='orders') renderOrders();
   if(tab==='reports') renderReports();
+}
+
+function openReportsLock(){
+  document.getElementById('modal-container').innerHTML=`
+    <div class="modal-bg" role="dialog" aria-modal="true" aria-label="Manager access required"><div class="modal">
+      <h3>🔒 Manager access</h3>
+      <span class="ml">Enter the manager password to view Reports.</span>
+      <input class="mi" type="password" id="rep-pin" placeholder="Manager password" aria-label="Manager password"/>
+      <div class="mbtns">
+        <button class="mbtn ok" onclick="unlockReports()">Unlock</button>
+        <button class="mbtn" onclick="closeModal()">Cancel</button>
+      </div>
+    </div></div>`;
+  setTimeout(()=>document.getElementById('rep-pin')?.focus(),50);
+}
+async function unlockReports(){
+  const pin=(document.getElementById('rep-pin')?.value||'');
+  let ok=false;
+  try{
+    const {data,error}=await sb.rpc('verify_manager_pin',{p_pin:pin});
+    if(error){ toast('Could not verify — please try again'); console.error('verify_manager_pin',error); return; }
+    ok=(data===true);
+  }catch(e){ toast('Could not verify — please try again'); console.error(e); return; }
+  if(!ok){ toast('Incorrect manager password'); const fld=document.getElementById('rep-pin'); if(fld){fld.value='';fld.focus();} return; }
+  __reportsUnlocked=true; closeModal(); switchTab('reports');
 }
 function setLoading(msg){document.getElementById('loading-msg').textContent=msg;}
 function updateClock(){document.getElementById('clock').textContent=new Date().toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'});}
