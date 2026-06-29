@@ -1663,12 +1663,17 @@ async function renderOrders(){
 }
 
 
+// Manager password required to void an order. TODO: change from this placeholder.
+const VOID_PASSWORD='walapassword';
+
 async function confirmVoid(orderId){
   document.getElementById('modal-container').innerHTML=`
     <div class="modal-bg"><div class="modal">
       <h3>⚠️ Void Order ${orderId}</h3>
       <span class="ml">This will mark the order as voided and reverse inventory. Reason:</span>
       <input class="mi" type="text" id="void-reason" placeholder="e.g. Wrong order, Customer cancelled" autofocus/>
+      <span class="ml" style="margin-top:10px;display:block">Manager password:</span>
+      <input class="mi" type="password" id="void-pass" placeholder="Manager password"/>
       <div class="mbtns">
         <button class="mbtn" style="background:rgba(192,57,43,0.15);color:#E05040;border-color:rgba(192,57,43,0.4)" onclick="doVoid('${orderId}')">Confirm Void</button>
         <button class="mbtn" onclick="closeModal()">Cancel</button>
@@ -1677,6 +1682,8 @@ async function confirmVoid(orderId){
   setTimeout(()=>document.getElementById('void-reason')?.focus(),50);
 }
 async function doVoid(orderId){
+  const pass=(document.getElementById('void-pass')?.value||'');
+  if(pass!==VOID_PASSWORD){ toast('Incorrect manager password'); const pf=document.getElementById('void-pass'); if(pf){pf.value='';pf.focus();} return; }
   const reason=(document.getElementById('void-reason')?.value||'').trim()||'No reason given';
   let ord=null;
   try{const {data}=await sb.from('orders').select('items,voided').eq('order_number',orderId).single();ord=data;}catch(e){}
