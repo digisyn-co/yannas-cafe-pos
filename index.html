@@ -984,6 +984,16 @@ function applyDiscount(type){
   renderOrder();
 }
 
+function computeDiscount(subtotal, dd){
+  if(!dd) return 0;
+  if(dd.type==='FRIENDLY') return Math.round(subtotal*0.20);
+  const idCount=(dd.ids&&dd.ids.length)||1;
+  const pax=dd.pax||1;
+  const ratio=Math.min(idCount,pax)/pax;
+  return Math.round(Math.round(subtotal*ratio)*0.20);
+}
+// Low-stock threshold (absolute, unit-aware) so the badge is meaningful regardless of 'max'.
+function lowThreshold(i){ return (i.reorder!=null)?i.reorder:(i.unit==='pcs'?10:500); }
 function renderOrder(){
   const el=document.getElementById('order-items');
   const btn=document.getElementById('place-btn');
@@ -993,24 +1003,26 @@ function renderOrder(){
     document.getElementById('subtotal').textContent='₱0';
     document.getElementById('total-amt').textContent='₱0';
     document.getElementById('item-count').textContent='0';
+    if(discountData){ discountData=null; ['disc-pwd','disc-sc','disc-friendly'].forEach(id=>document.getElementById(id)?.classList.remove('active')); }
     discLine.style.display='none';
     btn.disabled=true;return;
   }
   const subtotal=order.reduce((s,o)=>s+o.price*o.qty,0);
   const count=order.reduce((s,o)=>s+o.qty,0);
+  if(discountData) discountData.discAmt=computeDiscount(subtotal,discountData);
   const discAmt=discountData?discountData.discAmt:0;
   const total=subtotal-discAmt;
   el.innerHTML=order.map(o=>`
     <div class="order-row" style="flex-wrap:wrap">
-      <div class="oname">${o.name}</div>
+      <div class="oname">${esc(o.name)}</div>
       <div class="qty-ctrl">
-        <button class="note-btn ${o.note?'has-note':''}" title="${o.note||'Add note'}" onclick="addItemNote(${o.id})">✎</button>
+        <button class="note-btn ${o.note?'has-note':''}" title="${esc(o.note||'Add note')}" onclick="addItemNote(${o.id})">✎</button>
         <button class="qb" onclick="removeItem('${o.key}')">−</button>
         <span class="qn">${o.qty}</span>
         <button class="qb" onclick="addMoreItem('${o.key}')">+</button>
       </div>
       <div class="oprice">₱${o.price*o.qty}</div>
-      ${o.note?`<div class="item-note" style="width:100%;padding-left:2px">📝 ${o.note}</div>`:''}
+      ${o.note?`<div class="item-note" style="width:100%;padding-left:2px">📝 ${esc(o.note)}</div>`:''}
     </div>`).join('');
   document.getElementById('subtotal').textContent='₱'+subtotal;
   if(discountData){
@@ -1440,8 +1452,9 @@ let __savingOrder=false;
 async function confirmOrder(){
   if(__savingOrder) return;
   const dd=discountData;
-  const discAmt=dd?dd.discAmt:0;
   const subtotal=order.reduce((s,o)=>s+o.price*o.qty,0);
+  const discAmt=computeDiscount(subtotal,dd);
+  if(dd) dd.discAmt=discAmt;
   const total=subtotal-discAmt;
   if(currentPayMethod==='Cash'){
     const cashIn=parseFloat(document.getElementById('cash-in')?.value)||0;
@@ -1587,11 +1600,14 @@ async function renderInventory(){
     return `<div class="inv-section"><div class="sec-title">${cat}</div>
       <table class="inv-table"><thead><tr><th>Ingredient</th><th>Stock</th><th>Level</th><th></th></tr></thead>
       <tbody>${items.map(item=>{
-        const pct=Math.round(item.stock/item.max*100);
-        const fc=pct>50?'sok-f':pct>20?'slow-f':'sout-f';
-        const bc=pct>50?'sok':pct>20?'slow':'sout';
-        const txt=pct>50?'OK':pct>20?'Low':'Out';
-        return `<tr><td>${item.name}</td>
+        const thr=lowThreshold(item);
+        const ref=(item.max>0&&item.max<100000)?item.max:thr*3;
+        const pct=Math.max(0,Math.min(100,Math.round(item.stock/ref*100)));
+        const txt=item.stock<=0?'Out':item.stock<=thr?'Low':'OK';
+        const key=item.stock<=0?'sout':item.stock<=thr?'slow':'sok';
+        const fc=key+'-f';
+        const bc=key;
+        return `<tr><td>${esc(item.name)}</td>
           <td style="font-weight:600;font-size:12px">${item.stock} ${item.unit}</td>
           <td><div class="sbar"><div class="sfill ${fc}" style="width:${pct}%"></div></div><span class="sbadge ${bc}">${txt}</span></td>
           <td><button class="adj-btn" onclick="showAdj('${item.id}')">Edit</button></td></tr>`;
@@ -1804,7 +1820,7 @@ function printZReport(){
   w.print();w.close();
 }
 function updateLowStockBadge(){
-  const lowCount=invData.filter(i=>{const pct=i.max>0?i.stock/i.max*100:100;return pct<=20;}).length;
+  const lowCount=invData.filter(i=>i.stock<=lowThreshold(i)).length;
   const badge=document.getElementById('inv-badge');
   if(!badge) return;
   if(lowCount>0){badge.textContent=lowCount;badge.style.display='inline';}
