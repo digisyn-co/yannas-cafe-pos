@@ -620,6 +620,8 @@ async function loadApp(){
   setInterval(updateClock,10000);
   toast('Connected ✓');
   autoReconnectThermalPrinter();
+  setupOnlineUI();
+  setTimeout(()=>loadOnlineOrders(),1200);
 }
 
 async function setupInventory(){
@@ -674,6 +676,20 @@ function subscribeRealtime(){
       }).subscribe((status,err)=>{
         if(err) console.warn('Realtime orders:',err);
       });
+    sb.channel('drivethru-channel')
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'drive_thru_orders'},payload=>{
+        const d=payload.new;
+        if(!onlineActive.find(x=>x.id===d.id)) onlineActive.unshift(d);
+        if(d.status==='incoming') queueIncoming(d); else updateOnlineBadge();
+      }).subscribe((status,err)=>{ if(err) console.warn('Realtime drive_thru:',err); });
+    sb.channel('drivethru-upd-channel')
+      .on('postgres_changes',{event:'UPDATE',schema:'public',table:'drive_thru_orders'},payload=>{
+        const d=payload.new; const o=onlineActive.find(x=>x.id===d.id);
+        if(o) o.status=d.status; else onlineActive.unshift(d);
+        if(d.status==='picked_up') onlineActive=onlineActive.filter(x=>x.id!==d.id);
+        updateOnlineBadge();
+        const op=document.getElementById('modal-container'); if(op && op.innerHTML.includes('Online Orders')) openOnlinePanel();
+      }).subscribe((status,err)=>{ if(err) console.warn('Realtime drive_thru upd:',err); });
     sb.channel('inventory-channel')
       .on('postgres_changes',{event:'UPDATE',schema:'public',table:'inventory'},payload=>{
         const d=payload.new;
@@ -1326,6 +1342,7 @@ function escpos(receipt,copyLabel){
   // Order info
   w(BOLD_ON);line('ORDER '+receipt.orderNum);w(BOLD_OFF);
   line(receipt.time+'  '+receipt.method);
+  if(receipt.extra && receipt.extra.length){ receipt.extra.filter(Boolean).forEach(l=>line(l)); }
   div();
   // Items header
   // Col widths for 32-char 58mm paper
@@ -1810,6 +1827,176 @@ document.addEventListener('keydown',e=>{
     const mc=document.getElementById('modal-container'); if(mc&&mc.innerHTML.trim())closeModal();
   }
 });
+
+/* ════════════════════ ONLINE / DRIVE-THRU ORDERS ════════════════════ */
+let onlineActive=[];          // active drive_thru_orders (incoming/preparing/ready)
+let incomingQueue=[];         // ids waiting in the accept popup
+const __shownOnline=new Set();
+
+function chime(){
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+    const ctx=new AC();
+    [880,1320].forEach((fr,i)=>{
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.type='sine'; o.frequency.value=fr; o.connect(g); g.connect(ctx.destination);
+      const t=ctx.currentTime+i*0.18;
+      g.gain.setValueAtTime(0.0001,t);
+      g.gain.exponentialRampToValueAtTime(0.3,t+0.03);
+      g.gain.exponentialRampToValueAtTime(0.0001,t+0.16);
+      o.start(t); o.stop(t+0.18);
+    });
+    setTimeout(()=>{try{ctx.close();}catch(_){}} ,900);
+  }catch(_){}
+}
+
+function setupOnlineUI(){
+  if(!document.getElementById('online-popup')){
+    const d=document.createElement('div'); d.id='online-popup'; document.body.appendChild(d);
+  }
+  if(document.getElementById('online-btn')) return;
+  const pbtn=document.getElementById('printer-btn');
+  if(pbtn&&pbtn.parentNode){
+    const b=document.createElement('button');
+    b.id='online-btn'; b.onclick=openOnlinePanel;
+    b.style.cssText='margin-left:4px;padding:4px 10px;font-size:11px;border:0.5px solid #3D3528;border-radius:6px;background:transparent;color:var(--text2);cursor:pointer;font-family:var(--font-body);letter-spacing:0.3px';
+    b.innerHTML='🛵 Online <span id="online-count" style="display:none;background:var(--gold);color:#1a1a1a;border-radius:9px;padding:0 6px;font-weight:700;margin-left:2px">0</span>';
+    pbtn.parentNode.insertBefore(b,pbtn);
+  }
+}
+
+function activeOnline(){ return onlineActive.filter(o=>['incoming','preparing','ready'].includes(o.status)); }
+
+function updateOnlineBadge(){
+  const n=activeOnline().length;
+  const c=document.getElementById('online-count');
+  if(c){ c.textContent=n; c.style.display=n?'inline-block':'none'; }
+}
+
+async function loadOnlineOrders(){
+  try{
+    const {data,error}=await sb.from('drive_thru_orders').select('*').in('status',['incoming','preparing','ready']).order('created_at',{ascending:true});
+    if(error){ console.warn('loadOnlineOrders',error); return; }
+    if(data){ onlineActive=data; updateOnlineBadge(); data.filter(o=>o.status==='incoming').forEach(queueIncoming); }
+  }catch(e){ console.warn('loadOnlineOrders',e); }
+}
+
+function queueIncoming(o){
+  if(__shownOnline.has(o.id)) return;
+  __shownOnline.add(o.id);
+  if(!onlineActive.find(x=>x.id===o.id)) onlineActive.unshift(o);
+  if(!incomingQueue.includes(o.id)) incomingQueue.push(o.id);
+  updateOnlineBadge(); chime();
+  const pop=document.getElementById('online-popup');
+  if(pop && !pop.dataset.open) showNextIncoming();
+}
+
+function money(n){ return '₱'+(Number(n)||0).toLocaleString(); }
+
+function showNextIncoming(){
+  const pop=document.getElementById('online-popup');
+  const o=onlineActive.find(x=>x.id===incomingQueue[0]);
+  if(!o){ pop.dataset.open=''; pop.innerHTML=''; return; }
+  pop.dataset.open='1';
+  const items=(o.items||[]).map(it=>`<div style="display:flex;justify-content:space-between;font-size:15px;padding:4px 0"><span>${it.qty}× ${it.name||''}${it.temp?' · '+it.temp:''}</span><span>${money(it.price*it.qty)}</span></div>`).join('');
+  pop.innerHTML=`<div style="position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;z-index:500;padding:16px">
+    <div style="background:var(--bg2);border:1px solid var(--gold);border-radius:16px;max-width:440px;width:100%;max-height:88vh;overflow:auto;box-shadow:0 16px 60px rgba(0,0,0,.6)">
+      <div style="background:var(--gold-bg2);padding:16px 20px;border-bottom:1px solid #3D3528">
+        <div style="font-size:12px;letter-spacing:1px;color:var(--gold);font-weight:700">🛵 NEW ONLINE ORDER${incomingQueue.length>1?' · '+incomingQueue.length+' waiting':''}</div>
+        <div style="font-size:22px;font-weight:800;color:var(--text1);margin-top:2px">${o.order_number}</div>
+      </div>
+      <div style="padding:18px 20px">
+        <div style="font-size:16px;font-weight:700;color:var(--text1)">${o.customer_name||'Customer'}</div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:6px">${o.customer_phone||''}</div>
+        <div style="font-size:13px;color:var(--text2)">ETA ${o.eta_minutes!=null?o.eta_minutes+' min':'—'}${o.arrival_time?' · arrive '+o.arrival_time:''} · ${o.payment_method||'Online'} (paid)</div>
+        <div style="border-top:1px solid #2E2820;margin:12px 0"></div>
+        ${items}
+        <div style="display:flex;justify-content:space-between;font-size:19px;font-weight:800;color:var(--gold);border-top:1px solid #2E2820;margin-top:8px;padding-top:8px"><span>TOTAL</span><span>${money(o.total)}</span></div>
+      </div>
+      <div style="display:flex;gap:10px;padding:0 20px 20px">
+        <button onclick="snoozeIncoming('${o.id}')" style="flex:1;padding:15px;border-radius:10px;border:0.5px solid #3D3528;background:transparent;color:var(--text2);font-weight:700;font-size:15px;cursor:pointer">Later</button>
+        <button onclick="acceptIncoming('${o.id}')" style="flex:2;padding:15px;border-radius:10px;border:none;background:var(--gold);color:#1a1a1a;font-weight:800;font-size:16px;cursor:pointer">✓ Accept &amp; Print</button>
+      </div>
+    </div></div>`;
+}
+
+function closeIncomingPopup(){ const p=document.getElementById('online-popup'); p.dataset.open=''; p.innerHTML=''; }
+
+function snoozeIncoming(id){
+  incomingQueue=incomingQueue.filter(x=>x!==id);
+  incomingQueue.push(id);
+  closeIncomingPopup();
+  if(incomingQueue.length) showNextIncoming();
+}
+
+// Build + send two labeled copies (customer + kitchen) over whichever transport is active.
+async function printTwoCopies(receipt){
+  const data=concatBytes(escpos(receipt,'*** CUSTOMER COPY ***'),escpos(receipt,'*** KITCHEN COPY ***'));
+  if(printerConnected()){ try{ await sendToPrinter(data); return true; }catch(e){ console.error(e); return false; } }
+  if(isAndroid()){ try{ sendViaRawBT(data); return true; }catch(e){ console.error(e); } }
+  return false;
+}
+
+async function acceptIncoming(id){
+  const o=onlineActive.find(x=>x.id===id); if(!o) return;
+  const itemsPayload=(o.items||[]).map(it=>({id:it.id,name:it.name,qty:it.qty,price:it.price,cat:it.cat,temp:it.temp?String(it.temp).toLowerCase():null}));
+  // 1) advance customer status → preparing (live update on the customer app)
+  try{ await sb.from('drive_thru_orders').update({status:'preparing'}).eq('id',id); o.status='preparing'; }catch(e){ console.error('status',e); }
+  // 2) record as a POS sale so it shows in Orders + Reports
+  try{ await sb.from('orders').insert({order_number:o.order_number,items:itemsPayload,total:o.total,payment_method:o.payment_method||'Online',order_type:'Drive-thru'}); }catch(e){ console.error('record sale',e); }
+  // 3) deduct inventory
+  try{ await deductInventory(itemsPayload); updateLowStockBadge(); }catch(e){ console.error('deduct',e); }
+  // 4) local history + refresh whichever tab is open
+  if(!orderHistory.find(x=>x.id===o.order_number)){
+    orderHistory.unshift({id:o.order_number,time:new Date().toLocaleString('en-PH',{dateStyle:'short',timeStyle:'short'}),items:itemsPayload,total:o.total,method:o.payment_method||'Online',order_type:'Drive-thru',created_at:new Date().toISOString()});
+  }
+  refreshActiveView();
+  // 5) print 2 copies (customer receipt + kitchen ticket)
+  const sub=(o.items||[]).reduce((sm,it)=>sm+(it.price*it.qty||0),0);
+  const receipt={
+    orderNum:o.order_number,
+    time:new Date().toLocaleString('en-PH',{dateStyle:'short',timeStyle:'short'}),
+    method:(o.payment_method||'Online')+' PAID',
+    items:(o.items||[]).map(it=>({name:(it.name||'')+(it.temp?' '+it.temp:''),qty:it.qty,price:it.price})),
+    subtotal:sub,total:o.total,discAmt:0,cash:null,
+    extra:['** DRIVE-THRU / ONLINE **', o.customer_name||'', o.customer_phone||'', 'Pickup ETA '+(o.eta_minutes!=null?o.eta_minutes+' min':'-')+(o.arrival_time?' @ '+o.arrival_time:'')]
+  };
+  const printed=await printTwoCopies(receipt);
+  incomingQueue=incomingQueue.filter(x=>x!==id);
+  updateOnlineBadge(); closeIncomingPopup();
+  toast(printed?('Accepted '+o.order_number+' — printed ✓'):('Accepted '+o.order_number+' — NOT printed (check printer)'));
+  if(incomingQueue.length) showNextIncoming();
+}
+
+function openOnlinePanel(){
+  const list=activeOnline();
+  const rows=list.length?list.map(o=>{
+    let act,clr;
+    if(o.status==='incoming'){ act=`<button onclick="acceptIncoming('${o.id}')" style="padding:10px 14px;border-radius:8px;border:none;background:var(--gold);color:#1a1a1a;font-weight:700;cursor:pointer">Accept &amp; Print</button>`; clr='#9a8a5a'; }
+    else if(o.status==='preparing'){ act=`<button onclick="markReady('${o.id}')" style="padding:10px 14px;border-radius:8px;border:0.5px solid var(--gold);background:var(--gold-bg2);color:var(--gold);font-weight:700;cursor:pointer">Mark Ready</button>`; clr='#BA7517'; }
+    else { act=`<button onclick="markPickedUp('${o.id}')" style="padding:10px 14px;border-radius:8px;border:none;background:#2D7A4F;color:#fff;font-weight:700;cursor:pointer">Picked up</button>`; clr='#2D7A4F'; }
+    return `<div style="display:flex;align-items:center;gap:10px;justify-content:space-between;padding:12px;border:0.5px solid #2E2820;border-radius:10px;margin-bottom:8px">
+      <div><div style="font-weight:700;color:var(--text1)">${o.order_number} · ${money(o.total)}</div>
+      <div style="font-size:12px;color:var(--text2)">${o.customer_name||''} · <span style="color:${clr};font-weight:700;text-transform:uppercase">${o.status}</span></div></div>
+      ${act}</div>`;
+  }).join(''):'<div style="text-align:center;color:var(--text3);padding:28px 0">No active online orders</div>';
+  document.getElementById('modal-container').innerHTML=`<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal" style="max-width:460px;max-height:84vh;overflow:auto">
+    <h3 style="margin:0 0 12px;color:var(--gold);font-family:var(--font-display)">🛵 Online Orders</h3>${rows}
+    <div style="text-align:right;margin-top:10px"><button onclick="closeModal()" style="padding:9px 16px;border-radius:8px;border:0.5px solid #3D3528;background:transparent;color:var(--text2);cursor:pointer">Close</button></div>
+  </div></div>`;
+}
+
+async function markReady(id){
+  try{ await sb.from('drive_thru_orders').update({status:'ready'}).eq('id',id); const o=onlineActive.find(x=>x.id===id); if(o)o.status='ready'; }catch(e){ console.error(e); }
+  updateOnlineBadge(); openOnlinePanel(); toast('Marked ready — customer notified');
+}
+async function markPickedUp(id){
+  try{ await sb.from('drive_thru_orders').update({status:'picked_up'}).eq('id',id); }catch(e){ console.error(e); }
+  onlineActive=onlineActive.filter(x=>x.id!==id);
+  updateOnlineBadge(); openOnlinePanel();
+}
+
+
 init().catch(e=>{setLoading('Error: '+e.message);console.error(e);});
 </script>
 </body>
