@@ -518,9 +518,16 @@ const MENU=[
   {id:19,name:"Pork Crunchy Egg Fried Rice",    cat:"Food", price:130, badge:"bf"},
   {id:20,name:"Chicken Crunchy Egg Fried Rice",  cat:"Food", price:115, badge:"bf"},
   {id:21,name:"Beef Crunchy Egg Fried Rice",     cat:"Food", price:145, badge:"bf"},
-  {id:13,name:"BBQ Pork Sandwich",     cat:"Food",   price:140, badge:"bf"},
-  {id:14,name:"Chicken BBQ Sandwich",  cat:"Food",   price:130, badge:"bf"},
-  {id:15,name:"Beef BBQ Sandwich",     cat:"Food",   price:155, badge:"bf"},
+  {id:13,name:"BBQ Pork Sandwich",     cat:"Food",   price:170, badge:"bf"},
+  {id:14,name:"Chicken BBQ Sandwich",  cat:"Food",   price:165, badge:"bf"},
+  {id:15,name:"Beef BBQ Sandwich",     cat:"Food",   price:180, badge:"bf"},
+{id:22,name:"Add-on: Smoked Bacon",    cat:"Food", price:55, badge:"bf", addon:true},
+{id:23,name:"Add-on: Sweet Cured Tocino", cat:"Food", price:55, badge:"bf", addon:true},
+{id:24,name:"Add-on: Cured Beef Tapa", cat:"Food", price:70, badge:"bf", addon:true},
+{id:25,name:"Add-on: Egg (Rice)",      cat:"Food", price:25, badge:"bf", addon:true},
+{id:26,name:"Add-on: Farm-Fresh Egg (Sandwich)", cat:"Food", price:30, badge:"bf", addon:true},
+{id:27,name:"Add-on: Cheese",          cat:"Food", price:20, badge:"bf", addon:true},
+{id:28,name:"Add-on: Signature House Dip", cat:"Food", price:40, badge:"bf", addon:true},
 ];
 
 const INIT_INV=[
@@ -550,6 +557,11 @@ const INIT_INV=[
   {id:'carrots',name:"Carrots",unit:"pcs",stock:0,max:999999,cat:"Vegetables"},
   {id:'pickled_carrots',name:"Pickled Carrots",unit:"g",stock:0,max:999999,cat:"Vegetables"},
   {id:'pickled_onions',name:"Pickled Onions",unit:"g",stock:0,max:999999,cat:"Vegetables"},
+{id:'bacon',name:"Smoked Bacon",unit:"g",stock:0,max:999999,cat:"Food"},
+{id:'tocino',name:"Sweet Cured Tocino",unit:"g",stock:0,max:999999,cat:"Food"},
+{id:'tapa',name:"Cured Beef Tapa",unit:"g",stock:0,max:999999,cat:"Food"},
+{id:'cheese',name:"Cheese Slices",unit:"pcs",stock:0,max:999999,cat:"Food"},
+{id:'house_dip',name:"Signature House Dip",unit:"g",stock:0,max:999999,cat:"Food"},
   {id:'hot_cups',name:"Hot Cups",unit:"pcs",stock:0,max:999999,cat:"Supplies"},
   {id:'cold_cups_16',name:"Cold Cups 16oz",unit:"pcs",stock:0,max:999999,cat:"Supplies"},
   {id:'cold_cups_22',name:"Cold Cups 22oz",unit:"pcs",stock:0,max:999999,cat:"Supplies"},
@@ -1547,7 +1559,14 @@ const RECIPE={
   15:{baguette:1,beef:110,pickled_carrots:20,pickled_onions:10,cucumber:0.25},                   // Beef BBQ Sandwich
   19:{pork:110,eggs:2,onions:0.2},                                  // Pork Crunchy Egg Fried Rice
   20:{chicken:110,eggs:2,onions:0.2},                               // Chicken Crunchy Egg Fried Rice
-  21:{beef:110,eggs:2,onions:0.2}                                   // Beef Crunchy Egg Fried Rice
+  21:{beef:110,eggs:2,onions:0.2},                                  // Beef Crunchy Egg Fried Rice
+22:{bacon:50},                                                    // Add-on: Smoked Bacon
+23:{tocino:50},                                                   // Add-on: Sweet Cured Tocino
+24:{tapa:60},                                                     // Add-on: Cured Beef Tapa
+25:{eggs:1},                                                      // Add-on: Egg (Rice)
+26:{eggs:1},                                                      // Add-on: Farm-Fresh Egg (Sandwich)
+27:{cheese:1},                                                    // Add-on: Cheese
+28:{house_dip:40}                                                 // Add-on: Signature House Dip
 };
 
 function reqMap(items){
