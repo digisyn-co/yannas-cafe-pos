@@ -677,7 +677,10 @@ async function loadOrders(filter){
   }));
 }
 
+let __realtimeSubscribed=false; // guard against duplicate channels if loadApp() runs again (e.g. logout -> login without a full page reload)
 function subscribeRealtime(){
+  if(__realtimeSubscribed) return;
+  __realtimeSubscribed=true;
   try {
     sb.channel('orders-channel')
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'orders'},payload=>{
