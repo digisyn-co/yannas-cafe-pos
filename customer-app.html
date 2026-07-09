@@ -282,6 +282,14 @@ html,body{height:100%;background:var(--creme);color:var(--brown);font-family:'DM
         <div style="margin-bottom:16px"></div>
         <div class="field-label">PHONE NUMBER <span style="color:var(--red)">*</span></div>
         <input class="field-input" id="customer-phone" placeholder="09XX XXX XXXX" maxlength="13" type="tel" inputmode="numeric" oninput="validateDetails()">
+        <div id="loyalty-card" style="background:#FFF8EC;border-radius:var(--r);border:1.5px solid #F0DDB8;padding:14px 16px;margin-bottom:16px">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13.5px;color:#4A3B22;font-weight:600">
+            <input type="checkbox" id="loyalty-optin" checked onchange="onLoyaltyOptInChange()" style="width:18px;height:18px;flex-shrink:0">
+            <span>🎁 Join Yanna's Rewards — earn points on this order</span>
+          </label>
+          <div id="loyalty-status" style="font-size:12px;color:#8A7550;margin-top:6px;margin-left:28px"></div>
+          <div id="loyalty-reward-picker" style="margin-top:8px;margin-left:28px"></div>
+        </div>
         <div class="field-label">PAYMENT METHOD</div>
         <div class="pay-opts">
           <div class="pay-opt selected" id="pay-gcash" onclick="selectPay('GCash')">
@@ -389,6 +397,7 @@ const MENU=[
 let sb, cart=[], currentScreen='splash', screenStack=['splash'];
 let selectedPay='GCash', selectedEta=null, currentOrderId=null, statusInterval=null;
 let currentOrderData=null;
+let loyaltyOptIn=true,loyaltyBalance=0,loyaltyRewardsList=[],appliedReward=null,loyaltyLookupTimer=null;
 
 // ── INIT ──────────────────────────────────────
 window.onload=()=>{
@@ -536,6 +545,64 @@ function validateDetails(){
   const phone=document.getElementById('customer-phone').value.trim();
   const phoneOk=phone.replace(/\s/g,'').length>=10;
   document.getElementById('details-cta').disabled=!(fname&&lname&&phoneOk);
+  clearTimeout(loyaltyLookupTimer);
+  if(phoneOk) loyaltyLookupTimer=setTimeout(lookupLoyalty,500);
+}
+
+// ── LOYALTY ───────────────────────────────────
+function normalizePhone(p){
+  let d=(p||'').replace(/\D/g,'');
+  if(d.startsWith('0')) d='63'+d.slice(1);
+  else if(d.length===10) d='63'+d;
+  return d;
+}
+function onLoyaltyOptInChange(){
+  loyaltyOptIn=document.getElementById('loyalty-optin').checked;
+  const statusEl=document.getElementById('loyalty-status');
+  const pickerEl=document.getElementById('loyalty-reward-picker');
+  if(!loyaltyOptIn){
+    statusEl.textContent='';pickerEl.innerHTML='';appliedReward=null;
+  } else {
+    lookupLoyalty();
+  }
+}
+async function lookupLoyalty(){
+  const phone=document.getElementById('customer-phone').value.trim();
+  if(!loyaltyOptIn||phone.replace(/\s/g,'').length<10||!sb) return;
+  const phoneKey=normalizePhone(phone);
+  const statusEl=document.getElementById('loyalty-status');
+  try{
+    const {data}=await sb.rpc('loyalty_lookup',{p_phone:phoneKey});
+    const row=Array.isArray(data)?data[0]:data;
+    loyaltyBalance=row?(row.points||0):0;
+    if(row){
+      statusEl.textContent=`Welcome back${row.name?', '+row.name.split(' ')[0]:''}! You have ${loyaltyBalance} points.`;
+    } else {
+      statusEl.textContent='New member — earn 1 point per ₱20 spent on this order.';
+    }
+    if(!loyaltyRewardsList.length){
+      const {data:rw}=await sb.from('loyalty_rewards').select('*').eq('active',true).order('sort_order');
+      loyaltyRewardsList=rw||[];
+    }
+    renderRewardPicker();
+  }catch(e){ console.error('loyalty lookup failed',e); }
+}
+function renderRewardPicker(){
+  const el=document.getElementById('loyalty-reward-picker');
+  const eligible=loyaltyRewardsList.filter(r=>r.points_required<=loyaltyBalance);
+  if(!eligible.length){ el.innerHTML=''; return; }
+  el.innerHTML=`<select id="reward-select" onchange="onRewardPick()" style="width:100%;padding:9px;border-radius:8px;border:1.5px solid #F0DDB8;font-size:13px;background:#fff">
+    <option value="">Redeem a reward (optional)</option>
+    ${eligible.map(r=>`<option value="${r.id}">${r.label} — ${r.points_required} pts</option>`).join('')}
+  </select>`;
+}
+function onRewardPick(){
+  const id=document.getElementById('reward-select').value;
+  appliedReward=id?loyaltyRewardsList.find(r=>String(r.id)===id):null;
+}
+function getDiscountedTotal(rawTotal){
+  if(!appliedReward) return rawTotal;
+  return Math.max(0, rawTotal-Number(appliedReward.discount_value));
 }
 
 // ── ETA ───────────────────────────────────────
@@ -587,7 +654,8 @@ async function placeOrder(){
 
   goTo('processing');
 
-  const total=cart.reduce((s,i)=>s+i.price*i.qty,0);
+  const rawTotal=cart.reduce((s,i)=>s+i.price*i.qty,0);
+  const total=getDiscountedTotal(rawTotal);
   const today=new Date();
   const dtOrders=await sb.from('drive_thru_orders').select('id').gte('created_at',today.toISOString().split('T')[0]+'T00:00:00');
   const num=(dtOrders.data?.length||0)+1;
@@ -612,6 +680,22 @@ async function placeOrder(){
     console.error(error);
     return;
   }
+
+  const phoneKey=normalizePhone(phone);
+  let loyaltyResultPoints=null;
+  try{
+    if(appliedReward){
+      const {data:bal}=await sb.rpc('loyalty_redeem',{p_phone:phoneKey,p_reward_id:appliedReward.id,p_order_number:orderNumber});
+      loyaltyResultPoints=bal;
+    }
+    if(loyaltyOptIn){
+      const {data:bal2}=await sb.rpc('loyalty_earn',{p_phone:phoneKey,p_name:name,p_amount:total,p_order_number:orderNumber});
+      loyaltyResultPoints=bal2;
+    }
+  }catch(e){ console.error('loyalty update failed',e); }
+  window.__lastLoyaltyPoints=loyaltyResultPoints;
+  window.__lastRewardLabel=appliedReward?appliedReward.label:null;
+  window.__lastDiscount=rawTotal-total;
 
   currentOrderId=data.id;
   currentOrderData=data;
@@ -674,10 +758,14 @@ function renderStatusScreen(o){
   }).join('');
 
   // Order summary
+  const loyaltyBits=[];
+  if(window.__lastRewardLabel) loyaltyBits.push(`🎉 Redeemed: ${window.__lastRewardLabel} (-₱${(window.__lastDiscount||0).toLocaleString()})`);
+  if(window.__lastLoyaltyPoints!=null) loyaltyBits.push(`🎁 You now have ${window.__lastLoyaltyPoints} points with Yanna's Rewards.`);
   document.getElementById('order-summary-card').innerHTML=`
     <div class="os-title">Your items</div>
     ${(o.items||[]).map(i=>`<div class="os-item">${i.qty}× ${i.name}${i.temp?' ('+i.temp+')':''}</div>`).join('')}
-    <div class="os-total">Total: ₱${(o.total||0).toLocaleString()} · ${o.payment_method}</div>`;
+    <div class="os-total">Total: ₱${(o.total||0).toLocaleString()} · ${o.payment_method}</div>
+    ${loyaltyBits.length?`<div style="margin-top:10px;padding-top:10px;border-top:1px dashed #E5D9BF;font-size:12.5px;color:#8A7550">${loyaltyBits.join('<br>')}</div>`:''}`;
 
   updateCountdown(o);
 }

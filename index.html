@@ -439,6 +439,12 @@ body{background:var(--bg);color:var(--text1);font-size:14px;font-family:var(--fo
             <button class="disc-btn" id="disc-friendly" onclick="toggleDiscount('FRIENDLY')">🤝 Friendly</button>
           </div>
           <div class="disc-line" id="disc-line"><span id="disc-label">Discount (20%)</span><span id="disc-amt">−₱0</span></div>
+          <div class="loyalty-row" id="loyalty-row" style="margin:6px 0 4px">
+            <input type="tel" id="pos-loyalty-phone" placeholder="🎁 Customer phone (optional)" maxlength="13" oninput="posOnPhoneInput(this.value)" style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid #ddd;font-size:12.5px">
+            <div id="pos-loyalty-status" style="font-size:11px;color:#888;margin-top:4px"></div>
+            <div id="pos-loyalty-reward-picker" style="margin-top:4px"></div>
+          </div>
+          <div class="disc-line" id="loy-line" style="color:#3f8f5e;display:none"><span id="loy-label"></span><span id="loy-amt"></span></div>
           <div class="tot-row"><span>Total</span><span id="total-amt">₱0</span></div>
           <div class="pay-btns">
             <button class="pbtn pay-active" id="pay-cash" onclick="selectPayMethod('Cash')">💵 Cash</button>
@@ -787,7 +793,7 @@ function removeItem(key){
   if(--order[idx].qty<=0) order.splice(idx,1);
   renderOrder();
 }
-function clearOrder(){order=[];discountData=null;['disc-pwd','disc-sc','disc-friendly'].forEach(id=>document.getElementById(id)?.classList.remove('active'));renderOrder();}
+function clearOrder(){order=[];discountData=null;posResetLoyalty();['disc-pwd','disc-sc','disc-friendly'].forEach(id=>document.getElementById(id)?.classList.remove('active'));renderOrder();}
 function addMoreItem(key){
   const ex=order.find(o=>o.key===key);
   if(ex) ex.qty++;
@@ -838,6 +844,7 @@ function saveItemNote(id){
 
 // ── DISCOUNT MODAL ────────────────────────────
 let discountData=null; // {type, ids:[{name,idNum}], pax, discAmt}
+let posLoyaltyPhone='',posLoyaltyBalance=0,posLoyaltyRewardsList=[],posAppliedReward=null,posLoyaltyTimer=null;
 
 function toggleDiscount(type){
   // If already active same type, clear it
@@ -1039,13 +1046,16 @@ function renderOrder(){
     document.getElementById('item-count').textContent='0';
     if(discountData){ discountData=null; ['disc-pwd','disc-sc','disc-friendly'].forEach(id=>document.getElementById(id)?.classList.remove('active')); }
     discLine.style.display='none';
+    const loyLineEmpty=document.getElementById('loy-line'); if(loyLineEmpty) loyLineEmpty.style.display='none';
     btn.disabled=true;return;
   }
   const subtotal=order.reduce((s,o)=>s+o.price*o.qty,0);
   const count=order.reduce((s,o)=>s+o.qty,0);
   if(discountData) discountData.discAmt=computeDiscount(subtotal,discountData);
   const discAmt=discountData?discountData.discAmt:0;
-  const total=subtotal-discAmt;
+  if(posAppliedReward&&posAppliedReward.points_required>posLoyaltyBalance) posAppliedReward=null;
+  const loyAmt=posAppliedReward?Math.min(Number(posAppliedReward.discount_value),Math.max(0,subtotal-discAmt)):0;
+  const total=subtotal-discAmt-loyAmt;
   el.innerHTML=order.map(o=>`
     <div class="order-row" style="flex-wrap:wrap">
       <div class="oname">${esc(o.name)}</div>
@@ -1069,10 +1079,84 @@ function renderOrder(){
   } else {
     discLine.style.display='none';
   }
+  const loyLine=document.getElementById('loy-line');
+  if(loyLine){
+    if(posAppliedReward){
+      document.getElementById('loy-label').textContent='🎁 '+posAppliedReward.label;
+      document.getElementById('loy-amt').textContent='−₱'+loyAmt;
+      loyLine.style.display='flex';
+    } else {
+      loyLine.style.display='none';
+    }
+  }
   document.getElementById('total-amt').textContent='₱'+total;
   document.getElementById('item-count').textContent=count+' item'+(count!==1?'s':'');
   btn.disabled=false;
   btn.textContent='Place Order · '+currentPayMethod;
+}
+
+// ── LOYALTY (POS) ──────────────────────────────
+function posNormalizePhone(p){
+  let d=(p||'').replace(/\D/g,'');
+  if(!d) return '';
+  if(d.startsWith('0')) d='63'+d.slice(1);
+  else if(d.length===10) d='63'+d;
+  return d;
+}
+function posOnPhoneInput(val){
+  clearTimeout(posLoyaltyTimer);
+  const ok=(val||'').replace(/\s/g,'').length>=10;
+  if(!ok){
+    posLoyaltyPhone='';posLoyaltyBalance=0;posAppliedReward=null;
+    const statusEl=document.getElementById('pos-loyalty-status'); if(statusEl) statusEl.textContent='';
+    const pickerEl=document.getElementById('pos-loyalty-reward-picker'); if(pickerEl) pickerEl.innerHTML='';
+    renderOrder();
+    return;
+  }
+  posLoyaltyTimer=setTimeout(()=>posLookupLoyalty(val),500);
+}
+async function posLookupLoyalty(rawPhone){
+  if(!sb) return;
+  const phoneKey=posNormalizePhone(rawPhone);
+  if(!phoneKey) return;
+  posLoyaltyPhone=phoneKey;
+  const statusEl=document.getElementById('pos-loyalty-status');
+  try{
+    const {data}=await sb.rpc('loyalty_lookup',{p_phone:phoneKey});
+    const row=Array.isArray(data)?data[0]:data;
+    posLoyaltyBalance=row?(row.points||0):0;
+    if(statusEl) statusEl.textContent=row
+      ?`${row.name?row.name.split(' ')[0]+' — ':''}${posLoyaltyBalance} points on file`
+      :'New member — will earn points on this order';
+    if(!posLoyaltyRewardsList.length){
+      const {data:rw}=await sb.from('loyalty_rewards').select('*').eq('active',true).order('sort_order');
+      posLoyaltyRewardsList=rw||[];
+    }
+    posRenderRewardPicker();
+    renderOrder();
+  }catch(e){ console.error('POS loyalty lookup failed',e); }
+}
+function posRenderRewardPicker(){
+  const el=document.getElementById('pos-loyalty-reward-picker');
+  if(!el) return;
+  const eligible=posLoyaltyRewardsList.filter(r=>r.points_required<=posLoyaltyBalance);
+  if(!eligible.length){ el.innerHTML=''; return; }
+  el.innerHTML=`<select id="pos-reward-select" onchange="posOnRewardPick()" style="width:100%;padding:7px;border-radius:8px;border:1px solid #ddd;font-size:12px">
+    <option value="">Redeem a reward (optional)</option>
+    ${eligible.map(r=>`<option value="${r.id}">${esc(r.label)} — ${r.points_required} pts</option>`).join('')}
+  </select>`;
+}
+function posOnRewardPick(){
+  const id=document.getElementById('pos-reward-select').value;
+  posAppliedReward=id?posLoyaltyRewardsList.find(r=>String(r.id)===id):null;
+  renderOrder();
+}
+function posResetLoyalty(){
+  posLoyaltyPhone='';posLoyaltyBalance=0;posAppliedReward=null;
+  const phoneEl=document.getElementById('pos-loyalty-phone'); if(phoneEl) phoneEl.value='';
+  const statusEl=document.getElementById('pos-loyalty-status'); if(statusEl) statusEl.textContent='';
+  const pickerEl=document.getElementById('pos-loyalty-reward-picker'); if(pickerEl) pickerEl.innerHTML='';
+  const loyLine=document.getElementById('loy-line'); if(loyLine) loyLine.style.display='none';
 }
 
 // ── CHECKOUT & RECEIPT ────────────────────────
@@ -1086,7 +1170,9 @@ function showReceiptModal(items,method,savedOrder){
   const subtotal=items.reduce((s,o)=>s+o.price*o.qty,0);
   const dd=(!savedOrder&&discountData)||(savedOrder&&savedOrder.discountData)||null;
   const discAmt=dd?dd.discAmt:0;
-  const total=subtotal-discAmt;
+  const loyReward=(!savedOrder)?posAppliedReward:(savedOrder.loyaltyReward||null);
+  const loyAmt=loyReward?Math.min(Number(loyReward.discount_value),Math.max(0,subtotal-discAmt)):0;
+  const total=subtotal-discAmt-loyAmt;
   const now=savedOrder?savedOrder.time:new Date().toLocaleString('en-PH',{dateStyle:'medium',timeStyle:'short'});
   const orderNum=savedOrder?savedOrder.id:'NEW';
   const isCash=method==='Cash';
@@ -1100,6 +1186,11 @@ function showReceiptModal(items,method,savedOrder){
       <span>−₱${discAmt}</span>
     </div>
     ${dd.type!=='FRIENDLY'?dd.ids.map((id,i)=>`<div style="font-size:9px;color:#999;padding:0 0 1px 0">${dd.type} #${i+1}: ${id.name} · ${id.idNum}</div>`).join(''):''}`:'';
+  const loyReceiptHtml=loyReward?`
+    <div class="r-subtotal-row" style="color:#3f8f5e;margin-top:2px">
+      <span>🎁 ${esc(loyReward.label)}</span>
+      <span>−₱${loyAmt}</span>
+    </div>`:'';
 
   document.getElementById('modal-container').innerHTML=`
     <div class="modal-bg" id="receipt-modal">
@@ -1126,6 +1217,7 @@ function showReceiptModal(items,method,savedOrder){
           <hr class="r-divider">
           <div class="r-subtotal-row"><span>SUBTOTAL</span><span>₱${subtotal}</span></div>
           ${discReceiptHtml}
+          ${loyReceiptHtml}
           <div class="r-total-row"><span>TOTAL</span><span>₱${total}</span></div>
           ${isCash?`
           <div class="r-payment-row" id="r-cash-line"><span>CASH</span><span id="r-cash-val">—</span></div>
@@ -1489,7 +1581,10 @@ async function confirmOrder(){
   const subtotal=order.reduce((s,o)=>s+o.price*o.qty,0);
   const discAmt=computeDiscount(subtotal,dd);
   if(dd) dd.discAmt=discAmt;
-  const total=subtotal-discAmt;
+  const loyReward=posAppliedReward;
+  const loyAmt=loyReward?Math.min(Number(loyReward.discount_value),Math.max(0,subtotal-discAmt)):0;
+  const total=subtotal-discAmt-loyAmt;
+  const loyPhoneKey=posLoyaltyPhone||'';
   if(currentPayMethod==='Cash'){
     const cashIn=parseFloat(document.getElementById('cash-in')?.value)||0;
     if(cashIn===0){ if(!confirm('No cash amount entered.\nRecord this Cash order with no tender/change?')) return; }
@@ -1512,7 +1607,8 @@ async function confirmOrder(){
   let orderNum=null,saveErr=null;
   let res=await sb.from('orders').insert({
     items:itemsPayload,total,payment_method:currentPayMethod,order_type:currentOrderType,
-    cash_tendered:tendered,change_given:changeGiven,cashier_email:cashierEmail,cashier_name:cashierName,...discPayload
+    cash_tendered:tendered,change_given:changeGiven,cashier_email:cashierEmail,cashier_name:cashierName,
+    customer_phone:loyPhoneKey||null,...discPayload
   }).select('order_number').single();
   if(res.error){
     const msg=((res.error.message||'')+' '+(res.error.code||'')+' '+(res.error.details||''));
@@ -1520,7 +1616,7 @@ async function confirmOrder(){
     if(schemaIssue){
       // DB not migrated yet → fall back to client-side number + legacy columns only (keeps POS working)
       orderNum='#'+String(orderHistory.length+1).padStart(4,'0');
-      res=await sb.from('orders').insert({order_number:orderNum,items:itemsPayload,total,payment_method:currentPayMethod,order_type:currentOrderType,...discPayload}).select('order_number').single();
+      res=await sb.from('orders').insert({order_number:orderNum,items:itemsPayload,total,payment_method:currentPayMethod,order_type:currentOrderType,customer_phone:loyPhoneKey||null,...discPayload}).select('order_number').single();
       saveErr=res.error;
     } else { saveErr=res.error; }
   }
@@ -1539,17 +1635,27 @@ async function confirmOrder(){
   const orderNumEl=document.querySelector('#receipt-content .r-order-num');
   if(orderNumEl) orderNumEl.textContent='ORDER '+orderNum;
 
+  if(loyPhoneKey){
+    try{
+      if(loyReward){
+        await sb.rpc('loyalty_redeem',{p_phone:loyPhoneKey,p_reward_id:loyReward.id,p_order_number:orderNum});
+      }
+      await sb.rpc('loyalty_earn',{p_phone:loyPhoneKey,p_name:null,p_amount:total,p_order_number:orderNum});
+    }catch(e){ console.error('POS loyalty update failed',e); }
+  }
+
   await deductInventory([...order]);
   updateLowStockBadge();
 
   const now=new Date().toLocaleString('en-PH',{dateStyle:'short',timeStyle:'short'});
-  orderHistory.unshift({id:orderNum,time:now,items:[...order],total,method:currentPayMethod,discountData:dd?{...dd}:null,cashier:cashierName,tendered,change:changeGiven});
+  orderHistory.unshift({id:orderNum,time:now,items:[...order],total,method:currentPayMethod,discountData:dd?{...dd}:null,loyaltyReward:loyReward?{...loyReward}:null,cashier:cashierName,tendered,change:changeGiven});
 
   // Auto-print after confirming
   const __printed=await printReceipt();
 
   order=[];
   discountData=null;
+  posResetLoyalty();
   document.getElementById('disc-pwd').classList.remove('active');
   document.getElementById('disc-sc').classList.remove('active');
   document.getElementById('disc-friendly').classList.remove('active');
