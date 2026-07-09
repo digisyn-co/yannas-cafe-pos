@@ -440,7 +440,8 @@ body{background:var(--bg);color:var(--text1);font-size:14px;font-family:var(--fo
           </div>
           <div class="disc-line" id="disc-line"><span id="disc-label">Discount (20%)</span><span id="disc-amt">−₱0</span></div>
           <div class="loyalty-row" id="loyalty-row" style="margin:6px 0 4px">
-            <input type="tel" id="pos-loyalty-phone" placeholder="🎁 Customer phone (optional)" maxlength="13" oninput="posOnPhoneInput(this.value)" style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid #ddd;font-size:12.5px">
+            <input type="tel" id="pos-loyalty-phone" placeholder="🎁 Customer phone (optional)" maxlength="13" oninput="posOnPhoneInput(this.value)" style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid #ddd;font-size:12.5px;margin-bottom:6px">
+            <input type="text" id="pos-loyalty-name" placeholder="Customer name (optional)" maxlength="60" style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid #ddd;font-size:12.5px">
             <div id="pos-loyalty-status" style="font-size:11px;color:#888;margin-top:4px"></div>
             <div id="pos-loyalty-reward-picker" style="margin-top:4px"></div>
           </div>
@@ -1128,6 +1129,10 @@ async function posLookupLoyalty(rawPhone){
     if(statusEl) statusEl.textContent=row
       ?`${row.name?row.name.split(' ')[0]+' — ':''}${posLoyaltyBalance} points on file`
       :'New member — will earn points on this order';
+    if(row&&row.name){
+      const nameEl=document.getElementById('pos-loyalty-name');
+      if(nameEl&&!nameEl.value.trim()) nameEl.value=row.name;
+    }
     if(!posLoyaltyRewardsList.length){
       const {data:rw}=await sb.from('loyalty_rewards').select('*').eq('active',true).order('sort_order');
       posLoyaltyRewardsList=rw||[];
@@ -1154,6 +1159,7 @@ function posOnRewardPick(){
 function posResetLoyalty(){
   posLoyaltyPhone='';posLoyaltyBalance=0;posAppliedReward=null;
   const phoneEl=document.getElementById('pos-loyalty-phone'); if(phoneEl) phoneEl.value='';
+  const nameEl=document.getElementById('pos-loyalty-name'); if(nameEl) nameEl.value='';
   const statusEl=document.getElementById('pos-loyalty-status'); if(statusEl) statusEl.textContent='';
   const pickerEl=document.getElementById('pos-loyalty-reward-picker'); if(pickerEl) pickerEl.innerHTML='';
   const loyLine=document.getElementById('loy-line'); if(loyLine) loyLine.style.display='none';
@@ -1585,6 +1591,7 @@ async function confirmOrder(){
   const loyAmt=loyReward?Math.min(Number(loyReward.discount_value),Math.max(0,subtotal-discAmt)):0;
   const total=subtotal-discAmt-loyAmt;
   const loyPhoneKey=posLoyaltyPhone||'';
+  const loyName=(document.getElementById('pos-loyalty-name')?.value||'').trim()||null;
   if(currentPayMethod==='Cash'){
     const cashIn=parseFloat(document.getElementById('cash-in')?.value)||0;
     if(cashIn===0){ if(!confirm('No cash amount entered.\nRecord this Cash order with no tender/change?')) return; }
@@ -1608,7 +1615,7 @@ async function confirmOrder(){
   let res=await sb.from('orders').insert({
     items:itemsPayload,total,payment_method:currentPayMethod,order_type:currentOrderType,
     cash_tendered:tendered,change_given:changeGiven,cashier_email:cashierEmail,cashier_name:cashierName,
-    customer_phone:loyPhoneKey||null,...discPayload
+    customer_phone:loyPhoneKey||null,customer_name:loyName,...discPayload
   }).select('order_number').single();
   if(res.error){
     const msg=((res.error.message||'')+' '+(res.error.code||'')+' '+(res.error.details||''));
@@ -1616,7 +1623,7 @@ async function confirmOrder(){
     if(schemaIssue){
       // DB not migrated yet → fall back to client-side number + legacy columns only (keeps POS working)
       orderNum='#'+String(orderHistory.length+1).padStart(4,'0');
-      res=await sb.from('orders').insert({order_number:orderNum,items:itemsPayload,total,payment_method:currentPayMethod,order_type:currentOrderType,customer_phone:loyPhoneKey||null,...discPayload}).select('order_number').single();
+      res=await sb.from('orders').insert({order_number:orderNum,items:itemsPayload,total,payment_method:currentPayMethod,order_type:currentOrderType,customer_phone:loyPhoneKey||null,customer_name:loyName,...discPayload}).select('order_number').single();
       saveErr=res.error;
     } else { saveErr=res.error; }
   }
@@ -1640,7 +1647,7 @@ async function confirmOrder(){
       if(loyReward){
         await sb.rpc('loyalty_redeem',{p_phone:loyPhoneKey,p_reward_id:loyReward.id,p_order_number:orderNum});
       }
-      await sb.rpc('loyalty_earn',{p_phone:loyPhoneKey,p_name:null,p_amount:total,p_order_number:orderNum});
+      await sb.rpc('loyalty_earn',{p_phone:loyPhoneKey,p_name:loyName,p_amount:total,p_order_number:orderNum});
     }catch(e){ console.error('POS loyalty update failed',e); }
   }
 
