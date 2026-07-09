@@ -427,6 +427,12 @@ body{background:var(--bg);color:var(--text1);font-size:14px;font-family:var(--fo
           <div class="empty-order">Tap items to add</div>
         </div>
         <div class="order-foot">
+          <div class="loyalty-row" id="loyalty-row" style="margin:0 0 10px">
+            <input type="tel" id="pos-loyalty-phone" placeholder="🎁 Customer phone (optional)" maxlength="13" oninput="posOnPhoneInput(this.value)" style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid #ddd;font-size:12.5px;margin-bottom:6px">
+            <input type="text" id="pos-loyalty-name" placeholder="Customer name (optional)" maxlength="60" style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid #ddd;font-size:12.5px">
+            <div id="pos-loyalty-status" style="font-size:11px;color:#888;margin-top:4px"></div>
+            <div id="pos-loyalty-reward-picker" style="margin-top:4px"></div>
+          </div>
           <div class="order-type-row">
             <button class="ot-btn active" id="ot-dine" onclick="setOrderType('Dine-in')">🍽 Dine-in</button>
             <button class="ot-btn" id="ot-take" onclick="setOrderType('Takeout')">🥡 Takeout</button>
@@ -439,12 +445,6 @@ body{background:var(--bg);color:var(--text1);font-size:14px;font-family:var(--fo
             <button class="disc-btn" id="disc-friendly" onclick="toggleDiscount('FRIENDLY')">🤝 Friendly</button>
           </div>
           <div class="disc-line" id="disc-line"><span id="disc-label">Discount (20%)</span><span id="disc-amt">−₱0</span></div>
-          <div class="loyalty-row" id="loyalty-row" style="margin:6px 0 4px">
-            <input type="tel" id="pos-loyalty-phone" placeholder="🎁 Customer phone (optional)" maxlength="13" oninput="posOnPhoneInput(this.value)" style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid #ddd;font-size:12.5px;margin-bottom:6px">
-            <input type="text" id="pos-loyalty-name" placeholder="Customer name (optional)" maxlength="60" style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid #ddd;font-size:12.5px">
-            <div id="pos-loyalty-status" style="font-size:11px;color:#888;margin-top:4px"></div>
-            <div id="pos-loyalty-reward-picker" style="margin-top:4px"></div>
-          </div>
           <div class="disc-line" id="loy-line" style="color:#3f8f5e;display:none"><span id="loy-label"></span><span id="loy-amt"></span></div>
           <div class="tot-row"><span>Total</span><span id="total-amt">₱0</span></div>
           <div class="pay-btns">
