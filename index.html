@@ -300,6 +300,30 @@ body{background:var(--bg);color:var(--text1);font-size:14px;font-family:var(--fo
 
 /* ORDERS */
 .orders-wrap{display:flex;flex-direction:column;gap:8px}
+
+.recipe-card{background:var(--surface);border-radius:12px;border:1px solid var(--border);margin-bottom:10px;overflow:hidden}
+.recipe-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer}
+.recipe-head:active{background:rgba(0,0,0,0.02)}
+.recipe-name{font-size:14px;font-weight:700;color:var(--text)}
+.recipe-cat{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:2px 8px;border-radius:6px}
+.recipe-body{padding:0 16px 16px;display:none}
+.recipe-body.open{display:block}
+.recipe-scale{display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:10px 14px;background:var(--bg);border-radius:10px}
+.recipe-scale label{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.06em}
+.recipe-slider{flex:1;-webkit-appearance:none;appearance:none;height:6px;border-radius:3px;background:var(--border);outline:none}
+.recipe-slider::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--primary);cursor:pointer;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.2)}
+.recipe-val{font-size:18px;font-weight:800;color:var(--primary);min-width:32px;text-align:center}
+.recipe-table{width:100%}
+.recipe-table th{text-align:left;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;padding:6px 8px;border-bottom:2px solid var(--border)}
+.recipe-table td{padding:8px;font-size:13px;border-bottom:1px solid var(--border)}
+.recipe-table td:first-child{font-weight:600;color:var(--text)}
+.recipe-table td:nth-child(2){color:var(--text2);font-size:12px}
+.recipe-table td:last-child{font-weight:700;color:var(--primary);text-align:right;font-variant-numeric:tabular-nums}
+.recipe-total{margin-top:10px;padding:10px 14px;background:rgba(34,197,94,0.06);border-radius:8px;border:1px solid rgba(34,197,94,0.15)}
+.recipe-total-title{font-size:10px;font-weight:700;color:#22c55e;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+.recipe-total-row{display:flex;justify-content:space-between;font-size:12px;color:var(--text2);padding:2px 0}
+.recipe-total-row span:last-child{font-weight:700;color:var(--text)}
+
 .log-entry{border:0.5px solid #2E2820;border-radius:var(--rl);padding:12px 16px;background:var(--bg2)}
 .log-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
 .log-id{font-size:13px;font-weight:700;color:var(--gold);font-family:var(--font-display)}
@@ -400,6 +424,7 @@ body{background:var(--bg);color:var(--text1);font-size:14px;font-family:var(--fo
       <button class="tab" onclick="switchTab('inventory')"><span class="tab-icon">📦</span><span class="tab-label"> Inventory</span><span class="tab-badge" id="inv-badge" style="display:none"></span></button>
       <button class="tab" onclick="switchTab('orders')"><span class="tab-icon">📋</span><span class="tab-label"> Orders</span></button>
       <button class="tab" onclick="switchTab('reports')"><span class="tab-icon">📊</span><span class="tab-label"> Reports</span></button>
+<button class="tab" onclick="switchTab('recipes')"><span class="tab-icon">📖</span><span class="tab-label"> Recipes</span></button>
     </div>
     <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2)">
       <span class="status-dot live"></span>
@@ -503,6 +528,20 @@ body{background:var(--bg);color:var(--text1);font-size:14px;font-family:var(--fo
 </div>
 
 <div id="modal-container"></div>
+
+<div class="page" id="page-recipes">
+  <div class="page-head">
+    <h2 style="font-size:18px;font-weight:700">📖 Recipe Calculator</h2>
+    <div style="font-size:12px;color:var(--text2)">Scale any recipe from 1 order to a full batch</div>
+  </div>
+  <div style="padding:12px 16px">
+    <!-- Category filter -->
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px" id="recipe-cats"></div>
+    <!-- Recipe cards -->
+    <div id="recipe-list"></div>
+  </div>
+</div>
+
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
@@ -1988,6 +2027,81 @@ function refreshActiveView(){
 }
 
 let __reportsUnlocked=false;
+
+// ── RECIPES TAB ──
+let recipeFilter='All';
+
+function buildRecipes(){
+  const cats=['All','Coffee','Matcha','Tea','Food'];
+  const catEl=document.getElementById('recipe-cats');
+  catEl.innerHTML=cats.map(c=>'<button style="padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid var(--border);background:'+(c===recipeFilter?'var(--primary);color:#fff;border-color:var(--primary)':'var(--surface);color:var(--text2)')+';cursor:pointer;font-family:inherit" onclick="recipeFilter=\''+c+'\';buildRecipes()">'+c+'</button>').join('');
+
+  const list=document.getElementById('recipe-list');
+  const items=MENU.filter(m=>RECIPE[m.id]&&(recipeFilter==='All'||m.cat===recipeFilter));
+
+  list.innerHTML=items.map(m=>{
+    const r=RECIPE[m.id];
+    const catColors={Coffee:'#D97706',Matcha:'#059669',Tea:'#0D9488',Food:'#6366F1',Combo:'#8B5CF6'};
+    const catColor=catColors[m.cat]||'#888';
+    const ingRows=Object.entries(r).map(([ingId,amt])=>{
+      const inv=INIT_INV.find(i=>i.id===ingId);
+      const name=inv?inv.name:ingId;
+      const unit=inv?inv.unit:'';
+      return {name,unit,baseAmt:amt};
+    });
+
+    return '<div class="recipe-card" id="rc-'+m.id+'">'+
+      '<div class="recipe-head" onclick="toggleRecipe('+m.id+')">'+
+        '<span class="recipe-name">'+esc(m.name.replace(/ \(.*\)/,''))+'</span>'+
+        '<span class="recipe-cat" style="background:'+catColor+'15;color:'+catColor+'">'+m.cat+'</span>'+
+      '</div>'+
+      '<div class="recipe-body" id="rb-'+m.id+'">'+
+        '<div class="recipe-scale">'+
+          '<label>Servings</label>'+
+          '<input type="range" class="recipe-slider" min="1" max="50" value="1" oninput="scaleRecipe('+m.id+',this.value)">'+
+          '<span class="recipe-val" id="rv-'+m.id+'">1</span>'+
+        '</div>'+
+        '<table class="recipe-table">'+
+          '<thead><tr><th>Ingredient</th><th>Unit</th><th>Amount</th></tr></thead>'+
+          '<tbody id="rt-'+m.id+'">'+
+            ingRows.map(i=>'<tr><td>'+esc(i.name)+'</td><td>'+i.unit+'</td><td class="ra" data-base="'+i.baseAmt+'">'+fmtAmt(i.baseAmt)+'</td></tr>').join('')+
+          '</tbody>'+
+        '</table>'+
+        '<div class="recipe-total" id="rtotal-'+m.id+'">'+
+          '<div class="recipe-total-title">Cost Estimate (1 serving)</div>'+
+          '<div class="recipe-total-row"><span>Price</span><span>₱'+(m.price||m.coldPrice||0)+'</span></div>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+function toggleRecipe(id){
+  const el=document.getElementById('rb-'+id);
+  el.classList.toggle('open');
+}
+
+function scaleRecipe(id,val){
+  document.getElementById('rv-'+id).textContent=val;
+  const cells=document.querySelectorAll('#rt-'+id+' .ra');
+  cells.forEach(td=>{
+    const base=parseFloat(td.dataset.base);
+    td.textContent=fmtAmt(base*val);
+  });
+  const m=MENU.find(x=>x.id===id);
+  const price=m?(m.price||m.coldPrice||0):0;
+  const totalEl=document.getElementById('rtotal-'+id);
+  totalEl.innerHTML='<div class="recipe-total-title">'+(val==1?'1 Serving':val+' Servings')+'</div>'+
+    '<div class="recipe-total-row"><span>Unit Price</span><span>₱'+price+'</span></div>'+
+    '<div class="recipe-total-row"><span>Total Revenue</span><span>₱'+(price*val).toLocaleString()+'</span></div>';
+}
+
+function fmtAmt(n){
+  if(n>=1000) return (n/1000).toFixed(1)+'kg';
+  if(n%1===0) return n.toString();
+  return n.toFixed(1);
+}
+
 function switchTab(tab){
   if(tab==='reports' && !__reportsUnlocked){ openReportsLock(); return; }
   document.querySelectorAll('.tab').forEach((t,i)=>{
