@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kitchen Display — Yanna's Café</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --bg: #0F0A05;
+  --bg2: #1A1108;
+  --bg3: #2D200F;
+  --gold: #e9c16c;
+  --gold-d: #C9A452;
+  --text: #F0E8D6;
+  --text2: rgba(240,232,214,0.6);
+  --text3: rgba(240,232,214,0.3);
+  --green: #34C759;
+  --amber: #FF9500;
+  --red: #FF3B30;
+  --blue: #007AFF;
+  --sep: rgba(255,255,255,0.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased}
+
+/* ── TOPBAR ── */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 24px;background:var(--bg2);
+  border-bottom:1px solid var(--sep);
+  flex-shrink:0;
+}
+.topbar-left{display:flex;align-items:center;gap:14px}
+.topbar-logo{height:36px;border-radius:8px}
+.topbar-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:700}
+.topbar-right{display:flex;align-items:center;gap:16px}
+.clock{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--gold)}
+.conn-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px rgba(52,199,89,0.2);animation:pulse 2s infinite}
+.conn-dot.off{background:var(--red);box-shadow:0 0 0 3px rgba(255,59,48,0.2);animation:none}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 3px rgba(52,199,89,0.2)}50%{box-shadow:0 0 0 8px rgba(52,199,89,0.04)}}
+
+/* ── STATS BAR ── */
+.stats{
+  display:flex;gap:16px;padding:14px 24px;
+  background:var(--bg);border-bottom:1px solid var(--sep);flex-shrink:0;
+}
+.stat{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 16px;border-radius:12px;
+  background:var(--bg2);border:1px solid var(--sep);
+  font-size:13px;font-weight:600;color:var(--text2);
+}
+.stat-val{font-size:20px;font-weight:800;color:var(--text);font-variant-numeric:tabular-nums}
+.stat.incoming .stat-val{color:var(--amber)}
+.stat.preparing .stat-val{color:var(--blue)}
+.stat.ready .stat-val{color:var(--green)}
+
+/* ── COLUMNS ── */
+.board{
+  flex:1;display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:0;overflow:hidden;
+}
+.column{
+  display:flex;flex-direction:column;
+  border-right:1px solid var(--sep);overflow:hidden;
+}
+.column:last-child{border-right:none}
+.col-head{
+  padding:14px 20px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;
+}
+.col-title{
+  font-size:12px;font-weight:800;letter-spacing:.12em;
+  text-transform:uppercase;
+}
+.col-title.incoming{color:var(--amber)}
+.col-title.preparing{color:var(--blue)}
+.col-title.ready{color:var(--green)}
+.col-count{
+  font-size:11px;font-weight:700;
+  padding:3px 10px;border-radius:20px;
+}
+.col-count.incoming{background:rgba(255,149,0,0.12);color:var(--amber)}
+.col-count.preparing{background:rgba(0,122,255,0.12);color:var(--blue)}
+.col-count.ready{background:rgba(52,199,89,0.12);color:var(--green)}
+
+.col-body{
+  flex:1;overflow-y:auto;padding:8px 12px;
+  scrollbar-width:none;
+}
+.col-body::-webkit-scrollbar{display:none}
+
+/* ── ORDER CARD ── */
+.order-card{
+  background:var(--bg2);border-radius:16px;
+  border:1px solid var(--sep);
+  padding:16px;margin-bottom:10px;
+  transition:.2s;cursor:pointer;
+  position:relative;overflow:hidden;
+}
+.order-card:active{transform:scale(0.98)}
+.order-card.incoming{border-left:4px solid var(--amber)}
+.order-card.preparing{border-left:4px solid var(--blue)}
+.order-card.ready{border-left:4px solid var(--green)}
+
+.order-card.new-flash{animation:flash .6s ease}
+@keyframes flash{0%{background:rgba(255,149,0,0.15)}100%{background:var(--bg2)}}
+
+.oc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.oc-num{font-family:'Playfair Display',serif;font-size:20px;font-weight:700}
+.oc-num.incoming{color:var(--amber)}
+.oc-num.preparing{color:var(--blue)}
+.oc-num.ready{color:var(--green)}
+.oc-time{font-size:11px;color:var(--text3);font-variant-numeric:tabular-nums}
+
+.oc-customer{font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px}
+.oc-eta{font-size:11px;color:var(--text3);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.oc-eta-val{color:var(--gold-d);font-weight:700}
+
+.oc-items{border-top:1px solid var(--sep);padding-top:10px}
+.oc-item{
+  display:flex;justify-content:space-between;align-items:flex-start;
+  padding:4px 0;font-size:13px;
+}
+.oc-item-name{color:var(--text);font-weight:500;flex:1}
+.oc-item-qty{
+  color:var(--gold);font-weight:800;font-size:14px;
+  min-width:28px;text-align:center;flex-shrink:0;
+}
+.oc-item-temp{font-size:11px;color:var(--text3);margin-left:6px}
+
+.oc-total{
+  display:flex;justify-content:space-between;
+  border-top:1px solid var(--sep);padding-top:8px;margin-top:8px;
+  font-size:13px;font-weight:700;
+}
+.oc-total span:last-child{color:var(--gold)}
+
+/* ── ACTION BUTTON ── */
+.oc-action{
+  width:100%;margin-top:12px;padding:12px;
+  border-radius:12px;border:none;
+  font-size:13px;font-weight:700;
+  font-family:'DM Sans',sans-serif;
+  cursor:pointer;transition:.15s;
+  letter-spacing:.02em;
+}
+.oc-action:active{transform:scale(0.97)}
+.oc-action.start{background:rgba(0,122,255,0.12);color:var(--blue);border:1px solid rgba(0,122,255,0.25)}
+.oc-action.finish{background:rgba(52,199,89,0.12);color:var(--green);border:1px solid rgba(52,199,89,0.25)}
+.oc-action.done{background:rgba(52,199,89,0.08);color:var(--green);border:1px solid rgba(52,199,89,0.15)}
+
+/* ── EMPTY STATE ── */
+.empty{
+  text-align:center;padding:40px 20px;
+  color:var(--text3);font-size:14px;
+}
+.empty-icon{font-size:36px;margin-bottom:10px;opacity:.4}
+
+/* ── CHIME ── */
+.chime-indicator{
+  position:fixed;top:80px;right:24px;
+  background:var(--amber);color:var(--bg);
+  padding:10px 20px;border-radius:12px;
+  font-size:14px;font-weight:700;
+  opacity:0;transform:translateY(-10px);
+  transition:.3s;pointer-events:none;z-index:999;
+  box-shadow:0 4px 24px rgba(255,149,0,0.4);
+}
+.chime-indicator.show{opacity:1;transform:translateY(0)}
+
+/* ── LAYOUT ── */
+#app{height:100%;display:flex;flex-direction:column}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .board{grid-template-columns:1fr}
+  .column{border-right:none;border-bottom:1px solid var(--sep)}
+  .col-body{max-height:40vh}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-title">🔥 Kitchen Display</div>
+    </div>
+    <div class="topbar-right">
+      <div class="conn-dot" id="conn-dot" title="Supabase connection"></div>
+      <div class="clock" id="clock">--:--</div>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat incoming"><span class="stat-val" id="stat-incoming">0</span> Incoming</div>
+    <div class="stat preparing"><span class="stat-val" id="stat-preparing">0</span> Preparing</div>
+    <div class="stat ready"><span class="stat-val" id="stat-ready">0</span> Ready</div>
+  </div>
+
+  <div class="board">
+    <!-- INCOMING -->
+    <div class="column">
+      <div class="col-head">
+        <span class="col-title incoming">🔔 Incoming</span>
+        <span class="col-count incoming" id="cnt-incoming">0</span>
+      </div>
+      <div class="col-body" id="col-incoming"></div>
+    </div>
+    <!-- PREPARING -->
+    <div class="column">
+      <div class="col-head">
+        <span class="col-title preparing">👨‍🍳 Preparing</span>
+        <span class="col-count preparing" id="cnt-preparing">0</span>
+      </div>
+      <div class="col-body" id="col-preparing"></div>
+    </div>
+    <!-- READY -->
+    <div class="column">
+      <div class="col-head">
+        <span class="col-title ready">✅ Ready</span>
+        <span class="col-count ready" id="cnt-ready">0</span>
+      </div>
+      <div class="col-body" id="col-ready"></div>
+    </div>
+  </div>
+</div>
+
+<div class="chime-indicator" id="chime-ind">🔔 New Order!</div>
+
+<script>
+const SUPABASE_URL='https://dgjtpxdbztnokfbmfjbw.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRnanRweGRienRub2tmYm1mamJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3NjY5NDAsImV4cCI6MjA5NTM0Mjk0MH0.uUyk7ppnom9PI--Fs_5wdhqQD-dtAmpB5Gv1hup6dAk';
+
+let sb, orders = [];
+const seen = new Set();
+
+// ── Init ──
+window.addEventListener('load', () => {
+  try {
+    sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    document.getElementById('conn-dot').classList.remove('off');
+    loadOrders();
+    subscribeRealtime();
+  } catch(e) {
+    console.error('Supabase init failed:', e);
+    document.getElementById('conn-dot').classList.add('off');
+  }
+  tickClock();
+  setInterval(tickClock, 1000);
+});
+
+// ── Clock ──
+function tickClock() {
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-PH', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true});
+}
+
+// ── Load active orders ──
+async function loadOrders() {
+  try {
+    // Load both POS orders and drive-thru orders
+    const {data: dto, error: e1} = await sb.from('drive_thru_orders')
+      .select('*')
+      .in('status', ['incoming','preparing','ready'])
+      .order('created_at', {ascending: true});
+
+    if (e1) { console.warn('Load drive_thru error:', e1); return; }
+    orders = (dto || []).map(o => ({...o, source: 'drive_thru'}));
+    render();
+  } catch(e) { console.error('loadOrders:', e); }
+}
+
+// ── Realtime subscription ──
+function subscribeRealtime() {
+  // New orders
+  sb.channel('kitchen-new')
+    .on('postgres_changes', {event:'INSERT', schema:'public', table:'drive_thru_orders'}, payload => {
+      const o = {...payload.new, source:'drive_thru'};
+      if (!orders.find(x => x.id === o.id)) {
+        orders.unshift(o);
+        if (o.status === 'incoming') chime();
+      }
+      render();
+    }).subscribe();
+
+  // Status updates
+  sb.channel('kitchen-upd')
+    .on('postgres_changes', {event:'UPDATE', schema:'public', table:'drive_thru_orders'}, payload => {
+      const d = payload.new;
+      const idx = orders.findIndex(x => x.id === d.id);
+      if (idx >= 0) {
+        orders[idx] = {...orders[idx], ...d};
+        if (d.status === 'picked_up') orders.splice(idx, 1);
+      }
+      render();
+    }).subscribe();
+
+  // Also listen for POS dine-in orders
+  sb.channel('kitchen-pos')
+    .on('postgres_changes', {event:'INSERT', schema:'public', table:'orders'}, payload => {
+      const o = payload.new;
+      if (!orders.find(x => x.id === o.id)) {
+        orders.push({
+          id: o.id,
+          order_number: o.order_number,
+          customer_name: o.cashier_name || 'Dine-in',
+          items: o.items,
+          total: o.total,
+          status: 'incoming',
+          created_at: o.created_at,
+          source: 'pos',
+          payment_method: o.payment_method
+        });
+        chime();
+      }
+      render();
+    }).subscribe();
+}
+
+// ── Render ──
+function render() {
+  const incoming = orders.filter(o => o.status === 'incoming');
+  const preparing = orders.filter(o => o.status === 'preparing');
+  const ready = orders.filter(o => o.status === 'ready');
+
+  document.getElementById('stat-incoming').textContent = incoming.length;
+  document.getElementById('stat-preparing').textContent = preparing.length;
+  document.getElementById('stat-ready').textContent = ready.length;
+  document.getElementById('cnt-incoming').textContent = incoming.length;
+  document.getElementById('cnt-preparing').textContent = preparing.length;
+  document.getElementById('cnt-ready').textContent = ready.length;
+
+  renderColumn('col-incoming', incoming, 'incoming');
+  renderColumn('col-preparing', preparing, 'preparing');
+  renderColumn('col-ready', ready, 'ready');
+}
+
+function renderColumn(colId, items, status) {
+  const col = document.getElementById(colId);
+  if (!items.length) {
+    col.innerHTML = '<div class="empty"><div class="empty-icon">' +
+      (status==='incoming'?'☕':status==='preparing'?'👨‍🍳':'✅') +
+      '</div>No ' + status + ' orders</div>';
+    return;
+  }
+
+  col.innerHTML = items.map(o => {
+    const isNew = !seen.has(o.id);
+    if (isNew) seen.add(o.id);
+    const num = esc(o.order_number || '#' + String(o.id).slice(-4));
+    const name = esc(o.customer_name || (o.source==='pos'?'Dine-in':'Customer'));
+    const time = new Date(o.created_at).toLocaleTimeString('en-PH', {hour:'2-digit',minute:'2-digit',hour12:true});
+    const items_html = parseItems(o.items);
+    const total = typeof o.total === 'number' ? '₱' + o.total.toFixed(0) : '';
+    const eta = o.eta_minutes ? '<div class="oc-eta">⏱ ETA: <span class="oc-eta-val">' + o.eta_minutes + ' min</span></div>' : '';
+    const source_badge = o.source === 'pos' ? ' 🏠' : ' 📱';
+
+    let action = '';
+    if (status === 'incoming') {
+      action = '<button class="oc-action start" onclick="event.stopPropagation();updateStatus(\'' + o.id + '\',\'preparing\')">▶ Start Preparing</button>';
+    } else if (status === 'preparing') {
+      action = '<button class="oc-action finish" onclick="event.stopPropagation();updateStatus(\'' + o.id + '\',\'ready\')">✅ Mark Ready</button>';
+    } else if (status === 'ready') {
+      action = '<button class="oc-action done" onclick="event.stopPropagation();updateStatus(\'' + o.id + '\',\'picked_up\')">🤝 Picked Up</button>';
+    }
+
+    return '<div class="order-card ' + status + (isNew ? ' new-flash' : '') + '">' +
+      '<div class="oc-top"><span class="oc-num ' + status + '">' + num + source_badge + '</span><span class="oc-time">' + time + '</span></div>' +
+      '<div class="oc-customer">' + name + '</div>' +
+      eta +
+      '<div class="oc-items">' + items_html + '</div>' +
+      '<div class="oc-total"><span>Total</span><span>' + total + '</span></div>' +
+      action +
+    '</div>';
+  }).join('');
+}
+
+function parseItems(items) {
+  if (!items) return '<div class="oc-item"><span class="oc-item-name" style="color:var(--text3)">No items data</span></div>';
+  let arr = items;
+  if (typeof items === 'string') {
+    try { arr = JSON.parse(items); } catch(e) { return '<div class="oc-item"><span class="oc-item-name">' + esc(items) + '</span></div>'; }
+  }
+  if (!Array.isArray(arr)) return '<div class="oc-item"><span class="oc-item-name">' + esc(String(items)) + '</span></div>';
+
+  return arr.map(item => {
+    const name = esc(item.name || item.item || 'Item');
+    const qty = item.qty || item.quantity || 1;
+    const temp = item.temp ? '<span class="oc-item-temp">(' + esc(item.temp) + ')</span>' : '';
+    return '<div class="oc-item"><span class="oc-item-qty">×' + qty + '</span><span class="oc-item-name">' + name + temp + '</span></div>';
+  }).join('');
+}
+
+// ── Update status ──
+async function updateStatus(id, newStatus) {
+  try {
+    const order = orders.find(o => o.id === id);
+    if (!order) return;
+
+    const table = order.source === 'pos' ? 'orders' : 'drive_thru_orders';
+
+    if (table === 'drive_thru_orders') {
+      await sb.from(table).update({status: newStatus}).eq('id', id);
+    }
+
+    // Update local state immediately
+    if (newStatus === 'picked_up') {
+      orders = orders.filter(o => o.id !== id);
+    } else {
+      const o = orders.find(x => x.id === id);
+      if (o) o.status = newStatus;
+    }
+    render();
+  } catch(e) { console.error('updateStatus:', e); }
+}
+
+// ── Chime ──
+function chime() {
+  const ind = document.getElementById('chime-ind');
+  ind.classList.add('show');
+  setTimeout(() => ind.classList.remove('show'), 3000);
+
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.value = 880;
+    osc.type = 'sine';
+    gain.gain.value = 0.3;
+    osc.start(); osc.stop(ctx.currentTime + 0.15);
+    setTimeout(() => {
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.connect(gain2); gain2.connect(ctx.destination);
+      osc2.frequency.value = 1100;
+      osc2.type = 'sine';
+      gain2.gain.value = 0.3;
+      osc2.start(); osc2.stop(ctx.currentTime + 0.2);
+    }, 180);
+  } catch(e) {}
+}
+
+function esc(s) { return String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c])); }
+</script>
+</body>
+</html>
