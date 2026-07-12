@@ -2105,10 +2105,11 @@ function fmtAmt(n){
 function switchTab(tab){
   if(tab==='reports' && !__reportsUnlocked){ openReportsLock(); return; }
   document.querySelectorAll('.tab').forEach((t,i)=>{
-    t.classList.toggle('active',['pos','inventory','orders','reports'][i]===tab);
+    t.classList.toggle('active',['pos','inventory','orders','reports','recipes'][i]===tab);
   });
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+tab).classList.add('active');
+  if(tab==='recipes')buildRecipes();
   if(tab==='inventory'){renderInventory().then(()=>updateLowStockBadge());}
   if(tab==='orders') renderOrders();
   if(tab==='reports') renderReports();
