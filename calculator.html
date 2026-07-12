@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Break-Even Calculator — Yanna's Café</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0F0A05;--bg2:#1A1108;--bg3:#2D200F;--bg4:#3A2B18;--gold:#e9c16c;--gold-d:#C9A452;--text:#F0E8D6;--text2:rgba(240,232,214,0.6);--text3:rgba(240,232,214,0.3);--green:#34C759;--red:#FF3B30;--amber:#FF9500;--blue:#007AFF;--sep:rgba(255,255,255,0.06);--sep2:rgba(201,164,82,0.12)}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased}
+body{max-width:960px;margin:0 auto;padding:24px 16px 80px}
+
+h1{font-family:'Playfair Display',serif;font-size:32px;font-weight:900;margin-bottom:6px}
+h2{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;margin:32px 0 14px;color:var(--gold);display:flex;align-items:center;gap:10px}
+h2 .icon{font-size:24px}
+.sub{font-size:14px;color:var(--text2);margin-bottom:28px;line-height:1.6}
+
+/* ── Stats Grid ── */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:32px}
+.stat-card{background:var(--bg2);border-radius:16px;padding:20px;border:1px solid var(--sep);text-align:center}
+.stat-val{font-family:'Playfair Display',serif;font-size:32px;font-weight:900;margin-bottom:4px}
+.stat-val.gold{color:var(--gold)}
+.stat-val.green{color:var(--green)}
+.stat-val.amber{color:var(--amber)}
+.stat-val.red{color:var(--red)}
+.stat-label{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3)}
+
+/* ── Tables ── */
+.table-wrap{overflow-x:auto;margin-bottom:24px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-d);padding:10px 12px;border-bottom:2px solid var(--sep2);white-space:nowrap}
+th.right{text-align:right}
+td{padding:10px 12px;border-bottom:1px solid var(--sep);color:var(--text)}
+td.right{text-align:right;font-variant-numeric:tabular-nums}
+td.bold{font-weight:700}
+tr:hover td{background:rgba(233,193,108,0.03)}
+.margin-bar{height:6px;border-radius:3px;background:var(--bg3);position:relative;min-width:60px}
+.margin-fill{height:100%;border-radius:3px;position:absolute;left:0;top:0}
+.m-high{background:var(--green)}
+.m-mid{background:var(--amber)}
+.m-low{background:var(--red)}
+
+/* ── Ingredient Inputs ── */
+.ing-section{margin-bottom:32px}
+.ing-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px}
+.ing-row{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg2);border-radius:10px;border:1px solid var(--sep)}
+.ing-name{flex:1;font-size:13px;font-weight:500;color:var(--text)}
+.ing-unit{font-size:11px;color:var(--text3);min-width:40px}
+.ing-input{width:80px;padding:8px 10px;border-radius:8px;border:1px solid var(--sep);border-bottom:2px solid var(--sep2);background:var(--bg3);color:var(--gold);font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;text-align:right;outline:none;font-variant-numeric:tabular-nums}
+.ing-input:focus{border-bottom-color:var(--gold);background:var(--bg4)}
+
+/* ── Fixed Costs ── */
+.fixed-row{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.fixed-label{font-size:14px;font-weight:600;flex:1}
+.fixed-input{width:140px;padding:10px 14px;border-radius:10px;border:1px solid var(--sep);border-bottom:2px solid var(--sep2);background:var(--bg2);color:var(--gold);font-size:16px;font-weight:700;font-family:'DM Sans',sans-serif;text-align:right;outline:none}
+.fixed-input:focus{border-bottom-color:var(--gold)}
+
+/* ── Daily Mix ── */
+.mix-row{display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--bg2);border-radius:10px;margin-bottom:6px;border:1px solid var(--sep)}
+.mix-name{flex:1;font-size:13px;font-weight:500}
+.mix-cat{font-size:10px;font-weight:600;padding:2px 8px;border-radius:6px;letter-spacing:.05em;text-transform:uppercase}
+.cat-coffee{background:rgba(217,119,6,0.12);color:#D97706}
+.cat-matcha{background:rgba(5,150,105,0.12);color:#059669}
+.cat-tea{background:rgba(13,148,136,0.12);color:#0D9488}
+.cat-food{background:rgba(99,102,241,0.12);color:#6366F1}
+.mix-input{width:56px;padding:8px;border-radius:8px;border:1px solid var(--sep);background:var(--bg3);color:var(--text);font-size:14px;font-weight:700;text-align:center;font-family:inherit;outline:none}
+.mix-input:focus{border-color:var(--gold)}
+.mix-profit{font-size:13px;font-weight:700;color:var(--green);min-width:70px;text-align:right;font-variant-numeric:tabular-nums}
+
+/* ── Result Card ── */
+.result-card{background:var(--bg2);border-radius:16px;padding:24px;border:1px solid var(--sep2);margin-top:20px}
+.result-row{display:flex;justify-content:space-between;padding:8px 0;font-size:14px}
+.result-row.total{border-top:2px solid var(--sep2);padding-top:14px;margin-top:8px;font-size:18px;font-weight:800}
+.result-row .label{color:var(--text2)}
+.result-row .val{font-weight:700;font-variant-numeric:tabular-nums}
+.result-row .val.green{color:var(--green)}
+.result-row .val.red{color:var(--red)}
+
+/* ── Note ── */
+.note{background:rgba(233,193,108,0.06);border:1px solid var(--sep2);border-radius:12px;padding:16px 20px;margin-top:20px;font-size:13px;color:var(--text2);line-height:1.65}
+.note strong{color:var(--gold-d)}
+
+/* ── Tabs ── */
+.tabs{display:flex;gap:6px;margin-bottom:24px;flex-wrap:wrap}
+.tab-btn{padding:8px 18px;border-radius:20px;font-size:13px;font-weight:600;border:1px solid var(--sep);background:none;color:var(--text2);cursor:pointer;font-family:inherit;transition:.15s}
+.tab-btn.active{background:var(--gold);color:var(--bg);border-color:var(--gold)}
+.tab-btn:hover:not(.active){border-color:var(--gold-d);color:var(--text)}
+.tab-page{display:none}
+.tab-page.active{display:block}
+
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px}
+.badge{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);display:flex;align-items:center;gap:6px}
+.badge-dot{width:6px;height:6px;border-radius:50%;background:var(--gold)}
+
+.save-note{font-size:11px;color:var(--text3);text-align:center;margin-top:16px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <h1>☕ Break-Even Calculator</h1>
+    <div class="badge"><span class="badge-dot"></span> Yanna's Vietnamese Coffee</div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('ingredients')">💰 Ingredient Costs</button>
+  <button class="tab-btn" onclick="switchTab('margins')">📊 Margins & Profit</button>
+  <button class="tab-btn" onclick="switchTab('breakeven')">🎯 Break-Even</button>
+  <button class="tab-btn" onclick="switchTab('daily')">📅 Daily Mix Planner</button>
+</div>
+
+<!-- TAB 1: INGREDIENTS -->
+<div class="tab-page active" id="tab-ingredients">
+  <h2><span class="icon">💰</span> Your Ingredient Costs</h2>
+  <p class="sub">Enter your actual purchase prices. All calculations will update automatically. Prices are saved in your browser so they persist between visits.</p>
+  <div class="ing-grid" id="ing-grid"></div>
+
+  <h2 style="margin-top:28px"><span class="icon">🏢</span> Fixed Monthly Costs</h2>
+  <div style="max-width:400px">
+    <div class="fixed-row">
+      <span class="fixed-label">Employee Salary</span>
+      <span style="color:var(--text3)">₱</span>
+      <input class="fixed-input" type="number" id="salary" value="15000" oninput="recalc()">
+    </div>
+    <div class="fixed-row">
+      <span class="fixed-label">Rent / Utilities</span>
+      <span style="color:var(--text3)">₱</span>
+      <input class="fixed-input" type="number" id="rent" value="0" oninput="recalc()">
+    </div>
+    <div class="fixed-row">
+      <span class="fixed-label">Other Monthly Costs</span>
+      <span style="color:var(--text3)">₱</span>
+      <input class="fixed-input" type="number" id="other" value="0" oninput="recalc()">
+    </div>
+  </div>
+  <div class="save-note">💾 All values auto-save to your browser</div>
+</div>
+
+<!-- TAB 2: MARGINS -->
+<div class="tab-page" id="tab-margins">
+  <h2><span class="icon">📊</span> Profit Per Item</h2>
+  <p class="sub">Based on your ingredient costs. Green = high margin (70%+), Amber = medium (50-70%), Red = low (&lt;50%).</p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>Category</th>
+          <th class="right">Price</th>
+          <th class="right">COGS</th>
+          <th class="right">Profit</th>
+          <th>Margin</th>
+        </tr>
+      </thead>
+      <tbody id="margin-table"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- TAB 3: BREAK-EVEN -->
+<div class="tab-page" id="tab-breakeven">
+  <h2><span class="icon">🎯</span> Break-Even Analysis</h2>
+  <p class="sub">How many items you need to sell to cover all fixed costs.</p>
+  <div class="stats" id="be-stats"></div>
+  <h2 style="font-size:18px"><span class="icon">📋</span> By Item — Units to Break Even</h2>
+  <p class="sub">If you sold ONLY this item, how many would you need per month?</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Item</th><th class="right">Profit/Unit</th><th class="right">Units Needed</th><th class="right">Per Day (26d)</th></tr></thead>
+      <tbody id="be-table"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- TAB 4: DAILY MIX -->
+<div class="tab-page" id="tab-daily">
+  <h2><span class="icon">📅</span> Daily Sales Mix Planner</h2>
+  <p class="sub">Set your expected daily sales per item. The calculator shows if you'll cover all costs.</p>
+  <div id="mix-list"></div>
+  <div class="result-card" id="mix-result"></div>
+  <div class="note" style="margin-top:16px">
+    <strong>💡 Tip:</strong> Your drinks have 80-94% margins — they're your money makers. Push the bestsellers (★ Salted Cream, Coconut, Egg Coffee) and you'll hit break-even fast. Food items have lower margins but higher ticket value.
+  </div>
+</div>
+
+<script>
+// ── DATA ──
+const INGREDIENTS = [
+  {id:'robusta', name:'Dark Roast Robusta', unit:'per g', pkg:'₱/kg', factor:1000, default:450},
+  {id:'condensed', name:'Condensed Milk', unit:'per g', pkg:'₱/300g can', factor:300, default:80},
+  {id:'fresh_milk', name:'Fresh Milk', unit:'per ml', pkg:'₱/L', factor:1000, default:90},
+  {id:'heavy_cream', name:'Heavy Cream', unit:'per ml', pkg:'₱/L', factor:1000, default:250},
+  {id:'coconut_cream', name:'Coconut Cream', unit:'per ml', pkg:'₱/400ml', factor:400, default:60},
+  {id:'eggs', name:'Eggs', unit:'per pc', pkg:'₱/pc', factor:1, default:8},
+  {id:'sea_salt', name:'Sea Salt (specialty)', unit:'per g', pkg:'₱/100g', factor:100, default:200},
+  {id:'jasmine_tea', name:'Jasmine Tea', unit:'per g', pkg:'₱/100g', factor:100, default:50},
+  {id:'black_tea', name:'Black Tea', unit:'per g', pkg:'₱/100g', factor:100, default:40},
+  {id:'matcha', name:'Matcha Powder', unit:'per g', pkg:'₱/100g', factor:100, default:300},
+  {id:'baguette', name:'Baguette / Loaf', unit:'per pc', pkg:'₱/pc', factor:1, default:25},
+  {id:'pork', name:'Pork Shoulder', unit:'per g', pkg:'₱/kg', factor:1000, default:350},
+  {id:'chicken', name:'Chicken Thigh', unit:'per g', pkg:'₱/kg', factor:1000, default:280},
+  {id:'beef', name:'Beef Sirloin', unit:'per g', pkg:'₱/kg', factor:1000, default:500},
+  {id:'liver_spread', name:'Liver Spread', unit:'per pc', pkg:'₱/can', factor:1, default:15},
+  {id:'pickled_carrots', name:'Pickled Carrots', unit:'per g', pkg:'₱/kg', factor:1000, default:150},
+  {id:'pickled_onions', name:'Pickled Onions', unit:'per g', pkg:'₱/kg', factor:1000, default:150},
+  {id:'cucumber', name:'Cucumber', unit:'per pc', pkg:'₱/pc', factor:1, default:15},
+  {id:'onions', name:'Onions', unit:'per pc', pkg:'₱/pc', factor:1, default:12},
+  {id:'bacon', name:'Smoked Bacon', unit:'per g', pkg:'₱/kg', factor:1000, default:600},
+  {id:'tocino', name:'Sweet Cured Tocino', unit:'per g', pkg:'₱/kg', factor:1000, default:400},
+  {id:'tapa', name:'Cured Beef Tapa', unit:'per g', pkg:'₱/kg', factor:1000, default:550},
+  {id:'cheese', name:'Cheese Slices', unit:'per pc', pkg:'₱/slice', factor:1, default:12},
+  {id:'house_dip', name:'Signature House Dip', unit:'per g', pkg:'₱/kg', factor:1000, default:300},
+  {id:'hot_cups', name:'Hot Cups', unit:'per pc', pkg:'₱/pc', factor:1, default:3.5},
+  {id:'cold_cups_16', name:'Cold Cups 16oz', unit:'per pc', pkg:'₱/pc', factor:1, default:5},
+  {id:'cold_cups_22', name:'Cold Cups 22oz', unit:'per pc', pkg:'₱/pc', factor:1, default:6},
+  {id:'paper_bags', name:'Paper Bags', unit:'per pc', pkg:'₱/pc', factor:1, default:3},
+];
+
+const RECIPE = {
+  1:{robusta:19},
+  2:{robusta:19,heavy_cream:40,fresh_milk:15,sea_salt:1,condensed:3},
+  3:{robusta:19,coconut_cream:40,condensed:20,fresh_milk:20},
+  4:{robusta:19,eggs:1,condensed:20},
+  5:{robusta:19,condensed:35},
+  6:{matcha:2,fresh_milk:210},
+  7:{matcha:2,heavy_cream:30,fresh_milk:40,sea_salt:1,condensed:3},
+  8:{matcha:2,eggs:1,condensed:30,heavy_cream:50},
+  9:{jasmine_tea:2},
+  13:{baguette:1,pork:110,pickled_carrots:20,pickled_onions:10,cucumber:0.25,liver_spread:0.1},
+  14:{baguette:1,chicken:110,pickled_carrots:20,pickled_onions:10,cucumber:0.25},
+  15:{baguette:1,beef:110,pickled_carrots:20,pickled_onions:10,cucumber:0.25},
+  19:{pork:110,eggs:2,onions:0.2},
+  20:{chicken:110,eggs:2,onions:0.2},
+  21:{beef:110,eggs:2,onions:0.2},
+  22:{bacon:50}, 23:{tocino:50}, 24:{tapa:60},
+  25:{eggs:1}, 26:{eggs:1}, 27:{cheese:1}, 28:{house_dip:40},
+};
+
+const MENU = [
+  {id:1, name:'Black Coffee', cat:'Coffee', price:112, cup:'hot_cups', star:false},
+  {id:2, name:'Salted Cream Coffee', cat:'Coffee', price:160, cup:'cold_cups_16', star:true},
+  {id:3, name:'Coconut Coffee', cat:'Coffee', price:175, cup:'cold_cups_16', star:true},
+  {id:4, name:'Egg Coffee', cat:'Coffee', price:177, cup:'hot_cups', star:true},
+  {id:5, name:'Milk Coffee', cat:'Coffee', price:122, cup:'hot_cups', star:false},
+  {id:6, name:'Matcha Latte', cat:'Matcha', price:160, cup:'cold_cups_16', star:true},
+  {id:7, name:'Salt Matcha', cat:'Matcha', price:175, cup:'cold_cups_16', star:true},
+  {id:8, name:'Egg Custard Matcha', cat:'Matcha', price:185, cup:'cold_cups_16', star:true},
+  {id:9, name:'Fruit Tea', cat:'Tea', price:110, cup:'cold_cups_22', star:false},
+  {id:13, name:'BBQ Pork Sandwich', cat:'Food', price:170, cup:'paper_bags', star:false},
+  {id:14, name:'Chicken BBQ Sandwich', cat:'Food', price:165, cup:'paper_bags', star:false},
+  {id:15, name:'Beef BBQ Sandwich', cat:'Food', price:180, cup:'paper_bags', star:false},
+  {id:19, name:'Pork Fried Rice', cat:'Food', price:130, cup:'paper_bags', star:false},
+  {id:20, name:'Chicken Fried Rice', cat:'Food', price:115, cup:'paper_bags', star:false},
+  {id:21, name:'Beef Fried Rice', cat:'Food', price:145, cup:'paper_bags', star:false},
+];
+
+const catColors = {Coffee:'#D97706',Matcha:'#059669',Tea:'#0D9488',Food:'#6366F1'};
+
+let ingCosts = {};
+let dailyMix = {};
+
+// ── INIT ──
+function init() {
+  // Load saved values
+  try {
+    const saved = JSON.parse(localStorage.getItem('yc_calc') || '{}');
+    ingCosts = saved.ingCosts || {};
+    dailyMix = saved.dailyMix || {};
+    if (saved.salary) document.getElementById('salary').value = saved.salary;
+    if (saved.rent) document.getElementById('rent').value = saved.rent;
+    if (saved.other) document.getElementById('other').value = saved.other;
+  } catch(e) {}
+
+  buildIngGrid();
+  recalc();
+}
+
+function save() {
+  try {
+    localStorage.setItem('yc_calc', JSON.stringify({
+      ingCosts, dailyMix,
+      salary: parseFloat(document.getElementById('salary').value) || 0,
+      rent: parseFloat(document.getElementById('rent').value) || 0,
+      other: parseFloat(document.getElementById('other').value) || 0,
+    }));
+  } catch(e) {}
+}
+
+// ── INGREDIENT GRID ──
+function buildIngGrid() {
+  const grid = document.getElementById('ing-grid');
+  grid.innerHTML = INGREDIENTS.map(ing => {
+    const savedVal = ingCosts[ing.id];
+    const pkgPrice = savedVal != null ? savedVal * ing.factor : ing.default;
+    return '<div class="ing-row">' +
+      '<span class="ing-name">' + ing.name + '</span>' +
+      '<span class="ing-unit">' + ing.pkg + '</span>' +
+      '<input class="ing-input" type="number" step="0.5" value="' + pkgPrice.toFixed(ing.factor > 1 ? 0 : 1) + '" ' +
+        'oninput="updateIng(\'' + ing.id + '\',' + ing.factor + ',this.value)" data-id="' + ing.id + '">' +
+    '</div>';
+  }).join('');
+
+  // Initialize costs
+  INGREDIENTS.forEach(ing => {
+    if (ingCosts[ing.id] == null) {
+      ingCosts[ing.id] = ing.default / ing.factor;
+    }
+  });
+}
+
+function updateIng(id, factor, val) {
+  ingCosts[id] = (parseFloat(val) || 0) / factor;
+  recalc();
+}
+
+// ── CALCULATE ──
+function getCOGS(item) {
+  const recipe = RECIPE[item.id] || {};
+  let cogs = 0;
+  for (const [ingId, qty] of Object.entries(recipe)) {
+    cogs += (ingCosts[ingId] || 0) * qty;
+  }
+  cogs += ingCosts[item.cup] || 0;
+  return cogs;
+}
+
+function recalc() {
+  const salary = parseFloat(document.getElementById('salary').value) || 0;
+  const rent = parseFloat(document.getElementById('rent').value) || 0;
+  const other = parseFloat(document.getElementById('other').value) || 0;
+  const totalFixed = salary + rent + other;
+
+  // Calculate margins
+  const data = MENU.map(m => {
+    const cogs = getCOGS(m);
+    const profit = m.price - cogs;
+    const margin = m.price > 0 ? (profit / m.price) * 100 : 0;
+    return {...m, cogs, profit, margin};
+  }).sort((a, b) => b.margin - a.margin);
+
+  const avgProfit = data.reduce((s, d) => s + d.profit, 0) / data.length;
+  const avgPrice = data.reduce((s, d) => s + d.price, 0) / data.length;
+  const beUnits = totalFixed > 0 ? Math.ceil(totalFixed / avgProfit) : 0;
+
+  // ── Margin table ──
+  document.getElementById('margin-table').innerHTML = data.map(d => {
+    const mClass = d.margin >= 70 ? 'm-high' : d.margin >= 50 ? 'm-mid' : 'm-low';
+    const star = d.star ? ' ★' : '';
+    return '<tr>' +
+      '<td class="bold">' + d.name + star + '</td>' +
+      '<td><span class="mix-cat cat-' + d.cat.toLowerCase() + '">' + d.cat + '</span></td>' +
+      '<td class="right">₱' + d.price + '</td>' +
+      '<td class="right" style="color:var(--text2)">₱' + d.cogs.toFixed(0) + '</td>' +
+      '<td class="right bold" style="color:var(--green)">₱' + d.profit.toFixed(0) + '</td>' +
+      '<td><div class="margin-bar"><div class="margin-fill ' + mClass + '" style="width:' + Math.min(100, d.margin) + '%"></div></div> ' +
+        '<span style="font-size:12px;font-weight:700;color:' + (d.margin >= 70 ? 'var(--green)' : d.margin >= 50 ? 'var(--amber)' : 'var(--red)') + '">' + d.margin.toFixed(0) + '%</span></td>' +
+    '</tr>';
+  }).join('');
+
+  // ── Break-even stats ──
+  document.getElementById('be-stats').innerHTML =
+    '<div class="stat-card"><div class="stat-val gold">₱' + totalFixed.toLocaleString() + '</div><div class="stat-label">Monthly Fixed Costs</div></div>' +
+    '<div class="stat-card"><div class="stat-val green">₱' + avgProfit.toFixed(0) + '</div><div class="stat-label">Avg Profit / Item</div></div>' +
+    '<div class="stat-card"><div class="stat-val amber">' + beUnits + '</div><div class="stat-label">Items to Break Even</div></div>' +
+    '<div class="stat-card"><div class="stat-val">' + Math.ceil(beUnits / 26) + '</div><div class="stat-label">Items / Day (26 days)</div></div>';
+
+  // ── Break-even table ──
+  document.getElementById('be-table').innerHTML = data.map(d => {
+    const units = d.profit > 0 ? Math.ceil(totalFixed / d.profit) : '∞';
+    const daily = d.profit > 0 ? (totalFixed / d.profit / 26).toFixed(1) : '∞';
+    return '<tr><td class="bold">' + d.name + (d.star ? ' ★' : '') + '</td>' +
+      '<td class="right" style="color:var(--green)">₱' + d.profit.toFixed(0) + '</td>' +
+      '<td class="right bold">' + units + '</td>' +
+      '<td class="right" style="color:var(--text2)">' + daily + '/day</td></tr>';
+  }).join('');
+
+  // ── Daily mix ──
+  const mixList = document.getElementById('mix-list');
+  mixList.innerHTML = MENU.map(m => {
+    const d = data.find(x => x.id === m.id);
+    const qty = dailyMix[m.id] || 0;
+    const lineProfit = d.profit * qty;
+    const catClass = 'cat-' + m.cat.toLowerCase();
+    return '<div class="mix-row">' +
+      '<span class="mix-cat ' + catClass + '">' + m.cat + '</span>' +
+      '<span class="mix-name">' + m.name + (m.star ? ' ★' : '') + '</span>' +
+      '<input class="mix-input" type="number" min="0" max="999" value="' + qty + '" ' +
+        'oninput="updateMix(' + m.id + ',this.value)">' +
+      '<span class="mix-profit">' + (lineProfit > 0 ? '₱' + lineProfit.toFixed(0) : '—') + '</span>' +
+    '</div>';
+  }).join('');
+
+  // Mix results
+  let mixRev = 0, mixCogs = 0, mixItems = 0;
+  MENU.forEach(m => {
+    const qty = dailyMix[m.id] || 0;
+    const d = data.find(x => x.id === m.id);
+    mixRev += m.price * qty;
+    mixCogs += d.cogs * qty;
+    mixItems += qty;
+  });
+  const mixProfit = mixRev - mixCogs;
+  const monthlyProfit = mixProfit * 26;
+  const net = monthlyProfit - totalFixed;
+  const covers = net >= 0;
+
+  document.getElementById('mix-result').innerHTML =
+    '<div class="result-row"><span class="label">Daily Items Sold</span><span class="val">' + mixItems + ' items</span></div>' +
+    '<div class="result-row"><span class="label">Daily Revenue</span><span class="val">₱' + mixRev.toLocaleString() + '</span></div>' +
+    '<div class="result-row"><span class="label">Daily COGS</span><span class="val" style="color:var(--red)">−₱' + mixCogs.toFixed(0) + '</span></div>' +
+    '<div class="result-row"><span class="label">Daily Gross Profit</span><span class="val green">₱' + mixProfit.toFixed(0) + '</span></div>' +
+    '<div class="result-row" style="border-top:1px solid var(--sep);padding-top:10px;margin-top:6px"><span class="label">Monthly Gross (×26 days)</span><span class="val green">₱' + monthlyProfit.toLocaleString() + '</span></div>' +
+    '<div class="result-row"><span class="label">Fixed Costs (salary + rent + other)</span><span class="val" style="color:var(--red)">−₱' + totalFixed.toLocaleString() + '</span></div>' +
+    '<div class="result-row total"><span class="label">NET Monthly Profit</span><span class="val ' + (covers ? 'green' : 'red') + '">' + (covers ? '₱' : '−₱') + Math.abs(net).toLocaleString() + '</span></div>' +
+    '<div style="text-align:center;margin-top:14px;font-size:14px;font-weight:700;color:' + (covers ? 'var(--green)' : 'var(--red)') + '">' +
+      (covers ? '✅ This daily mix covers all costs with ₱' + net.toLocaleString() + ' profit' : '❌ Short by ₱' + Math.abs(net).toLocaleString() + '/month — sell ' + Math.ceil(Math.abs(net) / avgProfit / 26) + ' more items/day') +
+    '</div>';
+
+  save();
+}
+
+function updateMix(id, val) {
+  dailyMix[id] = parseInt(val) || 0;
+  recalc();
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  event.target.classList.add('active');
+  recalc();
+}
+
+init();
+</script>
+</body>
+</html>
