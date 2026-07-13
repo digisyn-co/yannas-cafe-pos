@@ -1777,8 +1777,8 @@ async function confirmOrder(){
   const now=new Date().toLocaleString('en-PH',{dateStyle:'short',timeStyle:'short'});
   orderHistory.unshift({id:orderNum,time:now,items:[...order],total,method:currentPayMethod,discountData:dd?{...dd}:null,loyaltyReward:loyReward?{...loyReward}:null,cashier:cashierName,tendered,change:changeGiven});
 
-  // Auto-print after confirming
-  const __printed=await printReceipt();
+  // Auto-print disabled — use the Print button manually
+  // const __printed=await printReceipt();
 
   order=[];
   discountData=null;
