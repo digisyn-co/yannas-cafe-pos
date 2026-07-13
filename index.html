@@ -299,6 +299,8 @@ body{background:var(--bg);color:var(--text1);font-size:14px;font-family:var(--fo
 .restock-btn:hover{background:rgba(201,168,76,0.28)}
 
 /* ORDERS */
+#page-recipes.active{display:flex!important;flex-direction:column;height:calc(100vh - 56px)}
+#page-recipes iframe{flex:1;min-height:0}
 .orders-wrap{display:flex;flex-direction:column;gap:8px}
 
 /* ── Inventory Chat ── */
@@ -564,8 +566,8 @@ body{background:var(--bg);color:var(--text1);font-size:14px;font-family:var(--fo
 
 <div id="modal-container"></div>
 
-<div class="page" id="page-recipes" style="padding:0;overflow:hidden;height:calc(100vh - 56px);display:flex;flex-direction:column">
-  <iframe src="/recipes" style="width:100%;flex:1;border:none;display:block;min-height:0" title="Recipe Book"></iframe>
+<div class="page" id="page-recipes" style="padding:0;overflow:hidden">
+  <iframe src="/recipes" style="width:100%;border:none;display:block" title="Recipe Book"></iframe>
 </div>
 
 
@@ -1729,7 +1731,7 @@ async function confirmOrder(){
   let orderNum=null,saveErr=null;
   let res=await sb.from('orders').insert({
     items:itemsPayload,total,payment_method:currentPayMethod,order_type:currentOrderType,
-    cash_tendered:tendered,change_given:changeGiven,cashier_email:cashierEmail,cashier_name:cashierName,
+    cash_tendered:tendered,change_given:changeGiven,cashier_email:cashierEmail,cashier_name:cashierName,status:'incoming',
     customer_phone:loyPhoneKey||null,customer_name:loyName,...discPayload
   }).select('order_number').single();
   if(res.error){
@@ -1743,7 +1745,7 @@ async function confirmOrder(){
     } else if(res.error?.message?.includes('duplicate key')||res.error?.details?.includes('duplicate')){
       // Duplicate order number — retry with a new unique number
       orderNum='#'+new Date().toISOString().slice(11,19).replace(/:/g,'')+'-'+String(Math.floor(Math.random()*900)+100);
-      res=await sb.from('orders').insert({order_number:orderNum,items:itemsPayload,total,payment_method:currentPayMethod,order_type:currentOrderType}).select('order_number').single();
+      res=await sb.from('orders').insert({order_number:orderNum,items:itemsPayload,total,payment_method:currentPayMethod,order_type:currentOrderType,status:'incoming'}).select('order_number').single();
       saveErr=res.error;
     } else { saveErr=res.error; }
   }
