@@ -279,6 +279,9 @@ window.addEventListener('load', () => {
   }
   tickClock();
   setInterval(tickClock, 1000);
+  // Smart polling: check for new orders every 10 seconds
+  // Works as fallback even if Supabase Realtime isn't enabled
+  setInterval(pollForNewOrders, 10000);
   // Removed auto-reload — realtime handles updates; manual refresh via page reload if needed
   setInterval(render, 30000); // refresh elapsed times
 });
@@ -338,6 +341,40 @@ async function loadOrders() {
 }
 
 // ── Realtime subscription ──
+
+// ── Smart Polling (fallback for when Realtime isn't enabled) ──
+let lastPollCount = 0;
+async function pollForNewOrders() {
+  if (!sb) return;
+  try {
+    // Check drive_thru_orders
+    const {data: dto} = await sb.from('drive_thru_orders')
+      .select('id,status,created_at')
+      .in('status', ['incoming','preparing','ready'])
+      .order('created_at', {ascending: false})
+      .limit(50);
+
+    // Check POS orders from today
+    const today = new Date().toISOString().slice(0,10);
+    const {data: posData} = await sb.from('orders')
+      .select('id,order_number,created_at')
+      .gte('created_at', today + 'T00:00:00')
+      .order('created_at', {ascending: false})
+      .limit(50);
+
+    const totalActive = (dto||[]).length + (posData||[]).filter(o => !isDismissed('pos-'+o.id)).length;
+    
+    // If count changed, do a full reload
+    if (totalActive !== lastPollCount) {
+      lastPollCount = totalActive;
+      await loadOrders();
+      // Chime if there are new incoming orders we haven't seen
+      const newIncoming = orders.filter(o => o.status === 'incoming' && !seen.has(o.id));
+      if (newIncoming.length > 0) chime();
+    }
+  } catch(e) { console.warn('Poll error:', e); }
+}
+
 function subscribeRealtime() {
   // New orders
   sb.channel('kitchen-new')
