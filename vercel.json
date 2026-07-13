@@ -1,27 +1,15 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "index.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "customer-app.html",
-      "use": "@vercel/static"
-    }
-  ],
   "routes": [
-    {
-      "src": "/customer-app",
-      "dest": "/customer-app.html"
-    },
-    {
-      "src": "/order",
-      "dest": "/customer-app.html"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
+    { "src": "/kitchen", "dest": "/kitchen.html" },
+    { "src": "/kitchen.html", "dest": "/kitchen.html" },
+    { "src": "/queue", "dest": "/queue.html" },
+    { "src": "/queue.html", "dest": "/queue.html" },
+    { "src": "/calculator", "dest": "/calculator.html" },
+    { "src": "/calculator.html", "dest": "/calculator.html" },
+    { "src": "/customer-app", "dest": "/customer-app.html" },
+    { "src": "/customer-app.html", "dest": "/customer-app.html" },
+    { "src": "/order", "dest": "/customer-app.html" },
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
