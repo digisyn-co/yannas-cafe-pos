@@ -1813,9 +1813,9 @@ const RECIPE={
   4:{robusta:19,eggs:1,condensed:20,sugar:5,water:150,cup_hot:1,lid:1},                                // Egg Coffee (Hot)
   5:{robusta:19,condensed:35,water:150,cup_hot:1,lid:1},                                                // Vietnamese Milk Coffee
   // ── MATCHA ──
-  6:{matcha:2,fresh_milk:210,sugar:8,ice:120,cup_cold:1,lid:1,straw:1},                                // Matcha Latte
-  7:{matcha:2,heavy_cream:30,fresh_milk:40,sea_salt:1,condensed:3,ice:120,cup_cold:1,lid:1,straw:1},   // Salt Matcha
-  8:{matcha:2,eggs:1,condensed:30,heavy_cream:50,sugar:5,ice:100,cup_cold:1,lid:1,straw:1},            // Egg Custard Matcha
+  6:{matcha:2,fresh_milk:180,sugar:5,ice:150,cup_cold:1,lid:1,straw:1},                                // Matcha Latte (16oz cold only)
+  7:{matcha:2,heavy_cream:30,fresh_milk:130,sea_salt:1,condensed:3,ice:150,cup_cold:1,lid:1,straw:1},   // Salt Matcha (16oz cold only)
+  8:{matcha:2,eggs:1,condensed:25,heavy_cream:40,sugar:5,ice:150,cup_cold:1,lid:1,straw:1},            // Egg Custard Matcha (16oz cold only)
   // ── TEA ──
   9:{jasmine_tea:2,water:200,fruit_syrup:30,sugar:10,ice:150,cup_cold:1,lid:1,straw:1},                // Fruit Tea
   // ── SANDWICHES ──
@@ -1840,7 +1840,8 @@ function reqMap(items){
   const need={};const add=(id,a)=>{if(!a)return;need[id]=(need[id]||0)+a;};
   items.forEach(o=>{
     const r=RECIPE[o.id]; if(r) for(const ing in r) add(ing,r[ing]*o.qty);
-    if(o.cat==='Coffee'||o.cat==='Matcha') add(o.temp==='hot'?'hot_cups':'cold_cups_16',o.qty);
+    if(o.cat==='Coffee') add(o.temp==='hot'?'hot_cups':'cold_cups_16',o.qty);
+    if(o.cat==='Matcha') add('cold_cups_16',o.qty); // matcha is cold-only 16oz
     else if(o.cat==='Tea') add('cold_cups_22',o.qty);
     if(o.cat==='Food') add('paper_bags',o.qty);
   });
@@ -1865,7 +1866,8 @@ async function deductInventory(items){
     const r=RECIPE[o.id];
     if(r){for(const ing in r) adj(ing, r[ing]*o.qty);}
     // cups & packaging
-    if(o.cat==='Coffee'||o.cat==='Matcha') adj(o.temp==='hot'?'hot_cups':'cold_cups_16',o.qty);
+    if(o.cat==='Coffee') adj(o.temp==='hot'?'hot_cups':'cold_cups_16',o.qty);
+    if(o.cat==='Matcha') adj('cold_cups_16',o.qty);
     else if(o.cat==='Tea') adj('cold_cups_22',o.qty);
     if(o.cat==='Food') adj('paper_bags',o.qty);
   });
