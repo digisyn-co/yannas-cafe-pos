@@ -34,6 +34,7 @@ h1{font-family:'Playfair Display',serif;font-size:clamp(28px,5vw,36px);font-weig
 /* Accordion card */
 .card{background:var(--surface);border-radius:14px;border:1px solid var(--border);margin-bottom:10px;overflow:hidden;transition:.2s}
 .card.open{box-shadow:0 4px 20px rgba(0,0,0,0.06)}
+.card.is-batch{border-left:4px solid var(--gold)}
 .card-head{display:flex;align-items:center;gap:12px;padding:16px 20px;cursor:pointer;user-select:none;transition:.1s}
 .card-head:hover{background:var(--surface2)}
 .card-arrow{width:24px;height:24px;border-radius:6px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text3);flex-shrink:0;transition:.2s}
@@ -45,6 +46,9 @@ h1{font-family:'Playfair Display',serif;font-size:clamp(28px,5vw,36px);font-weig
 .tag-matcha{background:#E8F5E9;color:#2E7D32}
 .tag-tea{background:#E0F2F1;color:#00695C}
 .tag-food{background:#EDE7F6;color:#4527A0}
+.tag-batch{background:#FBF6EC;color:#8A6A1F}
+.tag-kids{background:#FCE4EC;color:#AD1457}
+.tag-refreshers{background:#FFF8E1;color:#B26A00}
 .card-price{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:var(--gold);flex-shrink:0;margin-left:6px}
 .card-body{display:none;border-top:1px solid var(--border)}
 .card.open .card-body{display:block}
@@ -100,291 +104,568 @@ h1{font-family:'Playfair Display',serif;font-size:clamp(28px,5vw,36px);font-weig
 <div class="header">
   <div class="badge"><span class="badge-dot"></span> Yanna's Vietnamese Coffee</div>
   <h1>📖 Recipe Book</h1>
-  <div class="sub">Per-order assembly recipes with scaling calculator. Tap any item to see ingredients and step-by-step instructions.</div>
+  <div class="sub">Batch prep and per-order assembly. Every amount is exact — no ranges. Tap any item for ingredients and step-by-step instructions. Use the slider to scale.</div>
 </div>
 
 <div class="cats" id="cats"></div>
 <div id="recipe-list"></div>
 
-<div class="footer">Yanna's Vietnamese Coffee · San Enrique, Iloilo · Recipe Book v2 — June 2026</div>
+<div class="footer">Yanna's Vietnamese Coffee · San Enrique, Iloilo · Recipe Book v3 — July 14, 2026</div>
 
 <script>
 const RECIPES = [
+  // ══════════ BATCH PREP ══════════
+  {
+    id:101, name:"Coffee Concentrate", cat:"Batch", price:"30 servings", star:false, batch:true,
+    ingredients:[
+      {name:"Trung Nguyen S ground coffee",unit:"g",amt:540},
+      {name:"Filtered water (93°C)",unit:"ml",amt:2560},
+    ],
+    steps:[
+      "Heat the water to <strong>93°C</strong>. Use a thermometer — above 94°C is bitter, below 92°C is weak.",
+      "Split across 2 phin filters: <strong>270g coffee + 1280ml water</strong> each. Tap the bed level.",
+      "<strong>BLOOM:</strong> pour 50ml water into each phin. Wait <strong>30 seconds</strong>. Do not skip this.",
+      "Pour the remaining 1230ml into each phin. Fit the lid.",
+      "Let it drip <strong>12 minutes</strong>. Do not press. Do not rush.",
+      "Combine both. Expected yield: <strong>1900ml</strong>.",
+      "Cool to room temp within 30 min. Bottle, label with date and time, refrigerate below 5°C.",
+    ],
+    notes:[
+      {type:"info",text:"Yield check — Under 1800ml: grind coarser. Over 2000ml: grind finer."},
+      {type:"warn",text:"Shelf life 48 hours. No label = discard."},
+    ]
+  },
+  {
+    id:102, name:"Egg Custard Cream", cat:"Batch", price:"30 servings", star:false, batch:true,
+    ingredients:[
+      {name:"Egg yolks (same-day fresh)",unit:"yolks",amt:18},
+      {name:"Condensed milk",unit:"ml",amt:540},
+      {name:"Alaska Crema heavy cream",unit:"ml",amt:900},
+      {name:"White sugar",unit:"g",amt:180},
+    ],
+    steps:[
+      "Separate <strong>18 egg yolks</strong>. Any shell or white ruins the texture — start over if it happens.",
+      "Whisk yolks + <strong>540ml condensed milk</strong> + <strong>180g sugar</strong> for <strong>3 minutes</strong>, until pale and thickened.",
+      "Add the <strong>900ml cream SLOWLY</strong> while whisking. Never dump it in — it will split.",
+      "Texture target: silky, slightly thick, pours off a spoon in a ribbon.",
+      "Transfer to a sealed container. Sit it in a bowl of ice during service.",
+      "Expected yield: <strong>1800ml</strong>.",
+    ],
+    notes:[
+      {type:"warn",text:"⚠ SAME DAY ONLY. Raw yolks. Discard every drop at close of shift. No exceptions."},
+      {type:"warn",text:"Never out of refrigeration more than 1 hour. Keep it on ice at the bar."},
+    ]
+  },
+  {
+    id:103, name:"Salt Cream Foam", cat:"Batch", price:"30 servings", star:false, batch:true,
+    ingredients:[
+      {name:"Alaska Crema heavy cream",unit:"ml",amt:1300},
+      {name:"Alaska Barista Milk",unit:"ml",amt:520},
+      {name:"Sea salt",unit:"g",amt:21},
+      {name:"Condensed milk",unit:"g",amt:104},
+    ],
+    steps:[
+      "Combine all four ingredients <strong>COLD</strong> in a clean pitcher.",
+      "Froth with a hand mixer until light and pourable. <strong>NOT stiff peaks.</strong>",
+      "Texture target: pour a little on a spoon — it should flow slowly, like melted ice cream.",
+      "Too stiff? Add 50ml milk and re-froth. Too thin? Froth 30 more seconds.",
+      "Refrigerate immediately. Label with the time made. Expected yield: <strong>1900ml</strong>.",
+    ],
+    notes:[{type:"warn",text:"Shelf life 24 hours. Re-froth briefly before each use — it settles in the fridge."}]
+  },
+  {
+    id:104, name:"Coconut Coffee Mix", cat:"Batch", price:"30 servings", star:false, batch:true,
+    ingredients:[
+      {name:"Coconut milk",unit:"ml",amt:1600},
+      {name:"Alaska Barista Milk",unit:"ml",amt:600},
+      {name:"Condensed milk",unit:"ml",amt:200},
+    ],
+    steps:[
+      "Whisk all three <strong>cold</strong> until completely smooth and uniform. No heat needed.",
+      "Pour into squeeze bottles for fast service.",
+      "Label and refrigerate. Expected yield: <strong>2400ml</strong>.",
+    ],
+    notes:[{type:"warn",text:"Shelf life 48 hours. SHAKE BEFORE EVERY USE — coconut cream separates in the bottle."}]
+  },
+  {
+    id:105, name:"Black Tea Base", cat:"Batch", price:"30 servings", star:true, batch:true,
+    ingredients:[
+      {name:"Ceylon or Assam black tea (loose leaf)",unit:"g",amt:81},
+      {name:"Filtered water (95°C)",unit:"ml",amt:4500},
+    ],
+    steps:[
+      "Heat the water to <strong>95°C</strong>. Use a thermometer.",
+      "<strong>Weigh 81g</strong> black tea on a digital scale. Add to the water.",
+      "Steep for <strong>exactly 5 minutes</strong>. SET A TIMER. Over-steeping makes it bitter and no amount of syrup fixes it.",
+      "<strong>Strain immediately</strong> at 5 minutes. Do not let the leaves sit.",
+      "Chill quickly — an ice bath is faster than the fridge.",
+      "Expected yield: <strong>4200ml</strong> (the leaves absorb some water).",
+      "Bottle, label with date and time, refrigerate below 5°C.",
+    ],
+    notes:[
+      {type:"info",text:"Café standard: 18g tea per 1L water at 95°C, exactly 5 minutes. At this ratio the tea survives being diluted by both ice and fruit syrup. A weaker brew disappears and the drink tastes like sugar water."},
+      {type:"info",text:"Reference only — Iced tea served straight: 11g/L at 93°C, 4 min. Milk tea: 23g/L at 95°C, 6 min."},
+      {type:"warn",text:"Shelf life 48 hours. Label the bottle."},
+    ]
+  },
+  {
+    id:106, name:"Simple Syrup", cat:"Batch", price:"~90 servings", star:false, batch:true,
+    ingredients:[
+      {name:"White sugar",unit:"g",amt:1000},
+      {name:"Filtered water",unit:"ml",amt:1000},
+    ],
+    steps:[
+      "Combine sugar and water in a pot.",
+      "Heat and stir until fully dissolved and clear. <strong>Do not boil.</strong>",
+      "Cool completely. Bottle. Label. Expected yield: <strong>1400ml</strong>.",
+    ],
+    notes:[{type:"warn",text:"Shelf life 14 days. If it goes cloudy or develops strands, discard and make a fresh batch."}]
+  },
+  {
+    id:107, name:"Jim's Mayo Butter", cat:"Batch", price:"~40 sandwiches", star:false, batch:true,
+    ingredients:[
+      {name:"Mayonnaise",unit:"ml",amt:240},
+      {name:"Butter (softened)",unit:"g",amt:160},
+      {name:"Salt",unit:"g",amt:2},
+      {name:"Calamansi juice",unit:"ml",amt:20},
+    ],
+    steps:["Whisk until completely smooth and uniform.","Store in a squeeze bottle, refrigerated."],
+    notes:[{type:"warn",text:"Shelf life 7 days. This is the signature flavour layer — do not substitute ingredients."}]
+  },
+  {
+    id:108, name:"Pickled Carrots & Onions", cat:"Batch", price:"~30 sandwiches", star:false, batch:true,
+    ingredients:[
+      {name:"Carrots (julienned)",unit:"g",amt:600},
+      {name:"Onions (julienned)",unit:"g",amt:300},
+      {name:"White vinegar",unit:"ml",amt:400},
+      {name:"White sugar",unit:"g",amt:120},
+      {name:"Salt",unit:"g",amt:8},
+    ],
+    steps:[
+      "Combine everything in a sealed jar.",
+      "Refrigerate <strong>overnight</strong> — prepare the night before so the flavour sets.",
+      "Target flavour: bright and tangy, <strong>not sour</strong>.",
+    ],
+    notes:[{type:"warn",text:"Shelf life 7 days sealed in the fridge."}]
+  },
+  {
+    id:109, name:"Crunchy Baked Rice", cat:"Batch", price:"30 servings", star:false, batch:true,
+    ingredients:[
+      {name:"Day-old cooked rice",unit:"g",amt:1500},
+    ],
+    steps:[
+      "Spread the rice on baking trays.",
+      "Bake at <strong>low heat</strong> until fully dried and crunchy all the way through.",
+      "<strong>Cool completely</strong> before storing — warm rice steams in the container and goes soft.",
+      "Store airtight <strong>AT ROOM TEMPERATURE</strong>.",
+    ],
+    notes:[{type:"warn",text:"⚠ NEVER refrigerate. Fridge moisture kills the crunch, which is the entire point. Shelf life 2 days at room temp."}]
+  },
+
+  // ══════════ COFFEE ══════════
   {
     id:1, name:"Traditional Black Coffee", cat:"Coffee", price:"Hot ₱105 / Cold ₱120", star:false,
     ingredients:[
-      {name:"Trung Nguyen S Concentrate",unit:"ml",amt:65},
-      {name:"Hot Water (or cold + ice)",unit:"ml",amt:275},
-      {name:"Sugar",unit:"g",amt:5},
-      {name:"Hot Cup (12oz) or Cold Cup",unit:"pc",amt:1},
-      {name:"Cup Lid",unit:"pc",amt:1},
+      {name:"Coffee concentrate",unit:"ml",amt:65},
+      {name:"Water (hot 275ml / cold 200ml)",unit:"ml",amt:275},
+      {name:"Ice — cold only",unit:"g",amt:200},
+      {name:"Cup + lid",unit:"set",amt:1},
     ],
     steps:[
-      "Pour <strong>60–70ml coffee concentrate</strong> into the cup.",
-      "<strong>Hot:</strong> Add 270–280ml hot water. Serve with condensed milk on the side (optional).",
-      "<strong>Cold:</strong> Fill 70% ice, add 200ml cold water, stir once, seal, serve.",
+      "<strong>HOT (12oz):</strong> Pour <strong>65ml concentrate</strong> into the cup. Add <strong>275ml hot water</strong>. Offer condensed milk on the side.",
+      "<strong>COLD (16oz):</strong> Fill the cup <strong>70% with ice (200g)</strong>. Add <strong>65ml concentrate</strong> and <strong>200ml cold water</strong>. Stir once, seal, serve.",
     ],
     notes:[]
   },
   {
     id:5, name:"Vietnamese Milk Coffee", cat:"Coffee", price:"Hot ₱115 / Cold ₱130", star:false,
     ingredients:[
-      {name:"Condensed Milk",unit:"g",amt:37},
-      {name:"Trung Nguyen S Concentrate",unit:"ml",amt:60},
-      {name:"Hot Water (or ice)",unit:"ml",amt:150},
-      {name:"Cup",unit:"pc",amt:1},
-      {name:"Cup Lid",unit:"pc",amt:1},
+      {name:"Condensed milk",unit:"ml",amt:37},
+      {name:"Coffee concentrate",unit:"ml",amt:60},
+      {name:"Hot water — hot only",unit:"ml",amt:150},
+      {name:"Ice — cold only",unit:"g",amt:200},
+      {name:"Cup + lid",unit:"set",amt:1},
     ],
     steps:[
-      "Add <strong>35–40ml condensed milk</strong> to the bottom of the cup.",
-      "Pour <strong>60ml concentrate</strong> over it — do not stir yet.",
-      "<strong>Hot:</strong> Serve layered — customer stirs before drinking.",
-      "<strong>Cold:</strong> Fill 70% ice, pour concentrate over ice, stir and serve.",
+      "Put <strong>37ml condensed milk</strong> in the bottom of the cup.",
+      "<strong>HOT (12oz):</strong> Pour <strong>60ml concentrate</strong> over it, then <strong>150ml hot water</strong>. Serve layered — the customer stirs it.",
+      "<strong>COLD (16oz):</strong> Fill <strong>70% ice (200g)</strong>. Pour <strong>60ml concentrate</strong> over the ice. Stir and serve.",
     ],
     notes:[]
   },
   {
-    id:2, name:"Salted Cream Coffee", cat:"Coffee", price:"Cold ₱160", star:true,
+    id:2, name:"Salted Cream Coffee", cat:"Coffee", price:"₱160 (16oz Cold)", star:true,
     ingredients:[
-      {name:"Trung Nguyen S Concentrate",unit:"ml",amt:60},
-      {name:"Salt Cream Foam (batch A.2)",unit:"ml",amt:80},
+      {name:"Coffee concentrate",unit:"ml",amt:60},
+      {name:"Salt cream foam (Batch)",unit:"ml",amt:60},
       {name:"Ice",unit:"g",amt:200},
-      {name:"Cold Cup (16oz)",unit:"pc",amt:1},
-      {name:"Cup Lid + Straw",unit:"pc",amt:1},
+      {name:"Cold cup + lid + straw",unit:"set",amt:1},
     ],
     steps:[
-      "Add <strong>60ml concentrate</strong> to the cup.",
-      "Fill <strong>70% ice</strong>.",
-      "Pour <strong>60–80ml salt cream foam</strong> on top — pour slowly over a spoon for clean layers.",
-      "<strong>Do NOT stir.</strong> Serve immediately. The customer sips through the cream.",
+      "Pour <strong>60ml concentrate</strong> into the cup.",
+      "Fill <strong>70% with ice (200g)</strong>.",
+      "Pour <strong>60ml salt cream</strong> slowly over the back of a spoon so it layers cleanly.",
+      "<strong>DO NOT STIR.</strong> Serve immediately — the customer drinks through the cream.",
     ],
-    notes:[{type:"info",text:"Salt cream comes from batch prep A.2. Re-froth briefly before each use."}]
+    notes:[{type:"info",text:"Re-froth the salt cream briefly before pouring. It settles in the fridge."}]
   },
   {
-    id:3, name:"Coconut Coffee", cat:"Coffee", price:"Cold ₱175", star:true,
+    id:3, name:"Coconut Coffee", cat:"Coffee", price:"₱175 (16oz Cold)", star:true,
     ingredients:[
-      {name:"Trung Nguyen S Concentrate",unit:"ml",amt:60},
-      {name:"Coconut Coffee Mix (batch A.3)",unit:"ml",amt:80},
+      {name:"Coffee concentrate",unit:"ml",amt:60},
+      {name:"Coconut coffee mix (Batch)",unit:"ml",amt:80},
       {name:"Ice",unit:"g",amt:200},
-      {name:"Cold Cup (16oz)",unit:"pc",amt:1},
-      {name:"Cup Lid + Straw",unit:"pc",amt:1},
+      {name:"Cold cup + lid + straw",unit:"set",amt:1},
     ],
     steps:[
-      "Add <strong>60ml concentrate</strong> to the cup.",
-      "Add <strong>80ml coconut mix</strong> (shake bottle before pouring).",
-      "Fill <strong>70% ice</strong>. Stir and serve.",
+      "<strong>Shake the coconut mix bottle</strong> before pouring.",
+      "Pour <strong>60ml concentrate</strong> and <strong>80ml coconut mix</strong> into the cup.",
+      "Fill <strong>70% with ice (200g)</strong>. Stir and serve.",
     ],
-    notes:[{type:"info",text:"Coconut mix from batch A.3. Shake before every pour — coconut cream separates."}]
+    notes:[{type:"warn",text:"⚠ SHAKE THE BOTTLE every single time. The bottom of the bottle is not the same drink as the top."}]
   },
   {
     id:4, name:"Egg Coffee", cat:"Coffee", price:"Hot ₱170 / Cold ₱185", star:true,
     ingredients:[
-      {name:"Trung Nguyen S Concentrate",unit:"ml",amt:60},
-      {name:"Egg Custard Cream (batch A.4)",unit:"ml",amt:60},
-      {name:"Cup",unit:"pc",amt:1},
-      {name:"Cup Lid",unit:"pc",amt:1},
+      {name:"Coffee concentrate",unit:"ml",amt:60},
+      {name:"Egg custard cream (Batch)",unit:"ml",amt:60},
+      {name:"Ice — cold only",unit:"g",amt:170},
+      {name:"Matcha or cocoa dusting — cold only",unit:"g",amt:1},
+      {name:"Cup + lid",unit:"set",amt:1},
     ],
     steps:[
-      "<strong>Hot:</strong> Pour 60ml <strong>hot concentrate</strong> into cup. Spoon <strong>60ml egg custard cream</strong> on top. Do NOT stir — serve as layers.",
-      "<strong>Cold:</strong> Pour 60ml <strong>chilled concentrate</strong> into cup, fill 60% ice, dollop <strong>60ml egg custard</strong> on top.",
-      "Dust with <strong>matcha powder or cocoa powder</strong>.",
+      "<strong>HOT (12oz):</strong> Pour <strong>60ml hot concentrate</strong>. Spoon <strong>60ml egg custard</strong> on top. <strong>DO NOT STIR</strong> — serve as visible layers.",
+      "<strong>COLD (16oz):</strong> Pour <strong>60ml chilled concentrate</strong>. Fill <strong>60% ice (170g)</strong> — less than other drinks, the custard needs room. Dollop <strong>60ml egg custard</strong> on top.",
+      "Cold version: dust with <strong>1g matcha or cocoa powder</strong>.",
     ],
-    notes:[{type:"warn",text:"⚠ Egg custard is SAME DAY USE ONLY — made with raw yolks. Discard all leftovers at end of shift."}]
+    notes:[{type:"warn",text:"⚠ Egg custard is SAME DAY USE ONLY."}]
   },
+
+  // ══════════ MATCHA ══════════
   {
     id:6, name:"Matcha Latte", cat:"Matcha", price:"₱160 (16oz Cold)", star:true,
     ingredients:[
-      {name:"Matcha Powder",unit:"g",amt:2},
-      {name:"Hot Water (75-80°C)",unit:"ml",amt:60},
-      {name:"Arla Barista Milk",unit:"ml",amt:180},
+      {name:"Matcha powder",unit:"g",amt:2},
+      {name:"Water at 78°C",unit:"ml",amt:60},
+      {name:"Alaska Barista Milk (cold)",unit:"ml",amt:180},
       {name:"Ice",unit:"g",amt:150},
-      {name:"Cup",unit:"pc",amt:1},
-      {name:"Cup Lid",unit:"pc",amt:1},
+      {name:"Cold cup + lid + straw",unit:"set",amt:1},
     ],
     steps:[
-      "<strong>Sift 2g matcha</strong> into a bowl (sifting prevents lumps).",
-      "Add <strong>60ml hot water (75–80°C max)</strong> and whisk until smooth and frothy.",
-      "Fill cup <strong>70% ice</strong> + <strong>180ml cold Arla milk</strong>.",
-      "Pour matcha base over a spoon for <strong>clean green-white layers</strong>. Serve immediately.",
+      "<strong>Sift 2g matcha</strong> into a bowl. Sifting is what stops lumps — do not skip it.",
+      "Add <strong>60ml water at 78°C</strong>. Whisk until smooth and lightly frothy.",
+      "Cool the base <strong>2 minutes</strong> before it touches ice.",
+      "Fill the cup <strong>70% ice (150g)</strong>, add <strong>180ml cold milk</strong>.",
+      "Pour the matcha over the back of a spoon for clean green-on-white layers.",
     ],
-    notes:[{type:"warn",text:"⚠ Matcha water must NEVER exceed 80°C — higher temperatures burn the matcha and make it bitter."}]
+    notes:[{type:"warn",text:"⚠ MATCHA WATER MUST BE 78°C. Never above 80°C — it burns the matcha and cannot be fixed."}]
   },
   {
     id:7, name:"Salt Matcha", cat:"Matcha", price:"₱175 (16oz Cold)", star:true,
     ingredients:[
-      {name:"Matcha Powder",unit:"g",amt:2},
-      {name:"Hot Water (75-80°C)",unit:"ml",amt:60},
-      {name:"Arla Barista Milk",unit:"ml",amt:130},
-      {name:"Salt Cream Foam (batch A.2)",unit:"ml",amt:60},
+      {name:"Matcha powder",unit:"g",amt:2},
+      {name:"Water at 78°C",unit:"ml",amt:60},
+      {name:"Alaska Barista Milk (cold)",unit:"ml",amt:130},
+      {name:"Salt cream foam (Batch)",unit:"ml",amt:60},
       {name:"Ice",unit:"g",amt:150},
-      {name:"Cold Cup (16oz)",unit:"pc",amt:1},
+      {name:"Cold cup + lid + straw",unit:"set",amt:1},
     ],
     steps:[
-      "Sift and whisk <strong>2g matcha + 60ml hot water</strong>.",
-      "Fill cup <strong>70% ice</strong> + <strong>150ml cold Arla milk</strong>.",
-      "Pour matcha base over ice.",
-      "Top with <strong>80ml salt cream foam</strong>. Do NOT stir. Serve immediately.",
+      "Sift <strong>2g matcha</strong>, whisk with <strong>60ml water at 78°C</strong>. Cool 2 minutes.",
+      "Fill <strong>70% ice (150g)</strong>, add <strong>130ml cold milk</strong>.",
+      "Pour the matcha base over the ice.",
+      "Top with <strong>60ml salt cream foam</strong>. <strong>DO NOT STIR.</strong> Serve immediately.",
     ],
-    notes:[]
+    notes:[{type:"warn",text:"⚠ Matcha water never above 80°C."}]
   },
   {
     id:8, name:"Egg Custard Matcha", cat:"Matcha", price:"₱185 (16oz Cold)", star:true,
     ingredients:[
-      {name:"Matcha Powder",unit:"g",amt:2},
-      {name:"Hot Water (75-80°C)",unit:"ml",amt:60},
-      {name:"Arla Barista Milk",unit:"ml",amt:130},
-      {name:"Egg Custard Cream (batch A.4)",unit:"ml",amt:50},
+      {name:"Matcha powder",unit:"g",amt:2},
+      {name:"Water at 78°C",unit:"ml",amt:60},
+      {name:"Alaska Barista Milk (cold)",unit:"ml",amt:130},
+      {name:"Egg custard cream (Batch)",unit:"ml",amt:50},
       {name:"Ice",unit:"g",amt:150},
-      {name:"Cold Cup (16oz)",unit:"pc",amt:1},
+      {name:"Matcha powder for dusting",unit:"g",amt:1},
+      {name:"Cold cup + lid + straw",unit:"set",amt:1},
     ],
     steps:[
-      "Sift and whisk <strong>2g matcha + 60ml hot water</strong>.",
-      "Fill cup <strong>70% ice</strong> + <strong>130ml cold Arla milk</strong>.",
-      "Pour matcha base over ice.",
-      "Top with <strong>50ml egg custard cream</strong>.",
-      "Dust with <strong>matcha powder</strong>.",
+      "Sift <strong>2g matcha</strong>, whisk with <strong>60ml water at 78°C</strong>. Cool 2 minutes.",
+      "Fill <strong>70% ice (150g)</strong>, add <strong>130ml cold milk</strong>.",
+      "Pour the matcha base over the ice.",
+      "Top with <strong>50ml egg custard cream</strong>. Dust with <strong>1g matcha powder</strong>.",
     ],
-    notes:[{type:"warn",text:"⚠ Egg custard is SAME DAY USE ONLY."}]
+    notes:[
+      {type:"warn",text:"⚠ Matcha water never above 80°C."},
+      {type:"warn",text:"⚠ Egg custard is SAME DAY USE ONLY."},
+    ]
   },
+
+  // ══════════ TEA ══════════
   {
-    id:9, name:"Artisanal Fruit Tea", cat:"Tea", price:"₱110 (22oz)", star:false,
+    id:9, name:"Fruit Tea", cat:"Tea", price:"₱110 (22oz Cold)", star:false,
     ingredients:[
-      {name:"Brewed Tea Base",unit:"ml",amt:135},
-      {name:"Fruit Syrup / Purée",unit:"ml",amt:30},
-      {name:"Simple Syrup",unit:"ml",amt:12},
+      {name:"Black tea base (Batch)",unit:"ml",amt:135},
+      {name:"Fruit syrup — see flavour chart",unit:"ml",amt:30},
+      {name:"Simple syrup (Batch)",unit:"ml",amt:12},
       {name:"Ice",unit:"g",amt:200},
-      {name:"22oz Cup",unit:"pc",amt:1},
-      {name:"Cup Lid + Wide Straw",unit:"pc",amt:1},
+      {name:"22oz cup + lid + wide straw",unit:"set",amt:1},
     ],
     steps:[
-      "Fill cup <strong>70–80% ice first</strong>.",
-      "Pour <strong>120–150ml brewed tea base</strong> (jasmine, green, or black depending on flavor).",
-      "Add <strong>fruit syrup or purée</strong>: Lychee 25ml / Strawberry 35ml + lemon / Mango 40ml / Passion 30ml.",
-      "Add <strong>10–15ml simple syrup</strong>.",
-      "Garnish: lychee pieces / lemon slice / fruit bits on top.",
-      "<strong>Do NOT stir</strong> before serving — the color layers are the presentation.",
+      "Fill the cup <strong>75% with ice (200g) FIRST</strong>. Ice always goes in first for fruit teas.",
+      "Pour <strong>135ml tea base</strong>.",
+      "Add the fruit syrup — <strong>Lychee 25ml</strong> · <strong>Strawberry 35ml purée + 5ml lemon</strong> · <strong>Mango 40ml purée</strong> · <strong>Passion Fruit 30ml</strong>.",
+      "Add <strong>12ml simple syrup</strong>.",
+      "Garnish — Lychee: 3 lychee pieces. Strawberry: 1 lemon slice. Mango / Passion: small fruit pieces.",
+      "<strong>DO NOT STIR.</strong> The colour layers are the presentation. Serve with a wide straw.",
     ],
-    notes:[{type:"info",text:"Flavors vary by seasonal fruit availability. Assembly is identical — only syrup changes."}]
+    notes:[{type:"info",text:"Assembly is identical for every flavour — only the syrup changes. Available flavours vary with fruit availability."}]
   },
+
+  // ══════════ FOOD ══════════
   {
     id:13, name:"BBQ Pork Sandwich", cat:"Food", price:"₱170", star:false,
     ingredients:[
       {name:"Baguette",unit:"pc",amt:1},
-      {name:"BBQ Pork (pre-cooked, batch A.5)",unit:"g",amt:120},
-      {name:"Reno Liver Spread",unit:"g",amt:15},
-      {name:"Jim's Mayo Butter (batch A.6)",unit:"g",amt:15},
-      {name:"Pickled Carrots & Onions",unit:"g",amt:35},
-      {name:"Fresh Cucumber (4-5 slices)",unit:"g",amt:15},
-      {name:"Sandwich Box",unit:"pc",amt:1},
+      {name:"BBQ pork (pre-cooked)",unit:"g",amt:120},
+      {name:"Reno liver spread",unit:"g",amt:15},
+      {name:"Jim's mayo butter (Batch)",unit:"g",amt:15},
+      {name:"Pickled carrots & onions (Batch)",unit:"g",amt:35},
+      {name:"Fresh cucumber",unit:"slices",amt:5},
+      {name:"Sandwich box",unit:"pc",amt:1},
     ],
     steps:[
-      "Slice baguette horizontally — <strong>leave hinged</strong> like a book, don't cut all the way.",
-      "<strong>Toast</strong> both inner sides on flat grill until golden and crunchy, 1–2 min/side.",
+      "Slice the baguette horizontally <strong>WITHOUT cutting through</strong>. Leave it hinged like a book.",
+      "Toast both inner faces on the flat grill until golden and crunchy. <strong>90 seconds per side</strong>.",
       "Spread <strong>15g liver spread</strong> on the bottom half.",
-      "Spread <strong>15g Jim's mayo butter</strong> over the liver spread — the signature flavor layer.",
-      "Layer <strong>30–40g pickled carrots & onions</strong> generously.",
-      "Add <strong>4–5 slices fresh cucumber</strong> (3mm thick).",
-      "Add <strong>120g BBQ pork</strong> (5–6 slices, should be warm).",
-      "Close bread, press lightly. <strong>Serve immediately</strong> while meat is warm.",
+      "Spread <strong>15g Jim's mayo butter</strong> over the liver spread — the signature flavour layer.",
+      "Layer <strong>35g pickled carrots and onions</strong>. Be generous.",
+      "Add <strong>5 cucumber slices, 3mm thick</strong>.",
+      "Add <strong>120g BBQ pork</strong> (6 slices).",
+      "Close the bread, press lightly. Serve immediately while the meat is warm.",
     ],
-    notes:[{type:"speed",text:"⏱ Target: under 5 minutes. Speed comes from having meat pre-portioned."}]
+    notes:[
+      {type:"speed",text:"⏱ Target: under 5 minutes. Speed comes from having meat pre-portioned."},
+      {type:"info",text:"Add-ons — Farm-Fresh Egg +₱30 (1 egg) · Cheese +₱20 (1 slice) · Signature House Dip +₱40 (40g). Any spice level at no extra charge."},
+    ]
   },
   {
     id:14, name:"Chicken BBQ Sandwich", cat:"Food", price:"₱165", star:false,
     ingredients:[
       {name:"Baguette",unit:"pc",amt:1},
-      {name:"BBQ Chicken (pre-cooked)",unit:"g",amt:120},
-      {name:"Reno Liver Spread",unit:"g",amt:15},
-      {name:"Jim's Mayo Butter",unit:"g",amt:15},
-      {name:"Pickled Carrots & Onions",unit:"g",amt:35},
-      {name:"Fresh Cucumber",unit:"g",amt:15},
-      {name:"Sandwich Box",unit:"pc",amt:1},
+      {name:"BBQ chicken (pre-cooked)",unit:"g",amt:120},
+      {name:"Reno liver spread",unit:"g",amt:15},
+      {name:"Jim's mayo butter (Batch)",unit:"g",amt:15},
+      {name:"Pickled carrots & onions (Batch)",unit:"g",amt:35},
+      {name:"Fresh cucumber",unit:"slices",amt:5},
+      {name:"Sandwich box",unit:"pc",amt:1},
     ],
-    steps:[
-      "Same assembly as Pork Sandwich above.",
-      "Use <strong>120g BBQ chicken thigh</strong> (3–4 strips).",
-    ],
-    notes:[]
+    steps:["Same assembly as the Pork Sandwich.","Use <strong>120g BBQ chicken thigh</strong> (4 strips)."],
+    notes:[{type:"speed",text:"⏱ Target: under 5 minutes."}]
   },
   {
     id:15, name:"Beef BBQ Sandwich", cat:"Food", price:"₱180", star:false,
     ingredients:[
       {name:"Baguette",unit:"pc",amt:1},
-      {name:"BBQ Beef (pre-cooked)",unit:"g",amt:120},
-      {name:"Reno Liver Spread",unit:"g",amt:15},
-      {name:"Jim's Mayo Butter",unit:"g",amt:15},
-      {name:"Pickled Carrots & Onions",unit:"g",amt:35},
-      {name:"Fresh Cucumber",unit:"g",amt:15},
-      {name:"Sandwich Box",unit:"pc",amt:1},
+      {name:"BBQ beef (pre-cooked)",unit:"g",amt:120},
+      {name:"Reno liver spread",unit:"g",amt:15},
+      {name:"Jim's mayo butter (Batch)",unit:"g",amt:15},
+      {name:"Pickled carrots & onions (Batch)",unit:"g",amt:35},
+      {name:"Fresh cucumber",unit:"slices",amt:5},
+      {name:"Sandwich box",unit:"pc",amt:1},
     ],
-    steps:[
-      "Same assembly as Pork Sandwich above.",
-      "Use <strong>120g thin-sliced BBQ beef</strong>.",
-    ],
-    notes:[]
+    steps:["Same assembly as the Pork Sandwich.","Use <strong>120g thin-sliced BBQ beef</strong>."],
+    notes:[{type:"speed",text:"⏱ Target: under 5 minutes."}]
   },
   {
     id:19, name:"Pork Crunchy Egg Fried Rice", cat:"Food", price:"₱130", star:false,
     ingredients:[
-      {name:"Day-Old Cooked Rice",unit:"g",amt:250},
-      {name:"BBQ Pork (pre-cooked)",unit:"g",amt:120},
-      {name:"Eggs",unit:"pc",amt:2},
-      {name:"Onion (diced)",unit:"pc",amt:0.5},
-      {name:"Garlic (minced)",unit:"tsp",amt:1},
-      {name:"Pechay / Bok Choy",unit:"g",amt:30},
-      {name:"Julienned Carrots",unit:"g",amt:15},
-      {name:"Soy Sauce",unit:"ml",amt:15},
-      {name:"Cooking Oil",unit:"ml",amt:10},
-      {name:"Crunchy Baked Rice Topping",unit:"g",amt:50},
-      {name:"Rice Box / Container",unit:"pc",amt:1},
+      {name:"Day-old cooked rice",unit:"g",amt:250},
+      {name:"BBQ pork (pre-cooked)",unit:"g",amt:120},
+      {name:"Eggs",unit:"pcs",amt:2},
+      {name:"Onion (diced)",unit:"g",amt:60},
+      {name:"Garlic (minced)",unit:"g",amt:5},
+      {name:"Pechay (chopped)",unit:"g",amt:30},
+      {name:"Carrots (julienned)",unit:"g",amt:15},
+      {name:"Soy sauce",unit:"ml",amt:15},
+      {name:"Cooking oil",unit:"ml",amt:10},
+      {name:"Crunchy baked rice (Batch)",unit:"g",amt:50},
+      {name:"Rice box",unit:"pc",amt:1},
     ],
     steps:[
-      "Heat wok to <strong>MAXIMUM</strong>. Add 10ml oil. Wait until shimmering, almost smoking.",
-      "Beat <strong>2 eggs</strong> with a pinch of salt. Pour in, <strong>scramble quickly</strong> until just set (~30 sec). Push to side.",
-      "Sauté <strong>½ diced onion + 1 tsp garlic</strong> for 10–15 seconds only — do not burn.",
-      "Add <strong>250g day-old rice</strong>. Spread flat, <strong>let sit 30 seconds untouched</strong> (creates the crust), then toss.",
-      "Add <strong>pechay + carrots</strong>. Toss until pechay wilts, ~1 minute.",
-      "Drizzle <strong>15ml soy sauce along the EDGE of the wok</strong> (not on the rice) — the heat caramelizes it. Toss.",
-      "Add <strong>120g pre-cooked BBQ pork</strong>. Toss until evenly distributed, ~1 minute.",
+      "Use <strong>250g DAY-OLD rice</strong>. Never fresh rice — it steams and turns to mush.",
+      "Beat <strong>2 eggs</strong> with a pinch of salt. Set aside.",
+      "Heat the wok to <strong>MAXIMUM</strong>. Add <strong>10ml oil</strong>. Wait until it shimmers, almost smoking.",
+      "Pour in the eggs. Scramble fast, <strong>30 seconds</strong>, until just set. Push to one side.",
+      "Sauté the <strong>diced onion + 5g garlic</strong> for <strong>15 seconds only</strong>. Do not burn it.",
+      "Add the <strong>250g rice</strong>. Spread flat. <strong>LET IT SIT 30 SECONDS UNTOUCHED</strong> — this makes the crust. Then toss.",
+      "Add <strong>30g pechay + 15g carrots</strong>. Toss <strong>1 minute</strong> until the pechay wilts.",
+      "Drizzle <strong>15ml soy sauce along the EDGE of the wok</strong> — not on the rice. The hot metal caramelizes it. Toss.",
+      "Add <strong>120g BBQ pork</strong>. Toss <strong>1 minute</strong> until heated through.",
       "Plate in a wide bowl. Top with <strong>50g crunchy baked rice</strong>. Garnish with spring onions.",
     ],
     notes:[
       {type:"warn",text:"⚠ THE WOK MUST BE SCREAMING HOT. Low heat = steamed rice, not fried rice."},
-      {type:"warn",text:"⚠ NEVER use freshly cooked rice — it steams and goes mushy. Day-old only."},
+      {type:"warn",text:"⚠ NEVER use freshly cooked rice. Day-old only."},
       {type:"speed",text:"⏱ Target: under 7 minutes."},
+      {type:"info",text:"Add-ons — Cured Beef Tapa +₱70 (60g) · Smoked Bacon +₱55 (50g) · Sweet Cured Tocino +₱55 (50g) · Egg +₱25 (1 egg)."},
     ]
   },
   {
     id:20, name:"Chicken Crunchy Egg Fried Rice", cat:"Food", price:"₱115", star:false,
     ingredients:[
-      {name:"Day-Old Cooked Rice",unit:"g",amt:250},
-      {name:"BBQ Chicken (pre-cooked)",unit:"g",amt:120},
-      {name:"Eggs",unit:"pc",amt:2},
-      {name:"Onion, Garlic, Pechay, Carrots",unit:"set",amt:1},
-      {name:"Soy Sauce + Oil",unit:"set",amt:1},
-      {name:"Crunchy Baked Rice Topping",unit:"g",amt:50},
-      {name:"Rice Box",unit:"pc",amt:1},
+      {name:"Day-old cooked rice",unit:"g",amt:250},
+      {name:"BBQ chicken (pre-cooked)",unit:"g",amt:120},
+      {name:"Eggs",unit:"pcs",amt:2},
+      {name:"Onion, garlic, pechay, carrots",unit:"set",amt:1},
+      {name:"Soy sauce",unit:"ml",amt:15},
+      {name:"Cooking oil",unit:"ml",amt:10},
+      {name:"Crunchy baked rice (Batch)",unit:"g",amt:50},
+      {name:"Rice box",unit:"pc",amt:1},
     ],
-    steps:["Same wok method as Pork Fried Rice. Use <strong>120g BBQ chicken</strong> instead."],
-    notes:[]
+    steps:["Same wok method as the Pork Fried Rice. Use <strong>120g BBQ chicken</strong>."],
+    notes:[{type:"warn",text:"⚠ Wok on maximum. Day-old rice only."},{type:"speed",text:"⏱ Target: under 7 minutes."}]
   },
   {
     id:21, name:"Beef Crunchy Egg Fried Rice", cat:"Food", price:"₱145", star:false,
     ingredients:[
-      {name:"Day-Old Cooked Rice",unit:"g",amt:250},
-      {name:"BBQ Beef (pre-cooked)",unit:"g",amt:120},
-      {name:"Eggs",unit:"pc",amt:2},
-      {name:"Onion, Garlic, Pechay, Carrots",unit:"set",amt:1},
-      {name:"Soy Sauce + Oil",unit:"set",amt:1},
-      {name:"Crunchy Baked Rice Topping",unit:"g",amt:50},
-      {name:"Rice Box",unit:"pc",amt:1},
+      {name:"Day-old cooked rice",unit:"g",amt:250},
+      {name:"BBQ beef (pre-cooked)",unit:"g",amt:120},
+      {name:"Eggs",unit:"pcs",amt:2},
+      {name:"Onion, garlic, pechay, carrots",unit:"set",amt:1},
+      {name:"Soy sauce",unit:"ml",amt:15},
+      {name:"Cooking oil",unit:"ml",amt:10},
+      {name:"Crunchy baked rice (Batch)",unit:"g",amt:50},
+      {name:"Rice box",unit:"pc",amt:1},
     ],
-    steps:["Same wok method as Pork Fried Rice. Use <strong>120g BBQ beef</strong> instead."],
+    steps:["Same wok method as the Pork Fried Rice. Use <strong>120g BBQ beef</strong>."],
+    notes:[{type:"warn",text:"⚠ Wok on maximum. Day-old rice only."},{type:"speed",text:"⏱ Target: under 7 minutes."}]
+  },
+
+  // ══════════ KIDS ══════════
+  {
+    id:29, name:"Mini Chicken Fried Rice", cat:"Kids", price:"₱89", star:false,
+    ingredients:[
+      {name:"Day-old cooked rice",unit:"g",amt:150},
+      {name:"BBQ chicken (pre-cooked)",unit:"g",amt:80},
+      {name:"Egg",unit:"pc",amt:1},
+      {name:"Onion (diced)",unit:"g",amt:30},
+      {name:"Garlic (minced)",unit:"g",amt:3},
+      {name:"Pechay (chopped)",unit:"g",amt:15},
+      {name:"Soy sauce",unit:"ml",amt:8},
+      {name:"Cooking oil",unit:"ml",amt:8},
+      {name:"Crunchy baked rice (Batch)",unit:"g",amt:30},
+    ],
+    steps:[
+      "Same wok method as the full-size fried rice — just smaller portions.",
+      "<strong>Season lightly.</strong> This is for children.",
+      "Top with <strong>30g crunchy baked rice</strong>.",
+    ],
+    notes:[{type:"info",text:"Kid-sized portion. Same crispy technique, gentler seasoning."}]
+  },
+  {
+    id:30, name:"Mini Pork Fried Rice", cat:"Kids", price:"₱95", star:false,
+    ingredients:[
+      {name:"Day-old cooked rice",unit:"g",amt:150},
+      {name:"BBQ pork (pre-cooked)",unit:"g",amt:80},
+      {name:"Egg",unit:"pc",amt:1},
+      {name:"Onion (diced)",unit:"g",amt:30},
+      {name:"Garlic (minced)",unit:"g",amt:3},
+      {name:"Pechay (chopped)",unit:"g",amt:15},
+      {name:"Soy sauce",unit:"ml",amt:8},
+      {name:"Cooking oil",unit:"ml",amt:8},
+      {name:"Crunchy baked rice (Batch)",unit:"g",amt:30},
+    ],
+    steps:[
+      "Same wok method as the full-size fried rice — just smaller portions.",
+      "<strong>Season lightly.</strong> This is for children.",
+      "Top with <strong>30g crunchy baked rice</strong>.",
+    ],
+    notes:[{type:"info",text:"Kid-sized portion. Same crispy technique, gentler seasoning."}]
+  },
+  {
+    id:31, name:"Chicken Bites & Rice", cat:"Kids", price:"₱99", star:true,
+    ingredients:[
+      {name:"Chicken (bite pieces)",unit:"g",amt:100},
+      {name:"Steamed rice",unit:"g",amt:150},
+      {name:"Cooking oil (for frying)",unit:"ml",amt:15},
+      {name:"Ketchup (on the side)",unit:"g",amt:20},
+    ],
+    steps:[
+      "Cut the chicken into <strong>bite-sized pieces</strong>.",
+      "Fry until <strong>golden and crispy</strong>.",
+      "Serve with <strong>150g fluffy steamed rice</strong> and <strong>20g ketchup on the side</strong>.",
+    ],
     notes:[]
+  },
+  {
+    id:32, name:"Chocolate Banana Toast", cat:"Kids", price:"₱85", star:false,
+    ingredients:[
+      {name:"Sliced bread",unit:"slices",amt:2},
+      {name:"Banana (sliced)",unit:"pc",amt:1},
+      {name:"Chocolate syrup",unit:"ml",amt:20},
+      {name:"Butter",unit:"g",amt:5},
+    ],
+    steps:[
+      "Butter the bread with <strong>5g butter</strong> and toast until warm and golden.",
+      "Top with <strong>1 sliced banana</strong>.",
+      "Drizzle <strong>20ml chocolate syrup</strong> over it.",
+    ],
+    notes:[]
+  },
+
+  // ══════════ REFRESHERS ══════════
+  {
+    id:33, name:"Fresh Apple", cat:"Refreshers", price:"₱95", star:false,
+    ingredients:[
+      {name:"Fresh apple (cored, chopped)",unit:"g",amt:150},
+      {name:"Cold water",unit:"ml",amt:100},
+      {name:"Simple syrup (Batch)",unit:"ml",amt:10},
+      {name:"Ice",unit:"g",amt:150},
+      {name:"Cold cup + lid + straw",unit:"set",amt:1},
+    ],
+    steps:[
+      "Blend <strong>150g apple + 100ml cold water + 10ml simple syrup</strong> until completely smooth.",
+      "Fill the cup with <strong>150g ice</strong>.",
+      "Pour the blended fruit over the ice. Serve immediately.",
+    ],
+    notes:[{type:"info",text:"Naturally caffeine-free. Use ripe fruit only — underripe fruit needs extra sugar and then it just tastes like sugar."}]
+  },
+  {
+    id:34, name:"Fresh Pineapple", cat:"Refreshers", price:"₱95", star:false,
+    ingredients:[
+      {name:"Fresh pineapple (chopped)",unit:"g",amt:150},
+      {name:"Cold water",unit:"ml",amt:100},
+      {name:"Simple syrup (Batch)",unit:"ml",amt:10},
+      {name:"Ice",unit:"g",amt:150},
+      {name:"Cold cup + lid + straw",unit:"set",amt:1},
+    ],
+    steps:[
+      "Blend <strong>150g pineapple + 100ml cold water + 10ml simple syrup</strong> until completely smooth.",
+      "Fill the cup with <strong>150g ice</strong>.",
+      "Pour the blended fruit over the ice. Serve immediately.",
+    ],
+    notes:[{type:"info",text:"Naturally caffeine-free. Use ripe fruit only."}]
+  },
+  {
+    id:35, name:"Fresh Mango", cat:"Refreshers", price:"₱105", star:true,
+    ingredients:[
+      {name:"Ripe Philippine mango (chopped)",unit:"g",amt:150},
+      {name:"Cold water",unit:"ml",amt:80},
+      {name:"Simple syrup (Batch)",unit:"ml",amt:10},
+      {name:"Ice",unit:"g",amt:150},
+      {name:"Cold cup + lid + straw",unit:"set",amt:1},
+    ],
+    steps:[
+      "Blend <strong>150g ripe mango + 80ml cold water + 10ml simple syrup</strong> until completely smooth.",
+      "Fill the cup with <strong>150g ice</strong>.",
+      "Pour the blended fruit over the ice. Serve immediately.",
+    ],
+    notes:[{type:"info",text:"Naturally caffeine-free. Ripe Philippine mangoes only — the whole point of the drink."}]
   },
 ];
 
-const CATS=['All','Coffee','Matcha','Tea','Food'];
+const CATS=['All','Batch','Coffee','Matcha','Tea','Food','Kids','Refreshers'];
 let filter='All', openId=null;
 
 function render(){
@@ -433,7 +714,7 @@ function render(){
       }
     }
 
-    return '<div class="card'+(isOpen?' open':'')+'" id="card-'+r.id+'">'+
+    return '<div class="card'+(isOpen?' open':'')+(r.batch?' is-batch':'')+'" id="card-'+r.id+'">'+
       '<div class="card-head" onclick="toggle('+r.id+')">'+
         '<div class="card-arrow">›</div>'+
         '<div class="card-name">'+r.name+star+'</div>'+
