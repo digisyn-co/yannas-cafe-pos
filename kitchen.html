@@ -257,6 +257,7 @@ window.addEventListener('load', () => {
   }
   tickClock();
   setInterval(tickClock, 1000);
+  setInterval(loadOrders, 30000); // refresh orders every 30s
   setInterval(render, 30000); // refresh elapsed times
 });
 
@@ -268,14 +269,43 @@ function tickClock() {
 // ── Load active orders ──
 async function loadOrders() {
   try {
-    // Load both POS orders and drive-thru orders
+    // Load drive-thru orders (online)
     const {data: dto, error: e1} = await sb.from('drive_thru_orders')
       .select('*')
       .in('status', ['incoming','preparing','ready'])
       .order('created_at', {ascending: true});
 
-    if (e1) { console.warn('Load drive_thru error:', e1); return; }
-    orders = (dto || []).map(o => ({...o, source: 'drive_thru'}));
+    if (e1) console.warn('Load drive_thru error:', e1);
+    const driveThru = (dto || []).map(o => ({...o, source: 'drive_thru'}));
+
+    // Load POS orders from today (dine-in)
+    const today = new Date().toISOString().slice(0,10);
+    let posOrders = [];
+    try {
+      const {data: posData, error: e2} = await sb.from('orders')
+        .select('*')
+        .gte('created_at', today + 'T00:00:00')
+        .order('created_at', {ascending: true});
+
+      if (!e2 && posData) {
+        posOrders = posData
+          .filter(o => !o.status || o.status === 'incoming' || o.status === 'preparing' || o.status === 'ready')
+          .map(o => ({
+            id: 'pos-' + o.id,
+            _real_id: o.id,
+            order_number: o.order_number,
+            customer_name: o.cashier_name || 'Dine-in',
+            items: o.items,
+            total: o.total,
+            status: o.status || 'incoming',
+            created_at: o.created_at,
+            source: 'pos',
+            payment_method: o.payment_method
+          }));
+      }
+    } catch(e) { console.warn('POS orders load (may not have status column):', e); }
+
+    orders = [...driveThru, ...posOrders];
     render();
   } catch(e) { console.error('loadOrders:', e); }
 }
@@ -309,19 +339,34 @@ function subscribeRealtime() {
   sb.channel('kitchen-pos')
     .on('postgres_changes', {event:'INSERT', schema:'public', table:'orders'}, payload => {
       const o = payload.new;
-      if (!orders.find(x => x.id === o.id)) {
+      const posId = 'pos-' + o.id;
+      if (!orders.find(x => x.id === posId)) {
         orders.push({
-          id: o.id,
+          id: posId,
+          _real_id: o.id,
           order_number: o.order_number,
           customer_name: o.cashier_name || 'Dine-in',
           items: o.items,
           total: o.total,
-          status: 'incoming',
+          status: o.status || 'incoming',
           created_at: o.created_at,
           source: 'pos',
           payment_method: o.payment_method
         });
         chime();
+      }
+      render();
+    }).subscribe();
+
+  // Listen for POS order updates (status changes from kitchen)
+  sb.channel('kitchen-pos-upd')
+    .on('postgres_changes', {event:'UPDATE', schema:'public', table:'orders'}, payload => {
+      const d = payload.new;
+      const posId = 'pos-' + d.id;
+      const idx = orders.findIndex(x => x.id === posId);
+      if (idx >= 0) {
+        orders[idx] = {...orders[idx], ...d, id: posId, _real_id: d.id, source: 'pos'};
+        if (d.status === 'picked_up' || d.status === 'completed') orders.splice(idx, 1);
       }
       render();
     }).subscribe();
@@ -418,10 +463,16 @@ async function updateStatus(id, newStatus) {
     const order = orders.find(o => o.id === id);
     if (!order) return;
 
-    const table = order.source === 'pos' ? 'orders' : 'drive_thru_orders';
-
-    if (table === 'drive_thru_orders') {
-      await sb.from(table).update({status: newStatus}).eq('id', id);
+    if (order.source === 'pos') {
+      // POS orders — update 'orders' table using real DB id
+      try {
+        await sb.from('orders').update({status: newStatus}).eq('id', order._real_id || order.id);
+      } catch(e) {
+        console.warn('Could not update POS order status (column may not exist):', e);
+      }
+    } else {
+      // Drive-thru orders
+      await sb.from('drive_thru_orders').update({status: newStatus}).eq('id', id);
     }
 
     // Update local state immediately
