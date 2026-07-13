@@ -1956,7 +1956,7 @@ async function renderOrders(){
         <span class="log-id">${o.id}</span>
         <span class="log-time">${o.time}${o.order_type?' · '+o.order_type:''}</span>
       </div>
-      <div class="log-items-text">${o.items.map(i=>`${i.qty}× ${i.name}${i.note?' ('+i.note+')':''}`).join(' · ')}</div>
+      <div class="log-items-text">${o.items.map(i=>`<div style="padding:2px 0">• ${i.qty}× ${i.name}${i.note?' ('+i.note+')':''}</div>`).join('')}</div>
       <div class="log-foot">
         <span class="log-total" style="${o.voided?'text-decoration:line-through':''}">₱${o.total}</span>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
