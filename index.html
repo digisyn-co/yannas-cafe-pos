@@ -624,55 +624,74 @@ const MENU=[
 // until an owner decision is made (see handoff notes).
 
 const INIT_INV=[
-  {id:'robusta',name:"Trung Nguyen S",unit:"g",stock:0,max:999999,cat:"Coffee"},
-  {id:'condensed',name:"Condensed Milk",unit:"g",stock:0,max:999999,cat:"Coffee"},
-  {id:'fresh_milk',name:"Fresh Milk",unit:"ml",stock:0,max:999999,cat:"Coffee"},
-  {id:'heavy_cream',name:"Heavy Cream",unit:"ml",stock:0,max:999999,cat:"Coffee"},
-  {id:'coconut_cream',name:"Coconut Cream",unit:"ml",stock:0,max:999999,cat:"Coffee"},
-  {id:'eggs',name:"Eggs",unit:"pcs",stock:0,max:999999,cat:"Coffee"},
-  {id:'sea_salt',name:"Sea Salt",unit:"g",stock:0,max:999999,cat:"Coffee"},
-  {id:'jasmine_tea',name:"Jasmine Tea",unit:"g",stock:0,max:999999,cat:"Tea & Matcha"},
-  {id:'black_tea',name:"Black Tea",unit:"g",stock:0,max:999999,cat:"Tea & Matcha"},
-  {id:'matcha',name:"Matcha Powder",unit:"g",stock:0,max:999999,cat:"Tea & Matcha"},
-  {id:'lychee_syrup',name:"Lychee Syrup",unit:"ml",stock:0,max:999999,cat:"Tea & Matcha"},
-  {id:'strawberry',name:"Strawberry Puree",unit:"ml",stock:0,max:999999,cat:"Tea & Matcha"},
-  {id:'mango',name:"Mango Puree",unit:"ml",stock:0,max:999999,cat:"Tea & Matcha"},
-  {id:'passion',name:"Passion Fruit Syrup",unit:"ml",stock:0,max:999999,cat:"Tea & Matcha"},
-  {id:'baguette',name:"Baguette / Loaf",unit:"pcs",stock:0,max:999999,cat:"Food"},
-  {id:'pork',name:"Pork Shoulder",unit:"g",stock:0,max:999999,cat:"Food"},
-  {id:'chicken',name:"Chicken Thigh",unit:"g",stock:0,max:999999,cat:"Food"},
-  {id:'beef',name:"Beef Sirloin",unit:"g",stock:0,max:999999,cat:"Food"},
-  {id:'liver_spread',name:"Liver Spread",unit:"pcs",stock:0,max:999999,cat:"Food"},
-  {id:'cucumber',name:"Cucumber",unit:"pcs",stock:0,max:999999,cat:"Vegetables"},
-  {id:'tomatoes',name:"Tomatoes",unit:"pcs",stock:0,max:999999,cat:"Vegetables"},
-  {id:'lettuce',name:"Lettuce",unit:"pcs",stock:0,max:999999,cat:"Vegetables"},
-  {id:'onions',name:"Onions",unit:"pcs",stock:0,max:999999,cat:"Vegetables"},
-  {id:'carrots',name:"Carrots",unit:"pcs",stock:0,max:999999,cat:"Vegetables"},
-  {id:'pickled_carrots',name:"Pickled Carrots",unit:"g",stock:0,max:999999,cat:"Vegetables"},
-  {id:'pickled_onions',name:"Pickled Onions",unit:"g",stock:0,max:999999,cat:"Vegetables"},
-{id:'bacon',name:"Smoked Bacon",unit:"g",stock:0,max:999999,cat:"Food"},
-{id:'tocino',name:"Sweet Cured Tocino",unit:"g",stock:0,max:999999,cat:"Food"},
-{id:'tapa',name:"Cured Beef Tapa",unit:"g",stock:0,max:999999,cat:"Food"},
-{id:'cheese',name:"Cheese Slices",unit:"pcs",stock:0,max:999999,cat:"Food"},
-{id:'house_dip',name:"Signature House Dip",unit:"g",stock:0,max:999999,cat:"Food"},
-{id:'water',name:"Filtered Water",unit:"ml",stock:0,max:999999,cat:"Supplies"},
-{id:'ice',name:"Ice",unit:"g",stock:0,max:999999,cat:"Supplies"},
-{id:'cup_hot',name:"Hot Cup (12oz)",unit:"pcs",stock:0,max:999999,cat:"Supplies"},
-{id:'cup_cold',name:"Cold Cup (16oz)",unit:"pcs",stock:0,max:999999,cat:"Supplies"},
-{id:'lid',name:"Cup Lid",unit:"pcs",stock:0,max:999999,cat:"Supplies"},
-{id:'straw',name:"Straw",unit:"pcs",stock:0,max:999999,cat:"Supplies"},
-{id:'paper_bag',name:"Paper Bag",unit:"pcs",stock:0,max:999999,cat:"Supplies"},
-{id:'rice',name:"Steamed Rice",unit:"g",stock:0,max:999999,cat:"Food"},
-{id:'cooking_oil',name:"Cooking Oil",unit:"ml",stock:0,max:999999,cat:"Supplies"},
-{id:'garlic',name:"Garlic",unit:"g",stock:0,max:999999,cat:"Vegetables"},
-{id:'soy_sauce',name:"Soy Sauce",unit:"ml",stock:0,max:999999,cat:"Supplies"},
-{id:'sugar',name:"Sugar",unit:"g",stock:0,max:999999,cat:"Supplies"},
-{id:'pechay',name:"Pechay (Bok Choy)",unit:"g",stock:0,max:999999,cat:"Vegetables"},
-{id:'fruit_syrup',name:"Fruit Syrup (seasonal)",unit:"ml",stock:0,max:999999,cat:"Supplies"},
-  {id:'hot_cups',name:"Hot Cups",unit:"pcs",stock:0,max:999999,cat:"Supplies"},
-  {id:'cold_cups_16',name:"Cold Cups 16oz",unit:"pcs",stock:0,max:999999,cat:"Supplies"},
-  {id:'cold_cups_22',name:"Cold Cups 22oz",unit:"pcs",stock:0,max:999999,cat:"Supplies"},
-  {id:'paper_bags',name:"Paper Bags",unit:"pcs",stock:0,max:999999,cat:"Supplies"},
+  // ── COFFEE & TEA ──
+  {id:'robusta',name:"Trung Nguyen S Coffee (500g pack)",unit:"packs",stock:0,max:20,cat:"Coffee"},
+  {id:'condensed',name:"Condensed Milk (300g can)",unit:"cans",stock:0,max:48,cat:"Coffee"},
+  {id:'assam_tea',name:"Assam Black Tea (500g pack)",unit:"packs",stock:0,max:10,cat:"Tea"},
+  {id:'jasmine_tea',name:"Jasmine Tea (500g pack)",unit:"packs",stock:0,max:10,cat:"Tea"},
+  {id:'matcha',name:"ACC Matcha Powder (1kg bag)",unit:"bags",stock:0,max:5,cat:"Matcha"},
+  {id:'ceremonial_matcha',name:"Ceremonial Matcha (100g tin)",unit:"tins",stock:0,max:10,cat:"Matcha"},
+
+  // ── MILK & CREAM ──
+  {id:'fresh_milk',name:"Alaska Barista Milk (1L box)",unit:"boxes",stock:0,max:24,cat:"Dairy"},
+  {id:'oat_milk',name:"Oatbedient Barista Oat Milk (1L box)",unit:"boxes",stock:0,max:12,cat:"Dairy"},
+  {id:'heavy_cream',name:"Alaska Crema (250ml can)",unit:"cans",stock:0,max:36,cat:"Dairy"},
+  {id:'coconut_cream',name:"Coconut Milk (1L carton)",unit:"cartons",stock:0,max:12,cat:"Dairy"},
+
+  // ── SYRUPS & FLAVORS ──
+  {id:'strawberry_syrup',name:"Injoy Strawberry Syrup (1L bottle)",unit:"bottles",stock:0,max:6,cat:"Syrup"},
+  {id:'lychee_syrup',name:"Injoy Lychee Syrup (1L bottle)",unit:"bottles",stock:0,max:6,cat:"Syrup"},
+  {id:'mango_syrup',name:"Mango Syrup / Purée (1L)",unit:"bottles",stock:0,max:6,cat:"Syrup"},
+  {id:'passion_syrup',name:"Passion Fruit Syrup (1L)",unit:"bottles",stock:0,max:6,cat:"Syrup"},
+  {id:'vanilla',name:"McCormick Vanilla Flavor (20ml)",unit:"bottles",stock:0,max:6,cat:"Syrup"},
+  {id:'fruit_jelly',name:"BobaTea Rainbow Fruit Jelly (2.5kg tub)",unit:"tubs",stock:0,max:4,cat:"Syrup"},
+  {id:'sugar',name:"White Sugar (1kg bag)",unit:"bags",stock:0,max:10,cat:"Supplies"},
+  {id:'sea_salt',name:"Sea Salt (100g pack)",unit:"packs",stock:0,max:10,cat:"Supplies"},
+
+  // ── EGGS ──
+  {id:'eggs',name:"Eggs (tray of 30)",unit:"trays",stock:0,max:10,cat:"Food"},
+
+  // ── MEAT (per kg) ──
+  {id:'pork',name:"Pork Shoulder (per kg)",unit:"kg",stock:0,max:20,cat:"Meat"},
+  {id:'chicken',name:"Chicken Thigh (per kg)",unit:"kg",stock:0,max:20,cat:"Meat"},
+  {id:'beef',name:"Beef Sirloin (per kg)",unit:"kg",stock:0,max:15,cat:"Meat"},
+  {id:'bacon',name:"Smoked Bacon (per kg)",unit:"kg",stock:0,max:5,cat:"Meat"},
+  {id:'tocino',name:"Sweet Cured Tocino (per kg)",unit:"kg",stock:0,max:5,cat:"Meat"},
+  {id:'tapa',name:"Cured Beef Tapa (per kg)",unit:"kg",stock:0,max:5,cat:"Meat"},
+
+  // ── BREAD & PRODUCE ──
+  {id:'baguette',name:"Baguette / Pandesal Roll",unit:"pcs",stock:0,max:100,cat:"Food"},
+  {id:'cucumber',name:"Cucumber",unit:"pcs",stock:0,max:30,cat:"Vegetables"},
+  {id:'onions',name:"Onions",unit:"pcs",stock:0,max:30,cat:"Vegetables"},
+  {id:'garlic',name:"Garlic (head)",unit:"heads",stock:0,max:20,cat:"Vegetables"},
+  {id:'pechay',name:"Pechay / Bok Choy (bundle)",unit:"bundles",stock:0,max:15,cat:"Vegetables"},
+  {id:'carrots',name:"Carrots",unit:"pcs",stock:0,max:20,cat:"Vegetables"},
+  {id:'pickled_carrots',name:"Pickled Carrots & Onions (batch jar)",unit:"jars",stock:0,max:10,cat:"Prep"},
+  {id:'liver_spread',name:"Reno Liver Spread (can)",unit:"cans",stock:0,max:12,cat:"Food"},
+  {id:'cheese',name:"Cheese Slices (pack)",unit:"packs",stock:0,max:10,cat:"Food"},
+  {id:'house_dip',name:"Signature House Dip (batch)",unit:"batches",stock:0,max:5,cat:"Prep"},
+
+  // ── SAUCES & OIL ──
+  {id:'soy_sauce',name:"Soy Sauce (1L bottle)",unit:"bottles",stock:0,max:6,cat:"Supplies"},
+  {id:'fish_sauce',name:"Fish Sauce (1L bottle)",unit:"bottles",stock:0,max:4,cat:"Supplies"},
+  {id:'oyster_sauce',name:"Oyster Sauce (bottle)",unit:"bottles",stock:0,max:4,cat:"Supplies"},
+  {id:'cooking_oil',name:"Cooking Oil (1L bottle)",unit:"bottles",stock:0,max:6,cat:"Supplies"},
+  {id:'mayo',name:"Mayonnaise (jar)",unit:"jars",stock:0,max:4,cat:"Supplies"},
+  {id:'butter',name:"Butter (block)",unit:"blocks",stock:0,max:4,cat:"Supplies"},
+
+  // ── RICE ──
+  {id:'rice',name:"Rice (5kg sack)",unit:"sacks",stock:0,max:10,cat:"Food"},
+  {id:'crunchy_rice',name:"Crunchy Baked Rice (batch)",unit:"batches",stock:0,max:5,cat:"Prep"},
+
+  // ── CUPS & PACKAGING (from receipt) ──
+  {id:'cup_hot',name:"Hot Cup Double Wall 100s",unit:"packs",stock:0,max:10,cat:"Packaging"},
+  {id:'cup_cold_single',name:"Cold Cup Single Wall 100s",unit:"packs",stock:0,max:10,cat:"Packaging"},
+  {id:'cup_22oz',name:"22oz U-Cup Mario/Luigi 50s",unit:"packs",stock:0,max:10,cat:"Packaging"},
+  {id:'lid',name:"Cup Lids (pack of 100)",unit:"packs",stock:0,max:10,cat:"Packaging"},
+  {id:'straw',name:"Straws (pack of 100)",unit:"packs",stock:0,max:10,cat:"Packaging"},
+  {id:'sandwich_box',name:"Clamshell Hotdog Box 25s",unit:"packs",stock:0,max:10,cat:"Packaging"},
+  {id:'rice_box',name:"Hi-Meal Box T-47 Brown 25s",unit:"packs",stock:0,max:10,cat:"Packaging"},
+  {id:'paper_bag',name:"Paper Bags (pack)",unit:"packs",stock:0,max:10,cat:"Packaging"},
 ];
 
 let sb,order=[],activeCategory='All',currentPayMethod='Cash',currentOrderType='Dine-in',reportFilter='today',ordersFilter='today';
@@ -2468,8 +2487,8 @@ ${invList}
 
 Rules:
 - Match the user's description to the closest inventory item ID
-- "box of milk" = fresh_milk, "cream" = heavy_cream, "robusta" or "coffee beans" = robusta
-- Convert units: 1 box milk = 1000ml, 1 kg = 1000g, 1 liter = 1000ml, 1 dozen eggs = 12pcs
+- "box of milk" or "barista milk" = fresh_milk (1L box), "cream" or "crema" = heavy_cream (250ml can), "robusta" or "coffee" or "Trung Nguyen" = robusta (500g pack), "matcha" = matcha (1kg bag), "eggs" or "tray of eggs" = eggs (tray of 30)
+- Units are in PURCHASE UNITS (packs, boxes, cans, kg, trays) NOT ml/g. "2 boxes of milk" = 2 boxes (not 2000ml). "1 tray of eggs" = 1 tray.
 - "Added" or "Received" means ADD to current stock
 - "Used" or "Consumed" means SUBTRACT from current stock
 - Return ONLY valid JSON, no markdown, no explanation
