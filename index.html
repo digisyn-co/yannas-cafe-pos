@@ -306,13 +306,13 @@ body{background:var(--bg);color:var(--text1);font-size:14px;font-family:var(--fo
 .recipe-head:active{background:rgba(0,0,0,0.02)}
 .recipe-name{font-size:14px;font-weight:700;color:var(--text)}
 .recipe-cat{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:2px 8px;border-radius:6px}
-.recipe-body{padding:0 16px 16px;display:none}
+.recipe-body{padding:0 16px 16px;display:block}
 .recipe-body.open{display:block}
 .recipe-scale{display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:10px 14px;background:var(--bg);border-radius:10px}
 .recipe-scale label{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.06em}
-.recipe-slider{flex:1;-webkit-appearance:none;appearance:none;height:6px;border-radius:3px;background:var(--border);outline:none}
-.recipe-slider::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--primary);cursor:pointer;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.2)}
-.recipe-val{font-size:18px;font-weight:800;color:var(--primary);min-width:32px;text-align:center}
+.recipe-slider{flex:1;-webkit-appearance:none;appearance:none;height:10px;border-radius:5px;background:var(--border);outline:none;cursor:pointer}
+.recipe-slider::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;border-radius:50%;background:var(--primary);cursor:pointer;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3)}
+.recipe-val{font-size:28px;font-weight:800;color:var(--primary);min-width:48px;text-align:center}
 .recipe-table{width:100%}
 .recipe-table th{text-align:left;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;padding:6px 8px;border-bottom:2px solid var(--border)}
 .recipe-table td{padding:8px;font-size:13px;border-bottom:1px solid var(--border)}
@@ -323,6 +323,8 @@ body{background:var(--bg);color:var(--text1);font-size:14px;font-family:var(--fo
 .recipe-total-title{font-size:10px;font-weight:700;color:#22c55e;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
 .recipe-total-row{display:flex;justify-content:space-between;font-size:12px;color:var(--text2);padding:2px 0}
 .recipe-total-row span:last-child{font-weight:700;color:var(--text)}
+.recipe-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:20px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:inherit;transition:.15s}
+.recipe-btn:active{background:var(--primary);color:#fff;border-color:var(--primary)}
 
 .log-entry{border:0.5px solid #2E2820;border-radius:var(--rl);padding:12px 16px;background:var(--bg2)}
 .log-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
@@ -2077,8 +2079,10 @@ function buildRecipes(){
       '</div>'+
       '<div class="recipe-body" id="rb-'+m.id+'">'+
         '<div class="recipe-scale">'+
-          '<label>Servings</label>'+
-          '<input type="range" class="recipe-slider" min="1" max="50" value="1" oninput="scaleRecipe('+m.id+',this.value)">'+
+          '<label>SERVINGS (1-50)</label>'+
+          '<button class="recipe-btn" onclick="adjustServing('+m.id+',-1)">−</button>'+
+          '<input type="range" class="recipe-slider" id="rs-'+m.id+'" min="1" max="50" value="1" oninput="scaleRecipe('+m.id+',this.value)">'+
+          '<button class="recipe-btn" onclick="adjustServing('+m.id+',1)">+</button>'+
           '<span class="recipe-val" id="rv-'+m.id+'">1</span>'+
         '</div>'+
         '<table class="recipe-table">'+
@@ -2094,6 +2098,16 @@ function buildRecipes(){
       '</div>'+
     '</div>';
   }).join('');
+}
+
+function adjustServing(id, delta){
+  const slider = document.getElementById('rs-'+id);
+  if(!slider) return;
+  let val = parseInt(slider.value) + delta;
+  if(val < 1) val = 1;
+  if(val > 50) val = 50;
+  slider.value = val;
+  scaleRecipe(id, val);
 }
 
 function toggleRecipe(id){
