@@ -1920,25 +1920,6 @@ async function applyAdj(id){
   toast('Stock updated ✓');
 }
 
-async function oneTimeRestock(){
-  // One-time restock to max — remove this block after first run
-  for(const i of invData){
-    await sb.from('inventory').update({stock:i.max}).eq('id',i.id);
-    i.stock=i.max;
-  }
-  renderInventory();
-  toast('All inventory restocked to max ✓');
-}
-// Auto-restock on this deploy
-if(!localStorage.getItem('restock_v2_done')){
-  setTimeout(async()=>{
-    if(sb && invData && invData.length > 0){
-      await oneTimeRestock();
-      localStorage.setItem('restock_v2_done','1');
-    }
-  },3000);
-}
-
 async function restockAll(){
   for(const i of invData){await sb.from('inventory').update({stock:i.max}).eq('id',i.id);i.stock=i.max;}
   renderInventory();
