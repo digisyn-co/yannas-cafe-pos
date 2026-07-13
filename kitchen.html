@@ -244,6 +244,28 @@ const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI
 let sb, orders = [];
 const seen = new Set();
 
+// Track dismissed/completed orders locally (in case DB has no status column)
+function getDismissed() {
+  try {
+    const d = JSON.parse(localStorage.getItem('kitchen_dismissed') || '{}');
+    // Clean out entries older than 24 hours
+    const now = Date.now();
+    for (const [k, v] of Object.entries(d)) {
+      if (now - v > 86400000) delete d[k];
+    }
+    localStorage.setItem('kitchen_dismissed', JSON.stringify(d));
+    return d;
+  } catch(e) { return {}; }
+}
+function dismissOrder(id) {
+  const d = getDismissed();
+  d[String(id)] = Date.now();
+  localStorage.setItem('kitchen_dismissed', JSON.stringify(d));
+}
+function isDismissed(id) {
+  return String(id) in getDismissed();
+}
+
 // ── Init ──
 window.addEventListener('load', () => {
   try {
@@ -257,7 +279,7 @@ window.addEventListener('load', () => {
   }
   tickClock();
   setInterval(tickClock, 1000);
-  setInterval(loadOrders, 30000); // refresh orders every 30s
+  // Removed auto-reload — realtime handles updates; manual refresh via page reload if needed
   setInterval(render, 30000); // refresh elapsed times
 });
 
@@ -276,7 +298,7 @@ async function loadOrders() {
       .order('created_at', {ascending: true});
 
     if (e1) console.warn('Load drive_thru error:', e1);
-    const driveThru = (dto || []).map(o => ({...o, source: 'drive_thru'}));
+    const driveThru = (dto || []).filter(o => !isDismissed(o.id)).map(o => ({...o, source: 'drive_thru'}));
 
     // Load POS orders from today (dine-in)
     const today = new Date().toISOString().slice(0,10);
@@ -289,7 +311,12 @@ async function loadOrders() {
 
       if (!e2 && posData) {
         posOrders = posData
-          .filter(o => !o.status || o.status === 'incoming' || o.status === 'preparing' || o.status === 'ready')
+          .filter(o => {
+            const st = o.status || 'incoming';
+            if (st === 'picked_up' || st === 'completed' || st === 'done') return false;
+            if (isDismissed('pos-' + o.id)) return false;
+            return true;
+          })
           .map(o => ({
             id: 'pos-' + o.id,
             _real_id: o.id,
@@ -475,8 +502,9 @@ async function updateStatus(id, newStatus) {
       await sb.from('drive_thru_orders').update({status: newStatus}).eq('id', id);
     }
 
-    // Update local state immediately
-    if (newStatus === 'picked_up') {
+    // Update local state immediately + dismiss so it won't come back on reload
+    if (newStatus === 'picked_up' || newStatus === 'completed') {
+      dismissOrder(id);
       orders = orders.filter(o => o.id !== id);
     } else {
       const o = orders.find(x => x.id === id);
