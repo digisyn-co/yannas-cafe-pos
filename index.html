@@ -2158,7 +2158,7 @@ let __reportsUnlocked=false;
 let recipeFilter='All';
 
 function buildRecipes(){
-  const cats=['All','Coffee','Matcha','Tea','Food'];
+  const cats=['All','Coffee','Matcha','Tea','Food','Kids','Refreshers'];
   const catEl=document.getElementById('recipe-cats');
   catEl.innerHTML=cats.map(c=>'<button style="padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid var(--border);background:'+(c===recipeFilter?'var(--primary);color:#fff;border-color:var(--primary)':'var(--surface);color:var(--text2)')+';cursor:pointer;font-family:inherit" onclick="recipeFilter=\''+c+'\';buildRecipes()">'+c+'</button>').join('');
 
