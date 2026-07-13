@@ -2167,7 +2167,7 @@ function buildRecipes(){
 
   list.innerHTML=items.map(m=>{
     const r=RECIPE[m.id];
-    const catColors={Coffee:'#D97706',Matcha:'#059669',Tea:'#0D9488',Food:'#6366F1',Combo:'#8B5CF6'};
+    const catColors={Coffee:'#D97706',Matcha:'#059669',Tea:'#0D9488',Food:'#6366F1',Combo:'#8B5CF6',Kids:'#EC4899',Refreshers:'#F59E0B'};
     const catColor=catColors[m.cat]||'#888';
     const ingRows=Object.entries(r).map(([ingId,amt])=>{
       const inv=INIT_INV.find(i=>i.id===ingId);
