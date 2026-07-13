@@ -626,6 +626,16 @@ const MENU=[
 {id:26,name:"Add-on: Farm-Fresh Egg (Sandwich)", cat:"Food", price:30, badge:"bf", addon:true},
 {id:27,name:"Add-on: Cheese",          cat:"Food", price:20, badge:"bf", addon:true},
 {id:28,name:"Add-on: Signature House Dip", cat:"Food", price:40, badge:"bf", addon:true},
+
+  // ── LITTLE YANNA'S CORNER (Kids) ──
+  {id:29,name:"Mini Chicken Fried Rice",namePH:"Fried Rice Pambata",cat:"Kids",price:89,emoji:"🍗"},
+  {id:30,name:"Mini Pork Fried Rice",namePH:"Fried Rice Pambata",cat:"Kids",price:95,emoji:"🐷"},
+  {id:31,name:"Chicken Bites & Rice",namePH:"Chicken Bites",cat:"Kids",price:99,emoji:"⭐"},
+  {id:32,name:"Chocolate Banana Toast",namePH:"Choco Banana Toast",cat:"Kids",price:85,emoji:"🍫"},
+  // ── FRESH FRUIT REFRESHERS ──
+  {id:33,name:"Fresh Apple",namePH:"Fresh Apple Juice",cat:"Refreshers",price:95,emoji:"🍏"},
+  {id:34,name:"Fresh Pineapple",namePH:"Fresh Pineapple Juice",cat:"Refreshers",price:95,emoji:"🍍"},
+  {id:35,name:"Fresh Mango",namePH:"Fresh Mango Juice",cat:"Refreshers",price:105,emoji:"🥭"},
 ];
 // NOTE: Combo recipes (16-18) intentionally have no RECIPE/inventory entry yet —
 // the exact bundle composition (fried rice vs. sandwich tier) was never confirmed
@@ -701,6 +711,14 @@ const INIT_INV=[
   {id:'sandwich_box',name:"Clamshell Hotdog Box 25s",unit:"packs",stock:0,max:10,cat:"Packaging"},
   {id:'rice_box',name:"Hi-Meal Box T-47 Brown 25s",unit:"packs",stock:0,max:10,cat:"Packaging"},
   {id:'paper_bag',name:"Paper Bags (pack)",unit:"packs",stock:0,max:10,cat:"Packaging"},
+
+  {id:'banana',name:"Bananas (bunch)",unit:"bunches",stock:0,max:10,cat:"Fruit"},
+  {id:'chocolate',name:"Chocolate Syrup/Spread",unit:"bottles",stock:0,max:6,cat:"Supplies"},
+  {id:'apple',name:"Apples (per kg)",unit:"kg",stock:0,max:10,cat:"Fruit"},
+  {id:'pineapple',name:"Pineapple (whole)",unit:"pcs",stock:0,max:10,cat:"Fruit"},
+  {id:'mango',name:"Mangoes (per kg)",unit:"kg",stock:0,max:10,cat:"Fruit"},
+  {id:'bread',name:"Sliced Bread (loaf)",unit:"loaves",stock:0,max:10,cat:"Food"},
+  {id:'ketchup',name:"Ketchup (bottle)",unit:"bottles",stock:0,max:4,cat:"Supplies"},
 ];
 
 let sb,order=[],activeCategory='All',currentPayMethod='Cash',currentOrderType='Dine-in',reportFilter='today',ordersFilter='today';
@@ -1834,6 +1852,16 @@ const RECIPE={
   26:{eggs:1},                                                      // Add-on: Farm-Fresh Egg (Sandwich)
   27:{cheese:1},                                                    // Add-on: Cheese
   28:{house_dip:40}                                                 // Add-on: Signature House Dip
+
+  // ── KIDS ──
+  29:{rice:150,chicken:80,eggs:1,onions:0.2,garlic:3,pechay:15,cooking_oil:8,soy_sauce:8,paper_bag:1},  // Mini Chicken Fried Rice
+  30:{rice:150,pork:80,eggs:1,onions:0.2,garlic:3,pechay:15,cooking_oil:8,soy_sauce:8,paper_bag:1},     // Mini Pork Fried Rice
+  31:{chicken:100,rice:150,cooking_oil:15,paper_bag:1},                                                   // Chicken Bites & Rice
+  32:{baguette:0.5,sugar:10,paper_bag:1},                                                                 // Chocolate Banana Toast
+  // ── REFRESHERS ──
+  33:{cup_cold:1,lid:1,straw:1,ice:150,sugar:10},   // Fresh Apple (fresh fruit not tracked)
+  34:{cup_cold:1,lid:1,straw:1,ice:150,sugar:10},   // Fresh Pineapple
+  35:{cup_cold:1,lid:1,straw:1,ice:150,sugar:10},   // Fresh Mango
 };
 
 function reqMap(items){
