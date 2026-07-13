@@ -612,6 +612,20 @@ const INIT_INV=[
 {id:'tapa',name:"Cured Beef Tapa",unit:"g",stock:0,max:999999,cat:"Food"},
 {id:'cheese',name:"Cheese Slices",unit:"pcs",stock:0,max:999999,cat:"Food"},
 {id:'house_dip',name:"Signature House Dip",unit:"g",stock:0,max:999999,cat:"Food"},
+{id:'water',name:"Filtered Water",unit:"ml",stock:0,max:999999,cat:"Supplies"},
+{id:'ice',name:"Ice",unit:"g",stock:0,max:999999,cat:"Supplies"},
+{id:'cup_hot',name:"Hot Cup (12oz)",unit:"pcs",stock:0,max:999999,cat:"Supplies"},
+{id:'cup_cold',name:"Cold Cup (16oz)",unit:"pcs",stock:0,max:999999,cat:"Supplies"},
+{id:'lid',name:"Cup Lid",unit:"pcs",stock:0,max:999999,cat:"Supplies"},
+{id:'straw',name:"Straw",unit:"pcs",stock:0,max:999999,cat:"Supplies"},
+{id:'paper_bag',name:"Paper Bag",unit:"pcs",stock:0,max:999999,cat:"Supplies"},
+{id:'rice',name:"Steamed Rice",unit:"g",stock:0,max:999999,cat:"Food"},
+{id:'cooking_oil',name:"Cooking Oil",unit:"ml",stock:0,max:999999,cat:"Supplies"},
+{id:'garlic',name:"Garlic",unit:"g",stock:0,max:999999,cat:"Vegetables"},
+{id:'soy_sauce',name:"Soy Sauce",unit:"ml",stock:0,max:999999,cat:"Supplies"},
+{id:'sugar',name:"Sugar",unit:"g",stock:0,max:999999,cat:"Supplies"},
+{id:'pechay',name:"Pechay (Bok Choy)",unit:"g",stock:0,max:999999,cat:"Vegetables"},
+{id:'fruit_syrup',name:"Fruit Syrup (seasonal)",unit:"ml",stock:0,max:999999,cat:"Supplies"},
   {id:'hot_cups',name:"Hot Cups",unit:"pcs",stock:0,max:999999,cat:"Supplies"},
   {id:'cold_cups_16',name:"Cold Cups 16oz",unit:"pcs",stock:0,max:999999,cat:"Supplies"},
   {id:'cold_cups_22',name:"Cold Cups 22oz",unit:"pcs",stock:0,max:999999,cat:"Supplies"},
@@ -1716,28 +1730,34 @@ async function confirmOrder(){
 // Per-item recipe (ingredient usage per single serving). Edit amounts here to match your prep.
 // Cups/packaging are added automatically below based on category & temperature.
 const RECIPE={
-  1:{robusta:19},                                                   // Black Coffee
-  2:{robusta:19,heavy_cream:40,fresh_milk:15,sea_salt:1,condensed:3},// Salted Cream Coffee
-  3:{robusta:19,coconut_cream:40,condensed:20,fresh_milk:20},        // Coconut Coffee
-  4:{robusta:19,eggs:1,condensed:20},                               // Egg Coffee
-  5:{robusta:19,condensed:35},                                      // Vietnamese Milk Coffee
-  6:{matcha:2,fresh_milk:210},                                      // Matcha Latte
-  7:{matcha:2,heavy_cream:30,fresh_milk:40,sea_salt:1,condensed:3}, // Salt Matcha
-  8:{matcha:2,eggs:1,condensed:30,heavy_cream:50},                  // Egg Custard Matcha
-  9:{jasmine_tea:2},                                                // Fruit Tea (fruit syrup varies by availability)
-  13:{baguette:1,pork:110,pickled_carrots:20,pickled_onions:10,cucumber:0.25,liver_spread:0.1}, // BBQ Pork Sandwich
-  14:{baguette:1,chicken:110,pickled_carrots:20,pickled_onions:10,cucumber:0.25},                // Chicken BBQ Sandwich
-  15:{baguette:1,beef:110,pickled_carrots:20,pickled_onions:10,cucumber:0.25},                   // Beef BBQ Sandwich
-  19:{pork:110,eggs:2,onions:0.2},                                  // Pork Crunchy Egg Fried Rice
-  20:{chicken:110,eggs:2,onions:0.2},                               // Chicken Crunchy Egg Fried Rice
-  21:{beef:110,eggs:2,onions:0.2},                                  // Beef Crunchy Egg Fried Rice
-22:{bacon:50},                                                    // Add-on: Smoked Bacon
-23:{tocino:50},                                                   // Add-on: Sweet Cured Tocino
-24:{tapa:60},                                                     // Add-on: Cured Beef Tapa
-25:{eggs:1},                                                      // Add-on: Egg (Rice)
-26:{eggs:1},                                                      // Add-on: Farm-Fresh Egg (Sandwich)
-27:{cheese:1},                                                    // Add-on: Cheese
-28:{house_dip:40}                                                 // Add-on: Signature House Dip
+  // ── COFFEE ──
+  1:{robusta:19,water:180,sugar:5,cup_hot:1,lid:1},                 // Black Coffee (Hot)
+  2:{robusta:19,heavy_cream:40,fresh_milk:15,sea_salt:1,condensed:3,ice:120,cup_cold:1,lid:1,straw:1}, // Salted Cream Coffee
+  3:{robusta:19,coconut_cream:40,condensed:20,fresh_milk:20,ice:120,cup_cold:1,lid:1,straw:1},         // Coconut Coffee
+  4:{robusta:19,eggs:1,condensed:20,sugar:5,water:150,cup_hot:1,lid:1},                                // Egg Coffee (Hot)
+  5:{robusta:19,condensed:35,water:150,cup_hot:1,lid:1},                                                // Vietnamese Milk Coffee
+  // ── MATCHA ──
+  6:{matcha:2,fresh_milk:210,sugar:8,ice:120,cup_cold:1,lid:1,straw:1},                                // Matcha Latte
+  7:{matcha:2,heavy_cream:30,fresh_milk:40,sea_salt:1,condensed:3,ice:120,cup_cold:1,lid:1,straw:1},   // Salt Matcha
+  8:{matcha:2,eggs:1,condensed:30,heavy_cream:50,sugar:5,ice:100,cup_cold:1,lid:1,straw:1},            // Egg Custard Matcha
+  // ── TEA ──
+  9:{jasmine_tea:2,water:200,fruit_syrup:30,sugar:10,ice:150,cup_cold:1,lid:1,straw:1},                // Fruit Tea
+  // ── SANDWICHES ──
+  13:{baguette:1,pork:110,pickled_carrots:20,pickled_onions:10,cucumber:0.25,liver_spread:0.1,paper_bag:1}, // BBQ Pork Sandwich
+  14:{baguette:1,chicken:110,pickled_carrots:20,pickled_onions:10,cucumber:0.25,paper_bag:1},               // Chicken BBQ Sandwich
+  15:{baguette:1,beef:110,pickled_carrots:20,pickled_onions:10,cucumber:0.25,paper_bag:1},                  // Beef BBQ Sandwich
+  // ── FRIED RICE ──
+  19:{rice:200,pork:110,eggs:2,onions:0.2,garlic:5,pechay:30,cooking_oil:10,soy_sauce:10,paper_bag:1},     // Pork Crunchy Egg Fried Rice
+  20:{rice:200,chicken:110,eggs:2,onions:0.2,garlic:5,pechay:30,cooking_oil:10,soy_sauce:10,paper_bag:1},   // Chicken Crunchy Egg Fried Rice
+  21:{rice:200,beef:110,eggs:2,onions:0.2,garlic:5,pechay:30,cooking_oil:10,soy_sauce:10,paper_bag:1},      // Beef Crunchy Egg Fried Rice
+  // ── ADD-ONS ──
+  22:{bacon:50},                                                    // Add-on: Smoked Bacon
+  23:{tocino:50},                                                   // Add-on: Sweet Cured Tocino
+  24:{tapa:60},                                                     // Add-on: Cured Beef Tapa
+  25:{eggs:1},                                                      // Add-on: Egg (Rice)
+  26:{eggs:1},                                                      // Add-on: Farm-Fresh Egg (Sandwich)
+  27:{cheese:1},                                                    // Add-on: Cheese
+  28:{house_dip:40}                                                 // Add-on: Signature House Dip
 };
 
 function reqMap(items){
