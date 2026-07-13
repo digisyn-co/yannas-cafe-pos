@@ -1737,8 +1737,13 @@ async function confirmOrder(){
     const schemaIssue=/column|does not exist|42703|schema cache|could not find/i.test(msg);
     if(schemaIssue){
       // DB not migrated yet → fall back to client-side number + legacy columns only (keeps POS working)
-      orderNum='#'+String(orderHistory.length+1).padStart(4,'0');
+      orderNum='#'+new Date().toISOString().slice(11,19).replace(/:/g,'')+'-'+String(Math.floor(Math.random()*900)+100);
       res=await sb.from('orders').insert({order_number:orderNum,items:itemsPayload,total,payment_method:currentPayMethod,order_type:currentOrderType,customer_phone:loyPhoneKey||null,customer_name:loyName,...discPayload}).select('order_number').single();
+      saveErr=res.error;
+    } else if(res.error?.message?.includes('duplicate key')||res.error?.details?.includes('duplicate')){
+      // Duplicate order number — retry with a new unique number
+      orderNum='#'+new Date().toISOString().slice(11,19).replace(/:/g,'')+'-'+String(Math.floor(Math.random()*900)+100);
+      res=await sb.from('orders').insert({order_number:orderNum,items:itemsPayload,total,payment_method:currentPayMethod,order_type:currentOrderType}).select('order_number').single();
       saveErr=res.error;
     } else { saveErr=res.error; }
   }
