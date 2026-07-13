@@ -1,6 +1,8 @@
 {
   "version": 2,
   "routes": [
+    { "src": "/recipes", "dest": "/recipes.html" },
+    { "src": "/recipes.html", "dest": "/recipes.html" },
     { "src": "/kitchen", "dest": "/kitchen.html" },
     { "src": "/kitchen.html", "dest": "/kitchen.html" },
     { "src": "/queue", "dest": "/queue.html" },
