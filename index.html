@@ -544,6 +544,7 @@ body{background:#FFFFFF;color:var(--text1);font-size:14px;font-family:var(--font
       <button class="tab" onclick="switchTab('orders')"><span class="tab-icon">📋</span><span class="tab-label"> Orders</span></button>
       <button class="tab" onclick="switchTab('reports')"><span class="tab-icon">📊</span><span class="tab-label"> Reports</span></button>
 <button class="tab" onclick="switchTab('recipes')"><span class="tab-icon">📖</span><span class="tab-label"> Recipes</span></button>
+<button class="tab" onclick="switchTab('shifts')"><span class="tab-icon">🕒</span><span class="tab-label"> Shifts</span></button>
     </div>
     <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2)">
       <span class="status-dot live"></span>
@@ -642,6 +643,37 @@ body{background:#FFFFFF;color:var(--text1);font-size:14px;font-family:var(--font
     <div class="rep-row">
       <div class="rep-card"><h4>🏆 Top Selling Items</h4><div id="top-items"><div class="no-data">No sales yet</div></div></div>
       <div class="rep-card"><h4>💰 Revenue by Category</h4><div id="rev-cat"><div class="no-data">No sales yet</div></div></div>
+    </div>
+  </div>
+
+  <div class="page" id="page-shifts">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+      <div class="date-filter" id="shift-date-filter" style="margin-bottom:0">
+        <button class="df-btn active" onclick="setShiftFilter('week',this)">This Week</button>
+        <button class="df-btn" onclick="setShiftFilter('today',this)">Today</button>
+        <button class="df-btn" onclick="setShiftFilter('month',this)">This Month</button>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="zrpt-btn" onclick="openAddEmployee()">＋ Add Employee</button>
+        <button class="zrpt-btn" onclick="openScheduleShift()">🗓 Schedule Shift</button>
+      </div>
+    </div>
+
+    <div class="rep-card" style="margin-bottom:12px">
+      <h4>🟢 On Now <span style="font-weight:400;color:var(--text2);font-size:12px">· staff punch in at <strong>/timeclock</strong> on the wall tablet</span></h4>
+      <div id="shift-on-now"><div class="no-data">Nobody clocked in</div></div>
+    </div>
+
+    <div class="metrics-grid" id="shift-metrics"></div>
+
+    <div class="rep-row">
+      <div class="rep-card"><h4>👥 Staff</h4><div id="shift-roster"><div class="no-data">No employees yet</div></div></div>
+      <div class="rep-card"><h4>🗓 Scheduled Shifts</h4><div id="shift-schedule"><div class="no-data">Nothing scheduled</div></div></div>
+    </div>
+
+    <div class="rep-card" style="margin-top:12px">
+      <h4>💰 Hours &amp; Pay <span id="shift-range-label" style="font-weight:400;color:var(--text2)"></span></h4>
+      <div id="shift-payroll"><div class="no-data">No hours logged</div></div>
     </div>
   </div>
 </div>
@@ -843,6 +875,8 @@ function applyRoleUI(){
   const role=currentUser?.user_metadata?.role||'employee';
   const reportTab=document.querySelector('.tab[onclick="switchTab(\'reports\')"]');
   if(reportTab) reportTab.style.display=role==='owner'?'':'none';
+  const shiftTab=document.querySelector('.tab[onclick="switchTab(\'shifts\')"]');
+  if(shiftTab) shiftTab.style.display=role==='owner'?'':'none';
 }
 
 async function loadApp(){
@@ -2268,6 +2302,7 @@ function refreshActiveView(){
 }
 
 let __reportsUnlocked=false;
+let __shiftsUnlocked=false;
 
 // ── RECIPES TAB ──
 let recipeFilter='All';
@@ -2357,8 +2392,9 @@ function fmtAmt(n){
 
 function switchTab(tab){
   if(tab==='reports' && !__reportsUnlocked){ openReportsLock(); return; }
+  if(tab==='shifts' && !__shiftsUnlocked){ openShiftsLock(); return; }
   document.querySelectorAll('.tab').forEach((t,i)=>{
-    t.classList.toggle('active',['pos','inventory','orders','reports','recipes'][i]===tab);
+    t.classList.toggle('active',['pos','inventory','orders','reports','recipes','shifts'][i]===tab);
   });
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+tab).classList.add('active');
@@ -2366,6 +2402,7 @@ function switchTab(tab){
   if(tab==='inventory'){renderInventory().then(()=>updateLowStockBadge());}
   if(tab==='orders') renderOrders();
   if(tab==='reports') renderReports();
+  if(tab==='shifts') renderShifts();
 }
 
 function openReportsLock(){
@@ -2392,6 +2429,260 @@ async function unlockReports(){
   if(!ok){ toast('Incorrect manager password'); const fld=document.getElementById('rep-pin'); if(fld){fld.value='';fld.focus();} return; }
   __reportsUnlocked=true; closeModal(); switchTab('reports');
 }
+function openShiftsLock(){
+  document.getElementById('modal-container').innerHTML=`
+    <div class="modal-bg" role="dialog" aria-modal="true" aria-label="Manager access required"><div class="modal">
+      <h3>🔒 Manager access</h3>
+      <span class="ml">Enter the manager password to open the Shift Manager.</span>
+      <input class="mi" type="password" id="shift-pin" placeholder="Manager password" aria-label="Manager password"/>
+      <div class="mbtns">
+        <button class="mbtn ok" onclick="unlockShifts()">Unlock</button>
+        <button class="mbtn" onclick="closeModal()">Cancel</button>
+      </div>
+    </div></div>`;
+  setTimeout(()=>document.getElementById('shift-pin')?.focus(),50);
+}
+async function unlockShifts(){
+  const pin=(document.getElementById('shift-pin')?.value||'');
+  let ok=false;
+  try{
+    const {data,error}=await sb.rpc('verify_manager_pin',{p_pin:pin});
+    if(error){ toast('Could not verify — please try again'); console.error('verify_manager_pin',error); return; }
+    ok=(data===true);
+  }catch(e){ toast('Could not verify — please try again'); console.error(e); return; }
+  if(!ok){ toast('Incorrect manager password'); const fld=document.getElementById('shift-pin'); if(fld){fld.value='';fld.focus();} return; }
+  __shiftsUnlocked=true; closeModal(); switchTab('shifts');
+}
+
+/* ===================== EMPLOYEE SHIFT MANAGER ===================== */
+/* Punching in/out lives on the standalone /timeclock page (PIN per employee).
+   This owner tab manages the roster, PINs, schedules, who's-on-now & payroll. */
+let __employees=[];
+let __shifts=[];
+let __shiftFilter='week';
+
+function shiftRange(){
+  const now=new Date();
+  let start=new Date(now);
+  if(__shiftFilter==='today'){ start.setHours(0,0,0,0); }
+  else if(__shiftFilter==='week'){ const d=start.getDay(); start.setDate(start.getDate()-d); start.setHours(0,0,0,0); }
+  else if(__shiftFilter==='month'){ start=new Date(now.getFullYear(),now.getMonth(),1); }
+  return {start, end:now};
+}
+function setShiftFilter(f,btn){
+  __shiftFilter=f;
+  document.querySelectorAll('#shift-date-filter .df-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  renderShifts();
+}
+function fmtTime(ts){ if(!ts)return '—'; return new Date(ts).toLocaleTimeString('en-PH',{hour:'numeric',minute:'2-digit'}); }
+function fmtDay(ts){ if(!ts)return ''; return new Date(ts).toLocaleDateString('en-PH',{weekday:'short',month:'short',day:'numeric'}); }
+function hoursBetween(a,b){ return (new Date(b)-new Date(a))/3600000; }
+function empName(id){ const e=__employees.find(x=>x.id===id); return e?e.name:'Unknown'; }
+
+async function loadEmployees(){
+  const {data,error}=await sb.from('employees').select('*').order('name');
+  if(error){ console.error('employees',error); return; }
+  __employees=data||[];
+}
+async function loadShifts(){
+  const {start}=shiftRange();
+  const iso=start.toISOString();
+  const [a,b,c]=await Promise.all([
+    sb.from('shifts').select('*').gte('clock_in',iso),
+    sb.from('shifts').select('*').gte('scheduled_start',iso),
+    sb.from('shifts').select('*').is('clock_out',null).not('clock_in','is',null)
+  ]);
+  if(a.error||b.error||c.error){ console.error('shifts',a.error||b.error||c.error); __shifts=[]; return; }
+  const byId={};
+  [...(a.data||[]),...(b.data||[]),...(c.data||[])].forEach(r=>{ byId[r.id]=r; });
+  __shifts=Object.values(byId);
+}
+
+async function renderShifts(){
+  await Promise.all([loadEmployees(), loadShifts()]);
+  renderOnNow();
+  renderRoster();
+  renderSchedule();
+  renderPayroll();
+  renderShiftMetrics();
+}
+
+function openShift(empId){
+  return __shifts.find(s=>s.employee_id===empId && s.clock_in && !s.clock_out);
+}
+
+function renderOnNow(){
+  const on=__shifts.filter(s=>s.clock_in && !s.clock_out);
+  const el=document.getElementById('shift-on-now');
+  if(!on.length){ el.innerHTML='<div class="no-data">Nobody clocked in</div>'; return; }
+  el.innerHTML=on.map(s=>{
+    const hrs=hoursBetween(s.clock_in,new Date());
+    return `<div class="r-meta" style="justify-content:space-between;padding:6px 0;border-bottom:0.5px solid #E5E1DB">
+      <span><strong>${empName(s.employee_id)}</strong> · in since ${fmtTime(s.clock_in)}</span>
+      <span style="color:var(--gold)">${hrs.toFixed(1)}h</span>
+    </div>`;
+  }).join('');
+}
+
+function renderRoster(){
+  const el=document.getElementById('shift-roster');
+  const active=__employees.filter(e=>e.active);
+  if(!active.length){ el.innerHTML='<div class="no-data">No employees yet</div>'; return; }
+  el.innerHTML=active.map(e=>{
+    const open=openShift(e.id);
+    const status=open?`<span style="color:#2ecc71">● on since ${fmtTime(open.clock_in)}</span>`:`<span style="color:var(--text2)">○ off</span>`;
+    const hasPin=e.pin_hash?'PIN set':'no PIN';
+    return `<div class="r-meta" style="justify-content:space-between;align-items:center;padding:7px 0;border-bottom:0.5px solid #E5E1DB">
+      <span><strong>${e.name}</strong> ${e.role==='owner'?'👑':''}<br><span style="font-size:11px;color:var(--text2)">${status} · ₱${(+e.hourly_rate||0).toFixed(0)}/hr · ${hasPin}</span></span>
+      <button class="mbtn" style="padding:5px 10px;font-size:12px" onclick="openSetPin('${e.id}')">Set PIN</button>
+    </div>`;
+  }).join('');
+}
+
+function renderSchedule(){
+  const el=document.getElementById('shift-schedule');
+  const sched=__shifts.filter(s=>s.scheduled_start)
+    .sort((a,b)=>new Date(a.scheduled_start)-new Date(b.scheduled_start));
+  if(!sched.length){ el.innerHTML='<div class="no-data">Nothing scheduled</div>'; return; }
+  el.innerHTML=sched.map(s=>`
+    <div class="r-meta" style="justify-content:space-between;padding:6px 0;border-bottom:0.5px solid #E5E1DB">
+      <span><strong>${empName(s.employee_id)}</strong><br><span style="font-size:11px;color:var(--text2)">${fmtDay(s.scheduled_start)} · ${fmtTime(s.scheduled_start)}–${fmtTime(s.scheduled_end)}</span></span>
+      <button class="mbtn" style="padding:4px 8px;font-size:11px" onclick="deleteShift('${s.id}')">✕</button>
+    </div>`).join('');
+}
+
+function renderPayroll(){
+  const el=document.getElementById('shift-payroll');
+  const lbl=document.getElementById('shift-range-label');
+  const {start,end}=shiftRange();
+  lbl.textContent=`(${start.toLocaleDateString('en-PH',{month:'short',day:'numeric'})} – ${end.toLocaleDateString('en-PH',{month:'short',day:'numeric'})})`;
+  const rows=__employees.map(e=>{
+    const clocked=__shifts.filter(s=>s.employee_id===e.id && s.clock_in);
+    let hrs=0;
+    clocked.forEach(s=>{ const out=s.clock_out||new Date(); if(new Date(s.clock_in)>=start) hrs+=hoursBetween(s.clock_in,out); });
+    return {name:e.name, hrs, pay:hrs*(+e.hourly_rate||0)};
+  }).filter(r=>r.hrs>0).sort((a,b)=>b.hrs-a.hrs);
+  if(!rows.length){ el.innerHTML='<div class="no-data">No hours logged</div>'; return; }
+  const totalHrs=rows.reduce((a,r)=>a+r.hrs,0), totalPay=rows.reduce((a,r)=>a+r.pay,0);
+  el.innerHTML=rows.map(r=>`
+    <div class="r-meta" style="justify-content:space-between;padding:6px 0;border-bottom:0.5px solid #E5E1DB">
+      <span>${r.name}</span>
+      <span>${r.hrs.toFixed(1)}h · <span style="color:var(--gold)">₱${r.pay.toFixed(0)}</span></span>
+    </div>`).join('')
+    + `<div class="r-meta" style="justify-content:space-between;padding:8px 0 0;font-weight:700">
+        <span>Total</span><span>${totalHrs.toFixed(1)}h · <span style="color:var(--gold)">₱${totalPay.toFixed(0)}</span></span></div>`;
+}
+
+function renderShiftMetrics(){
+  const grid=document.getElementById('shift-metrics');
+  const on=__shifts.filter(s=>s.clock_in && !s.clock_out).length;
+  const {start}=shiftRange();
+  let hrs=0;
+  __shifts.filter(s=>s.clock_in).forEach(s=>{ const out=s.clock_out||new Date(); if(new Date(s.clock_in)>=start) hrs+=hoursBetween(s.clock_in,out); });
+  const sched=__shifts.filter(s=>s.scheduled_start && new Date(s.scheduled_start)>=new Date()).length;
+  grid.innerHTML=`
+    <div class="metric-card"><div class="metric-lbl">On Now</div><div class="metric-val" style="color:var(--green)">${on}</div></div>
+    <div class="metric-card"><div class="metric-lbl">Hours This Period</div><div class="metric-val">${hrs.toFixed(1)}</div></div>
+    <div class="metric-card"><div class="metric-lbl">Active Staff</div><div class="metric-val">${__employees.filter(e=>e.active).length}</div></div>
+    <div class="metric-card"><div class="metric-lbl">Upcoming Shifts</div><div class="metric-val">${sched}</div></div>`;
+}
+
+async function deleteShift(id){
+  const {error}=await sb.from('shifts').delete().eq('id',id);
+  if(error){ toast('Could not remove'); console.error(error); return; }
+  toast('Removed'); renderShifts();
+}
+
+function openAddEmployee(){
+  document.getElementById('modal-container').innerHTML=`
+    <div class="modal-bg" role="dialog" aria-modal="true"><div class="modal">
+      <h3>＋ Add Employee</h3>
+      <input class="mi" id="emp-name" placeholder="Full name"/>
+      <input class="mi" id="emp-email" placeholder="Login email (optional)" style="margin-top:6px"/>
+      <input class="mi" id="emp-rate" type="number" min="0" step="1" placeholder="Hourly rate ₱ (optional)" style="margin-top:6px"/>
+      <input class="mi" id="emp-newpin" type="tel" inputmode="numeric" maxlength="4" placeholder="4-digit timeclock PIN (optional)" style="margin-top:6px"/>
+      <select class="mi" id="emp-role" style="margin-top:6px"><option value="employee">Employee</option><option value="owner">Owner</option></select>
+      <div class="mbtns">
+        <button class="mbtn ok" onclick="saveEmployee()">Save</button>
+        <button class="mbtn" onclick="closeModal()">Cancel</button>
+      </div>
+    </div></div>`;
+  setTimeout(()=>document.getElementById('emp-name')?.focus(),50);
+}
+async function saveEmployee(){
+  const name=(document.getElementById('emp-name').value||'').trim();
+  if(!name){ toast('Name required'); return; }
+  const newpin=(document.getElementById('emp-newpin').value||'').trim();
+  if(newpin && !/^\d{4}$/.test(newpin)){ toast('PIN must be 4 digits'); return; }
+  const row={ name,
+    email:(document.getElementById('emp-email').value||'').trim()||null,
+    hourly_rate:+(document.getElementById('emp-rate').value||0),
+    role:document.getElementById('emp-role').value };
+  const {data,error}=await sb.from('employees').insert(row).select().single();
+  if(error){ toast(error.message.includes('duplicate')?'That email already exists':'Could not save'); console.error(error); return; }
+  if(newpin && data?.id){
+    const {error:pe}=await sb.rpc('set_employee_pin',{p_employee_id:data.id,p_pin:newpin});
+    if(pe){ toast('Employee added, but PIN failed'); console.error(pe); }
+    else toast('Employee added ✓');
+  } else { toast('Employee added ✓'); }
+  closeModal(); renderShifts();
+}
+
+function openSetPin(empId){
+  const e=__employees.find(x=>x.id===empId);
+  document.getElementById('modal-container').innerHTML=`
+    <div class="modal-bg" role="dialog" aria-modal="true"><div class="modal">
+      <h3>🔑 Set PIN — ${e?e.name:''}</h3>
+      <span class="ml">4-digit PIN this person types at the timeclock.</span>
+      <input class="mi" id="set-pin" type="tel" inputmode="numeric" maxlength="4" placeholder="4-digit PIN" aria-label="New PIN"/>
+      <div class="mbtns">
+        <button class="mbtn ok" onclick="saveSetPin('${empId}')">Save PIN</button>
+        <button class="mbtn" onclick="closeModal()">Cancel</button>
+      </div>
+    </div></div>`;
+  setTimeout(()=>document.getElementById('set-pin')?.focus(),50);
+}
+async function saveSetPin(empId){
+  const pin=(document.getElementById('set-pin').value||'').trim();
+  if(!/^\d{4}$/.test(pin)){ toast('PIN must be 4 digits'); return; }
+  const {error}=await sb.rpc('set_employee_pin',{p_employee_id:empId,p_pin:pin});
+  if(error){ toast('Could not set PIN'); console.error(error); return; }
+  toast('PIN set ✓'); closeModal(); renderShifts();
+}
+
+function openScheduleShift(){
+  if(!__employees.length){ toast('Add an employee first'); return; }
+  const opts=__employees.filter(e=>e.active).map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
+  const today=new Date().toISOString().slice(0,10);
+  document.getElementById('modal-container').innerHTML=`
+    <div class="modal-bg" role="dialog" aria-modal="true"><div class="modal">
+      <h3>🗓 Schedule Shift</h3>
+      <select class="mi" id="sch-emp">${opts}</select>
+      <input class="mi" id="sch-date" type="date" value="${today}" style="margin-top:6px"/>
+      <div style="display:flex;gap:6px;margin-top:6px">
+        <input class="mi" id="sch-start" type="time" value="08:00" style="margin:0"/>
+        <input class="mi" id="sch-end" type="time" value="16:00" style="margin:0"/>
+      </div>
+      <div class="mbtns">
+        <button class="mbtn ok" onclick="saveScheduledShift()">Schedule</button>
+        <button class="mbtn" onclick="closeModal()">Cancel</button>
+      </div>
+    </div></div>`;
+}
+async function saveScheduledShift(){
+  const emp=document.getElementById('sch-emp').value;
+  const date=document.getElementById('sch-date').value;
+  const st=document.getElementById('sch-start').value, en=document.getElementById('sch-end').value;
+  if(!emp||!date||!st||!en){ toast('Fill all fields'); return; }
+  const row={ employee_id:emp,
+    scheduled_start:new Date(`${date}T${st}`).toISOString(),
+    scheduled_end:new Date(`${date}T${en}`).toISOString() };
+  const {error}=await sb.from('shifts').insert(row);
+  if(error){ toast('Could not schedule'); console.error(error); return; }
+  toast('Shift scheduled ✓'); closeModal(); renderShifts();
+}
+/* =================== END EMPLOYEE SHIFT MANAGER =================== */
 function setLoading(msg){document.getElementById('loading-msg').textContent=msg;}
 function updateClock(){document.getElementById('clock').textContent=new Date().toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'});}
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2800);}

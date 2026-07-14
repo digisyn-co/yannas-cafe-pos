@@ -12,6 +12,8 @@
     { "src": "/customer-app", "dest": "/customer-app.html" },
     { "src": "/customer-app.html", "dest": "/customer-app.html" },
     { "src": "/order", "dest": "/customer-app.html" },
+    { "src": "/timeclock", "dest": "/timeclock.html" },
+    { "src": "/timeclock.html", "dest": "/timeclock.html" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
