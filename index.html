@@ -866,13 +866,53 @@ async function loadApp(){
 
 async function setupInventory(){
   const {data,error}=await sb.from('inventory').select('*');
+
+  // Empty table -> seed it from INIT_INV.
   if(error||!data||data.length===0){
     const rows=INIT_INV.map(i=>({id:i.id,name:i.name,unit:i.unit,stock:i.stock,max_stock:i.max,cat:i.cat}));
     await sb.from('inventory').upsert(rows,{onConflict:'id'});
     invData=JSON.parse(JSON.stringify(INIT_INV));
-  } else {
-    invData=data.map(d=>({id:d.id,name:d.name,unit:d.unit,stock:d.stock,max:d.max_stock,cat:d.cat}));
+    return;
   }
+
+  // Table has rows. IMPORTANT: it used to just trust them, which meant any
+  // change to INIT_INV (renames, new items, unit changes) never reached a
+  // café that had already seeded — it kept showing the original data forever.
+  // So: reconcile the DB against INIT_INV. Stock is the DB's business and is
+  // never touched; the *definition* of an item (name/unit/max/cat) comes from
+  // the code, which is the source of truth.
+  const byId=new Map(data.map(d=>[d.id,d]));
+  const fixes=[];
+
+  for(const def of INIT_INV){
+    const row=byId.get(def.id);
+    if(!row){
+      // new item added in code -> insert it (starts empty)
+      fixes.push({id:def.id,name:def.name,unit:def.unit,stock:0,max_stock:def.max,cat:def.cat});
+    } else if(row.name!==def.name || row.unit!==def.unit || row.max_stock!==def.max || row.cat!==def.cat){
+      // definition drifted -> realign it, but KEEP the counted stock
+      fixes.push({id:def.id,name:def.name,unit:def.unit,stock:row.stock,max_stock:def.max,cat:def.cat});
+    }
+  }
+
+  if(fixes.length){
+    try{
+      await sb.from('inventory').upsert(fixes,{onConflict:'id'});
+      console.info(`[inventory] reconciled ${fixes.length} item(s) against INIT_INV`);
+    }catch(e){ console.warn('[inventory] reconcile failed:',e); }
+  }
+
+  // retired items: in the DB but no longer in the code. Left in place on
+  // purpose (deleting could orphan history) but hidden from the UI.
+  const live=new Set(INIT_INV.map(i=>i.id));
+
+  const merged=INIT_INV.map(def=>{
+    const row=byId.get(def.id);
+    return {id:def.id,name:def.name,unit:def.unit,cat:def.cat,max:def.max,
+            reorder:def.reorder,
+            stock:row?row.stock:0};
+  });
+  invData=merged;
 }
 
 function getDateRange(filter){
