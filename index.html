@@ -5,7 +5,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>Yanna's Vietnamese Cafe — POS</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -422,6 +422,81 @@ body{background:#FFFFFF;color:var(--text1);font-size:14px;font-family:var(--font
     padding: 4mm;
   }
   .no-print { display: none !important }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   TABLET TIER — iPad Air 13" (1366×1024 landscape / 1024×1366 portrait)
+   Fixes measured on-device:
+     · landscape wasted 166px to a 1200px .page cap
+     · portrait fell into the ≤700px phone rule, collapsing the order
+       panel into a bottom sheet and making the whole page scroll
+     · 137px menu cards were cramped for fast counter tapping
+   ═══════════════════════════════════════════════════════════════ */
+@media (min-width:701px) and (max-width:1400px){
+
+  /* reclaim the full width — no dead margins on a 13" tablet.
+     The base rule is `.page{max-width:1200px;margin:0 auto}`. Inside the
+     flex column below, that `auto` margin CENTERS the page and eats ~361px
+     of a 1366px screen — so it must be zeroed, not just the max-width. */
+  .page{max-width:100%;width:100%;margin:0;padding:14px 18px}
+
+  /* real two-column POS in BOTH orientations (never a bottom sheet).
+     NOTE: do NOT hard-code the topbar height — it measures 65px, not the
+     57px the base CSS assumes, which pushed the page 8px past the fold.
+     Use a flex column so the wrap fills whatever height is actually left. */
+  body{overflow:hidden}                 /* the PAGE never scrolls on a POS */
+  #app{display:flex;flex-direction:column;height:100vh;height:100dvh}
+  .page.active{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+  .pos-wrap{
+    display:grid;
+    grid-template-columns:1fr 360px;
+    gap:16px;
+    flex:1;min-height:0;height:auto;   /* fill remaining space, don't guess */
+  }
+  .menu-panel{display:flex;flex-direction:column;min-height:0}
+  .order-panel{
+    position:relative;inset:auto;
+    height:100%;max-height:none;
+    border-radius:var(--rl);
+    display:flex;flex-direction:column;
+  }
+  .order-items{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+
+  /* bigger, easier-to-hit menu cards */
+  .menu-grid{
+    grid-template-columns:repeat(auto-fill,minmax(158px,1fr));
+    gap:14px;
+    overflow-y:auto;-webkit-overflow-scrolling:touch;
+  }
+  .mcard,.menu-grid > *{min-height:96px}
+
+  /* comfortable touch targets (Apple HIG floor is 44pt) */
+  .cat-btn{padding:9px 16px;font-size:13px;min-height:40px}
+  .tab{min-height:44px}
+  .qty-btn,.mbtn,.clr-btn{min-height:40px;min-width:40px}
+  .menu-search{min-height:44px;font-size:15px}
+
+  /* the checkout button is the most-tapped control in the room */
+  .pay-btn,.checkout-btn{min-height:52px;font-size:16px}
+}
+
+/* portrait specifically: slightly narrower order panel so the menu keeps
+   a sensible number of columns at 1024px */
+@media (min-width:701px) and (max-width:1100px) and (orientation:portrait){
+  .pos-wrap{grid-template-columns:1fr 320px}
+  .menu-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+}
+
+/* touch ergonomics for tablet use */
+@media (hover:none) and (pointer:coarse){
+  /* stop double-tap zoom + the 300ms tap delay */
+  button,.mcard,.cat-btn,.tab,.qty-btn{touch-action:manipulation}
+  /* staff drag-scroll the menu; text selection just gets in the way */
+  .mcard,.cat-btn,.tab,.order-head,.mname{
+    -webkit-user-select:none;user-select:none;
+    -webkit-tap-highlight-color:transparent;
+  }
 }
 
 </style>
