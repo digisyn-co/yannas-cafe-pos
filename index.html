@@ -277,20 +277,27 @@ body{background:#FFFFFF;color:var(--text1);font-size:14px;font-family:var(--font
 .btn-cancel{background:transparent;color:var(--text2)}
 .btn-cancel:hover{background:var(--bg3)}
 
-/* INVENTORY */
+/* INVENTORY — spreadsheet style */
 .inv-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
-.inv-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
-.inv-section{background:var(--bg2);border-radius:var(--rl);padding:14px;border:0.5px solid #2E2820;min-width:0}
+.inv-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.inv-search{flex:1;min-width:160px;padding:8px 12px;border-radius:var(--r);border:0.5px solid #3D3528;background:var(--bg2);color:var(--text1);font-size:13px;font-family:var(--font-body);outline:none}
+.inv-search:focus{border-color:rgba(201,168,76,0.5)}
+.inv-count{font-size:11px;color:var(--text3);white-space:nowrap}
 .sec-title{font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:10px;font-family:var(--font-display)}
-.inv-table{width:100%;table-layout:fixed;border-collapse:collapse;font-size:13px}
-.inv-table th{text-align:left;padding:4px 6px;font-size:10px;font-weight:600;color:var(--text3);border-bottom:0.5px solid #2E2820;text-transform:uppercase;letter-spacing:0.5px}
-.inv-table th:nth-child(1){width:40%}
-.inv-table th:nth-child(2){width:20%}
-.inv-table th:nth-child(3){width:26%}
-.inv-table th:nth-child(4){width:14%}
-.inv-table td{padding:6px 6px;border-bottom:0.5px solid #2E2820;vertical-align:middle;color:var(--text1);overflow-wrap:break-word;word-break:break-word}
-.inv-table tr:last-child td{border-bottom:none}
-.inv-table tr:hover td{background:var(--bg3)}
+.inv-table-wrap{width:100%;overflow-x:auto;border-radius:var(--rl);border:0.5px solid #2E2820}
+.inv-sheet{width:100%;min-width:520px;border-collapse:collapse;font-size:13px;background:var(--bg2)}
+.inv-sheet thead th{position:sticky;top:0;background:var(--bg3);text-align:left;padding:9px 10px;font-size:10px;font-weight:700;color:var(--text3);border-bottom:0.5px solid #2E2820;text-transform:uppercase;letter-spacing:0.5px;z-index:1}
+.inv-sheet th:nth-child(1){width:16%}
+.inv-sheet th:nth-child(2){width:38%}
+.inv-sheet th:nth-child(3){width:18%}
+.inv-sheet th:nth-child(4){width:18%}
+.inv-sheet th:nth-child(5){width:10%}
+.inv-sheet td{padding:8px 10px;border-bottom:0.5px solid #2E2820;vertical-align:middle;color:var(--text1);overflow-wrap:break-word;word-break:break-word}
+.inv-sheet tbody tr:nth-child(even) td{background:rgba(255,255,255,0.015)}
+.inv-sheet tbody tr:last-child td{border-bottom:none}
+.inv-sheet tbody tr:hover td{background:var(--bg3)}
+.inv-cat-pill{display:inline-block;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600;letter-spacing:0.3px;background:var(--gold-bg2);color:var(--gold);white-space:nowrap}
+.inv-empty{padding:28px;text-align:center;color:var(--text3);font-size:13px}
 .sbar{width:100%;max-width:64px;height:4px;background:var(--bg4);border-radius:3px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:5px}
 .sfill{height:100%;border-radius:3px}
 .sok-f{background:var(--green-m)}
@@ -614,7 +621,17 @@ body{background:#FFFFFF;color:var(--text1);font-size:14px;font-family:var(--font
       <div style="font-size:16px;font-weight:700">Ingredient Inventory</div>
       <button class="restock-btn" onclick="restockAll()">↺ Restock All</button>
     </div>
-    <div class="inv-grid" id="inv-grid"></div>
+    <div class="inv-toolbar">
+      <input type="text" id="inv-search" class="inv-search" placeholder="🔍 Search ingredient…" oninput="renderInventory()">
+      <div class="cat-bar" id="inv-cat-bar"></div>
+      <span class="inv-count" id="inv-count"></span>
+    </div>
+    <div class="inv-table-wrap">
+      <table class="inv-sheet">
+        <thead><tr><th>Category</th><th>Ingredient</th><th>Stock</th><th>Level</th><th></th></tr></thead>
+        <tbody id="inv-tbody"></tbody>
+      </table>
+    </div>
   </div>
 
   <!-- Orders -->
@@ -2099,29 +2116,45 @@ async function deductInventory(items){
 function closeModal(){document.getElementById('modal-container').innerHTML='';}
 
 // ── INVENTORY ─────────────────────────────────
+let invActiveCat='All';
 async function renderInventory(){
   const {data}=await sb.from('inventory').select('*');
   if(data) invData=data.map(d=>({id:d.id,name:d.name,unit:d.unit,stock:d.stock,max:d.max_stock,cat:d.cat}));
-  const cats=[...new Set(invData.map(i=>i.cat))];
-  document.getElementById('inv-grid').innerHTML=cats.map(cat=>{
-    const items=invData.filter(i=>i.cat===cat);
-    return `<div class="inv-section"><div class="sec-title">${cat}</div>
-      <table class="inv-table"><thead><tr><th>Ingredient</th><th>Stock</th><th>Level</th><th></th></tr></thead>
-      <tbody>${items.map(item=>{
-        const thr=lowThreshold(item);
-        const ref=(item.max>0&&item.max<100000)?item.max:thr*3;
-        const pct=Math.max(0,Math.min(100,Math.round(item.stock/ref*100)));
-        const txt=item.stock<=0?'Out':item.stock<=thr?'Low':'OK';
-        const key=item.stock<=0?'sout':item.stock<=thr?'slow':'sok';
-        const fc=key+'-f';
-        const bc=key;
-        return `<tr><td>${esc(item.name)}</td>
-          <td style="font-weight:600;font-size:12px">${item.stock} ${item.unit}</td>
-          <td><div class="sbar"><div class="sfill ${fc}" style="width:${pct}%"></div></div><span class="sbadge ${bc}">${txt}</span></td>
-          <td><button class="adj-btn" onclick="showAdj('${item.id}')">Edit</button></td></tr>`;
-      }).join('')}</tbody></table></div>`;
+
+  // category filter chips
+  const cats=['All',...new Set(invData.map(i=>i.cat))];
+  const catBar=document.getElementById('inv-cat-bar');
+  if(catBar) catBar.innerHTML=cats.map(c=>
+    `<button class="cat-btn${c===invActiveCat?' active':''}" onclick="filterInvCat('${c}')">${c}</button>`
+  ).join('');
+
+  const q=(document.getElementById('inv-search')?.value||'').toLowerCase().trim();
+  let rows=invData.filter(i=>invActiveCat==='All'||i.cat===invActiveCat);
+  if(q) rows=rows.filter(i=>i.name.toLowerCase().includes(q)||i.cat.toLowerCase().includes(q));
+  rows=[...rows].sort((a,b)=>a.cat.localeCompare(b.cat)||a.name.localeCompare(b.name));
+
+  const countEl=document.getElementById('inv-count');
+  if(countEl) countEl.textContent=rows.length+' of '+invData.length+' items';
+
+  const tbody=document.getElementById('inv-tbody');
+  if(!rows.length){ tbody.innerHTML=`<tr><td colspan="5" class="inv-empty">No ingredients match "${esc(q)}"</td></tr>`; return; }
+
+  tbody.innerHTML=rows.map(item=>{
+    const thr=lowThreshold(item);
+    const ref=(item.max>0&&item.max<100000)?item.max:thr*3;
+    const pct=Math.max(0,Math.min(100,Math.round(item.stock/ref*100)));
+    const txt=item.stock<=0?'Out':item.stock<=thr?'Low':'OK';
+    const key=item.stock<=0?'sout':item.stock<=thr?'slow':'sok';
+    return `<tr>
+      <td><span class="inv-cat-pill">${esc(item.cat)}</span></td>
+      <td>${esc(item.name)}</td>
+      <td style="font-weight:600;font-size:12px">${item.stock} ${item.unit}</td>
+      <td><div class="sbar"><div class="sfill ${key}-f" style="width:${pct}%"></div></div><span class="sbadge ${key}">${txt}</span></td>
+      <td><button class="adj-btn" onclick="showAdj('${item.id}')">Edit</button></td>
+    </tr>`;
   }).join('');
 }
+function filterInvCat(cat){ invActiveCat=cat; renderInventory(); }
 
 function showAdj(id){
   const item=invData.find(i=>i.id===id);
