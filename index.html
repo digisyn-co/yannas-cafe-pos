@@ -233,6 +233,8 @@ body{background:#FFFFFF;color:var(--text1);font-size:14px;font-family:var(--font
 .mi{width:100%;padding:8px 10px;border:0.5px solid #3D3528;border-radius:var(--r);font-size:13px;color:var(--text1);background:var(--bg3);font-family:var(--font-body)}
 .mi:focus{outline:none;border-color:rgba(201,168,76,0.4)}
 .mbtns{display:flex;gap:8px;margin-top:16px;justify-content:flex-end}
+.flavor-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+.flavor-btn{width:100%;padding:12px 8px;text-align:center;font-size:14px;font-weight:600}
 .mbtn{padding:7px 16px;border-radius:var(--r);border:0.5px solid #3D3528;background:transparent;cursor:pointer;font-size:13px;font-weight:500;color:var(--text2);font-family:var(--font-body);transition:all .15s}
 .mbtn.ok{background:var(--gold-bg2);border-color:rgba(201,168,76,0.4);color:var(--gold)}
 .mbtn.print-btn{background:var(--bg3);border-color:#3D3528;color:var(--text1)}
@@ -1060,12 +1062,46 @@ function renderMenu(){
 function filterCat(cat){activeCategory=cat;renderMenu();}
 
 // ── ORDER ─────────────────────────────────────
+// Fruit Tea flavor -> syrup inventory id + ml per serving (matches Recipe Book B.3)
+const FLAVOR_SYRUP={
+  'Lychee':{id:'lychee_syrup',amt:25},
+  'Strawberry':{id:'strawberry_syrup',amt:35},
+  'Mango':{id:'mango_syrup',amt:40},
+  'Passion Fruit':{id:'passion_syrup',amt:30},
+  'Wintermelon':{id:'wintermelon_syrup',amt:30},
+};
+const FRUIT_TEA_FLAVORS=Object.keys(FLAVOR_SYRUP);
+
 function addItem(id){
   const item=MENU.find(m=>m.id===id);
+  if(id===9){ openFlavorModal(id); return; } // Fruit Tea → pick a flavor first
   const key=id+'-plain';
   const ex=order.find(o=>o.key===key);
   if(ex) ex.qty++;
   else order.push({...item,price:item.price,qty:1,key,temp:null,displayName:item.name});
+  renderOrder();
+}
+
+function openFlavorModal(id){
+  const item=MENU.find(m=>m.id===id);
+  document.getElementById('modal-container').innerHTML=`
+    <div class="modal-bg"><div class="modal">
+      <h3>🧋 Choose a Flavour</h3>
+      <span class="ml" style="margin-bottom:8px;display:block">${item.name} — ₱${item.price}</span>
+      <div class="flavor-grid">
+        ${FRUIT_TEA_FLAVORS.map(f=>`<button class="mbtn flavor-btn" onclick="addFruitTea(${id},'${f}')">${f}</button>`).join('')}
+      </div>
+      <div class="mbtns"><button class="mbtn" onclick="closeModal()">Cancel</button></div>
+    </div></div>`;
+}
+
+function addFruitTea(id,flavor){
+  const item=MENU.find(m=>m.id===id);
+  const key=id+'-'+flavor.toLowerCase().replace(/\s+/g,'_');
+  const ex=order.find(o=>o.key===key);
+  if(ex) ex.qty++;
+  else order.push({...item,price:item.price,qty:1,key,temp:null,flavor,displayName:`${item.name} — ${flavor}`});
+  closeModal();
   renderOrder();
 }
 function addItemTemp(id,temp,evt){
@@ -1985,7 +2021,7 @@ const RECIPE={
   7:{matcha:2,heavy_cream:30,fresh_milk:130,sea_salt:1,condensed:3,ice:150,cup_cold:1,lid:1,straw:1},   // Salt Matcha (16oz cold only)
   8:{matcha:2,eggs:1,condensed:25,heavy_cream:40,sugar:5,ice:150,cup_cold:1,lid:1,straw:1},            // Egg Custard Matcha (16oz cold only)
   // ── TEA ──
-  9:{jasmine_tea:2,water:200,fruit_syrup:30,sugar:10,ice:150,cup_cold:1,lid:1,straw:1},                // Fruit Tea
+  9:{jasmine_tea:2,water:200,sugar:10,ice:150,cup_cold:1,lid:1,straw:1},                // Fruit Tea (fruit syrup deducted per-flavor — see FLAVOR_SYRUP)
   // ── SANDWICHES ──
   13:{baguette:1,pork:110,pickled_carrots:20,pickled_onions:10,cucumber:0.25,liver_spread:0.1,paper_bag:1}, // BBQ Pork Sandwich
   14:{baguette:1,chicken:110,pickled_carrots:20,pickled_onions:10,cucumber:0.25,paper_bag:1},               // Chicken BBQ Sandwich
@@ -2018,6 +2054,7 @@ function reqMap(items){
   const need={};const add=(id,a)=>{if(!a)return;need[id]=(need[id]||0)+a;};
   items.forEach(o=>{
     const r=RECIPE[o.id]; if(r) for(const ing in r) add(ing,r[ing]*o.qty);
+    if(o.id===9 && o.flavor && FLAVOR_SYRUP[o.flavor]){ const fs=FLAVOR_SYRUP[o.flavor]; add(fs.id,fs.amt*o.qty); }
     if(o.cat==='Coffee') add(o.temp==='hot'?'hot_cups':'cold_cups_16',o.qty);
     if(o.cat==='Matcha') add('cold_cups_16',o.qty); // matcha is cold-only 16oz
     else if(o.cat==='Tea') add('cold_cups_22',o.qty);
@@ -2043,6 +2080,7 @@ async function deductInventory(items){
   items.forEach(o=>{
     const r=RECIPE[o.id];
     if(r){for(const ing in r) adj(ing, r[ing]*o.qty);}
+    if(o.id===9 && o.flavor && FLAVOR_SYRUP[o.flavor]){ const fs=FLAVOR_SYRUP[o.flavor]; adj(fs.id,fs.amt*o.qty); }
     // cups & packaging
     if(o.cat==='Coffee') adj(o.temp==='hot'?'hot_cups':'cold_cups_16',o.qty);
     if(o.cat==='Matcha') adj('cold_cups_16',o.qty);
@@ -2812,7 +2850,7 @@ const __busyOnline=new Set();
 async function acceptIncoming(id){
   if(__busyOnline.has(id)) return; __busyOnline.add(id);
   const o=onlineActive.find(x=>x.id===id); if(!o){ __busyOnline.delete(id); return; }
-  const itemsPayload=(o.items||[]).map(it=>({id:it.id,name:it.name,qty:it.qty,price:it.price,cat:it.cat,temp:it.temp?String(it.temp).toLowerCase():null}));
+  const itemsPayload=(o.items||[]).map(it=>({id:it.id,name:it.name,qty:it.qty,price:it.price,cat:it.cat,temp:it.temp?String(it.temp).toLowerCase():null,flavor:it.flavor||null}));
   // 1) Idempotent claim: incoming→preparing only if still incoming (prevents double-accept across taps/devices)
   let __claimed=false;
   try{ const {data:cl}=await sb.from('drive_thru_orders').update({status:'preparing'}).eq('id',id).eq('status','incoming').select('id'); __claimed=!!(cl&&cl.length); }catch(e){ console.error('status',e); __claimed=true; }
