@@ -197,7 +197,7 @@ body{background:#FAF9F6;color:var(--text1);font-size:14px;font-family:var(--font
 .dm-total-preview .dtp-row.total{color:var(--gold);font-weight:700;font-size:14px;margin-bottom:0;border-top:0.5px solid rgba(73,104,0,0.3);padding-top:6px;margin-top:6px}
 .dm-actions{display:flex;gap:8px;margin-top:4px}
 .dm-actions button{flex:1;padding:10px;border-radius:var(--r);border:none;cursor:pointer;font-family:var(--font-body);font-size:12px;font-weight:600}
-.dm-apply{background:var(--gold);color:#1a1a1a}
+.dm-apply{background:var(--gold);color:#fff}
 .dm-cancel{background:var(--bg3);color:var(--text2);border:0.5px solid #827472 !important;border:none}
 .clr-btn{background:none;border:none;cursor:pointer;color:var(--text3);font-size:12px;padding:2px 4px;transition:color .15s}
 /* ORDER TYPE */
@@ -340,7 +340,7 @@ body{background:#FAF9F6;color:var(--text1);font-size:14px;font-family:var(--font
 .inv-chat-msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;min-height:200px;max-height:360px}
 .inv-chat-msgs::-webkit-scrollbar{display:none}
 .chat-msg{max-width:85%;padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.5;word-wrap:break-word}
-.chat-msg.bot{background:#F7F5F2;color:#1A1815;align-self:flex-start;border-bottom-left-radius:4px}
+.chat-msg.bot{background:var(--bg2);color:var(--text1);align-self:flex-start;border-bottom-left-radius:4px}
 .chat-msg.user{background:var(--primary);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
 .chat-msg.confirm{background:#E8F5E9;color:#1B5E20;border:1px solid #A5D6A7;align-self:flex-start;border-bottom-left-radius:4px}
 .chat-msg.error{background:#FFEBEE;color:#B71C1C;border:1px solid #EF9A9A;align-self:flex-start;border-bottom-left-radius:4px}
@@ -2671,7 +2671,7 @@ function renderOnNow(){
   if(!on.length){ el.innerHTML='<div class="no-data">Nobody clocked in</div>'; return; }
   el.innerHTML=on.map(s=>{
     const hrs=hoursBetween(s.clock_in,new Date());
-    return `<div class="r-meta" style="justify-content:space-between;padding:6px 0;border-bottom:0.5px solid #E5E1DB">
+    return `<div class="r-meta" style="justify-content:space-between;padding:6px 0;border-bottom:0.5px solid #D3C3C0">
       <span><strong>${empName(s.employee_id)}</strong> · in since ${fmtTime(s.clock_in)}</span>
       <span style="color:var(--gold)">${hrs.toFixed(1)}h</span>
     </div>`;
@@ -2686,7 +2686,7 @@ function renderRoster(){
     const open=openShift(e.id);
     const status=open?`<span style="color:#2ecc71">● on since ${fmtTime(open.clock_in)}</span>`:`<span style="color:var(--text2)">○ off</span>`;
     const hasPin=e.pin_hash?'PIN set':'no PIN';
-    return `<div class="r-meta" style="justify-content:space-between;align-items:center;padding:7px 0;border-bottom:0.5px solid #E5E1DB">
+    return `<div class="r-meta" style="justify-content:space-between;align-items:center;padding:7px 0;border-bottom:0.5px solid #D3C3C0">
       <span><strong>${e.name}</strong> ${e.role==='owner'?'👑':''}<br><span style="font-size:11px;color:var(--text2)">${status} · ₱${(+e.hourly_rate||0).toFixed(0)}/hr · ${hasPin}</span></span>
       <button class="mbtn" style="padding:5px 10px;font-size:12px" onclick="openSetPin('${e.id}')">Set PIN</button>
     </div>`;
@@ -2699,7 +2699,7 @@ function renderSchedule(){
     .sort((a,b)=>new Date(a.scheduled_start)-new Date(b.scheduled_start));
   if(!sched.length){ el.innerHTML='<div class="no-data">Nothing scheduled</div>'; return; }
   el.innerHTML=sched.map(s=>`
-    <div class="r-meta" style="justify-content:space-between;padding:6px 0;border-bottom:0.5px solid #E5E1DB">
+    <div class="r-meta" style="justify-content:space-between;padding:6px 0;border-bottom:0.5px solid #D3C3C0">
       <span><strong>${empName(s.employee_id)}</strong><br><span style="font-size:11px;color:var(--text2)">${fmtDay(s.scheduled_start)} · ${fmtTime(s.scheduled_start)}–${fmtTime(s.scheduled_end)}</span></span>
       <button class="mbtn" style="padding:4px 8px;font-size:11px" onclick="deleteShift('${s.id}')">✕</button>
     </div>`).join('');
@@ -2719,7 +2719,7 @@ function renderPayroll(){
   if(!rows.length){ el.innerHTML='<div class="no-data">No hours logged</div>'; return; }
   const totalHrs=rows.reduce((a,r)=>a+r.hrs,0), totalPay=rows.reduce((a,r)=>a+r.pay,0);
   el.innerHTML=rows.map(r=>`
-    <div class="r-meta" style="justify-content:space-between;padding:6px 0;border-bottom:0.5px solid #E5E1DB">
+    <div class="r-meta" style="justify-content:space-between;padding:6px 0;border-bottom:0.5px solid #D3C3C0">
       <span>${r.name}</span>
       <span>${r.hrs.toFixed(1)}h · <span style="color:var(--gold)">₱${r.pay.toFixed(0)}</span></span>
     </div>`).join('')
@@ -2882,7 +2882,7 @@ function setupOnlineUI(){
     const b=document.createElement('button');
     b.id='online-btn'; b.onclick=openOnlinePanel;
     b.style.cssText='margin-left:4px;padding:4px 10px;font-size:11px;border:0.5px solid #827472;border-radius:6px;background:transparent;color:var(--text2);cursor:pointer;font-family:var(--font-body);letter-spacing:0.3px';
-    b.innerHTML='🛵 Online <span id="online-count" style="display:none;background:var(--gold);color:#1a1a1a;border-radius:9px;padding:0 6px;font-weight:700;margin-left:2px">0</span>';
+    b.innerHTML='🛵 Online <span id="online-count" style="display:none;background:var(--gold);color:#fff;border-radius:9px;padding:0 6px;font-weight:700;margin-left:2px">0</span>';
     pbtn.parentNode.insertBefore(b,pbtn);
   }
 }
@@ -2938,7 +2938,7 @@ function showNextIncoming(){
       </div>
       <div style="display:flex;gap:10px;padding:0 20px 20px">
         <button onclick="snoozeIncoming('${o.id}')" style="flex:1;padding:15px;border-radius:10px;border:0.5px solid #827472;background:transparent;color:var(--text2);font-weight:700;font-size:15px;cursor:pointer">Later</button>
-        <button onclick="acceptIncoming('${o.id}')" style="flex:2;padding:15px;border-radius:10px;border:none;background:var(--gold);color:#1a1a1a;font-weight:800;font-size:16px;cursor:pointer">✓ Accept &amp; Print</button>
+        <button onclick="acceptIncoming('${o.id}')" style="flex:2;padding:15px;border-radius:10px;border:none;background:var(--gold);color:#fff;font-weight:800;font-size:16px;cursor:pointer">✓ Accept &amp; Print</button>
       </div>
     </div></div>`;
 }
@@ -3000,7 +3000,7 @@ function openOnlinePanel(){
   const list=activeOnline();
   const rows=list.length?list.map(o=>{
     let act,clr;
-    if(o.status==='incoming'){ act=`<button onclick="acceptIncoming('${o.id}')" style="padding:10px 14px;border-radius:8px;border:none;background:var(--gold);color:#1a1a1a;font-weight:700;cursor:pointer">Accept &amp; Print</button>`; clr='#9a8a5a'; }
+    if(o.status==='incoming'){ act=`<button onclick="acceptIncoming('${o.id}')" style="padding:10px 14px;border-radius:8px;border:none;background:var(--gold);color:#fff;font-weight:700;cursor:pointer">Accept &amp; Print</button>`; clr='#9a8a5a'; }
     else if(o.status==='preparing'){ act=`<button onclick="markReady('${o.id}')" style="padding:10px 14px;border-radius:8px;border:0.5px solid var(--gold);background:var(--gold-bg2);color:var(--gold);font-weight:700;cursor:pointer">Mark Ready</button>`; clr='#BA7517'; }
     else { act=`<button onclick="markPickedUp('${o.id}')" style="padding:10px 14px;border-radius:8px;border:none;background:#2D7A4F;color:#fff;font-weight:700;cursor:pointer">Picked up</button>`; clr='#2D7A4F'; }
     return `<div style="display:flex;align-items:center;gap:10px;justify-content:space-between;padding:12px;border:0.5px solid #D3C3C0;border-radius:10px;margin-bottom:8px">
