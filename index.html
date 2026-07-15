@@ -624,6 +624,7 @@ body{background:#FFFFFF;color:var(--text1);font-size:14px;font-family:var(--font
     <div class="inv-toolbar">
       <input type="text" id="inv-search" class="inv-search" placeholder="🔍 Search ingredient…" oninput="renderInventory()">
       <div class="cat-bar" id="inv-cat-bar"></div>
+      <button class="restock-btn" onclick="openAddItem()">➕ Add Item</button>
       <span class="inv-count" id="inv-count"></span>
     </div>
     <div class="inv-table-wrap">
@@ -922,6 +923,20 @@ async function loadApp(){
   setTimeout(()=>loadOnlineOrders(),1200);
 }
 
+// Low-stock threshold: use INIT_INV's reorder point where the item still
+// matches a code-defined id, otherwise fall back to ~15% of max stock (or 3
+// if max isn't set) — used for items added straight from the Inventory tab,
+// which have no code entry to carry a reorder point.
+function invReorderFor(id,maxStock){
+  const def=INIT_INV.find(i=>i.id===id);
+  if(def&&def.reorder!=null) return def.reorder;
+  return Math.max(1,Math.round((maxStock||10)*0.15));
+}
+function mapInvRow(row){
+  return {id:row.id,name:row.name,unit:row.unit,cat:row.cat,max:row.max_stock,stock:row.stock,
+          reorder:invReorderFor(row.id,row.max_stock)};
+}
+
 async function setupInventory(){
   const {data,error}=await sb.from('inventory').select('*');
 
@@ -929,48 +944,33 @@ async function setupInventory(){
   if(error||!data||data.length===0){
     const rows=INIT_INV.map(i=>({id:i.id,name:i.name,unit:i.unit,stock:i.stock,max_stock:i.max,cat:i.cat}));
     await sb.from('inventory').upsert(rows,{onConflict:'id'});
-    invData=JSON.parse(JSON.stringify(INIT_INV));
+    invData=INIT_INV.map(i=>({...i}));
     return;
   }
 
-  // Table has rows. IMPORTANT: it used to just trust them, which meant any
-  // change to INIT_INV (renames, new items, unit changes) never reached a
-  // café that had already seeded — it kept showing the original data forever.
-  // So: reconcile the DB against INIT_INV. Stock is the DB's business and is
-  // never touched; the *definition* of an item (name/unit/max/cat) comes from
-  // the code, which is the source of truth.
+  // Table has rows. Only INSERT items that are brand new in the code —
+  // never overwrite an existing row's name/unit/max/cat. Those fields are
+  // now editable live from the Inventory tab (Edit button / + Add Item), so
+  // a code push must not silently undo a manager's rename or re-category —
+  // the DB is the source of truth for a row's definition once it exists.
   const byId=new Map(data.map(d=>[d.id,d]));
-  const fixes=[];
-
+  const inserts=[];
   for(const def of INIT_INV){
-    const row=byId.get(def.id);
-    if(!row){
-      // new item added in code -> insert it (starts empty)
-      fixes.push({id:def.id,name:def.name,unit:def.unit,stock:0,max_stock:def.max,cat:def.cat});
-    } else if(row.name!==def.name || row.unit!==def.unit || row.max_stock!==def.max || row.cat!==def.cat){
-      // definition drifted -> realign it, but KEEP the counted stock
-      fixes.push({id:def.id,name:def.name,unit:def.unit,stock:row.stock,max_stock:def.max,cat:def.cat});
+    if(!byId.has(def.id)){
+      inserts.push({id:def.id,name:def.name,unit:def.unit,stock:0,max_stock:def.max,cat:def.cat});
     }
   }
-
-  if(fixes.length){
+  if(inserts.length){
     try{
-      await sb.from('inventory').upsert(fixes,{onConflict:'id'});
-      console.info(`[inventory] reconciled ${fixes.length} item(s) against INIT_INV`);
-    }catch(e){ console.warn('[inventory] reconcile failed:',e); }
+      await sb.from('inventory').upsert(inserts,{onConflict:'id'});
+      console.info(`[inventory] added ${inserts.length} new item(s) from code`);
+    }catch(e){ console.warn('[inventory] insert failed:',e); }
   }
 
-  // retired items: in the DB but no longer in the code. Left in place on
-  // purpose (deleting could orphan history) but hidden from the UI.
-  const live=new Set(INIT_INV.map(i=>i.id));
-
-  const merged=INIT_INV.map(def=>{
-    const row=byId.get(def.id);
-    return {id:def.id,name:def.name,unit:def.unit,cat:def.cat,max:def.max,
-            reorder:def.reorder,
-            stock:row?row.stock:0};
-  });
-  invData=merged;
+  // invData = every row in the DB, including items added straight from the
+  // Inventory tab (which have no INIT_INV entry at all — previously those
+  // were hidden from the UI entirely).
+  invData=[...byId.values(),...inserts].map(mapInvRow);
 }
 
 function getDateRange(filter){
@@ -2119,7 +2119,7 @@ function closeModal(){document.getElementById('modal-container').innerHTML='';}
 let invActiveCat='All';
 async function renderInventory(){
   const {data}=await sb.from('inventory').select('*');
-  if(data) invData=data.map(d=>({id:d.id,name:d.name,unit:d.unit,stock:d.stock,max:d.max_stock,cat:d.cat}));
+  if(data) invData=data.map(mapInvRow);
 
   // category filter chips
   const cats=['All',...new Set(invData.map(i=>i.cat))];
@@ -2156,30 +2156,102 @@ async function renderInventory(){
 }
 function filterInvCat(cat){ invActiveCat=cat; renderInventory(); }
 
+const INV_UNITS=['pcs','kg','batch'];
+
+function invCategoryOptions(selected){
+  const cats=[...new Set(invData.map(i=>i.cat))].sort();
+  return cats.map(c=>`<option value="${esc(c)}"${c===selected?' selected':''}>${esc(c)}</option>`).join('');
+}
+function invUnitOptions(selected){
+  return INV_UNITS.map(u=>`<option value="${u}"${u===selected?' selected':''}>${u}</option>`).join('');
+}
+
 function showAdj(id){
   const item=invData.find(i=>i.id===id);
   document.getElementById('modal-container').innerHTML=`
     <div class="modal-bg"><div class="modal">
-      <h3>Adjust Stock</h3>
-      <span class="ml">Ingredient: <strong>${item.name}</strong></span>
-      <span class="ml">Current: ${item.stock} ${item.unit} · Max: ${item.max} ${item.unit}</span>
-      <label class="ml" style="margin-top:10px">New stock level (${item.unit})</label>
-      <input class="mi" type="number" id="adj-val" value="${item.stock}" min="0"/>
+      <h3>Edit Ingredient</h3>
+      <label class="ml">Name</label>
+      <input class="mi" type="text" id="edit-name" value="${esc(item.name)}" maxlength="120"/>
+      <label class="ml" style="margin-top:10px">Category</label>
+      <input class="mi" type="text" id="edit-cat" list="edit-cat-list" value="${esc(item.cat)}" maxlength="40"/>
+      <datalist id="edit-cat-list">${invCategoryOptions(item.cat)}</datalist>
+      <label class="ml" style="margin-top:10px">Unit</label>
+      <select class="mi" id="edit-unit">${invUnitOptions(item.unit)}</select>
+      <label class="ml" style="margin-top:10px">Current stock</label>
+      <input class="mi" type="number" id="edit-stock" value="${item.stock}" min="0"/>
+      <label class="ml" style="margin-top:10px">Max stock (for the level bar)</label>
+      <input class="mi" type="number" id="edit-max" value="${item.max}" min="0"/>
       <div class="mbtns">
-        <button class="mbtn ok" onclick="applyAdj('${id}')">Update</button>
+        <button class="mbtn ok" onclick="applyItemEdit('${id}')">Save</button>
         <button class="mbtn" onclick="closeModal()">Cancel</button>
       </div>
     </div></div>`;
 }
 
-async function applyAdj(id){
-  const val=parseInt(document.getElementById('adj-val').value)||0;
-  await sb.from('inventory').update({stock:val}).eq('id',id);
+async function applyItemEdit(id){
   const item=invData.find(i=>i.id===id);
-  if(item) item.stock=val;
+  if(!item) return;
+  const name=(document.getElementById('edit-name').value||'').trim();
+  const cat=(document.getElementById('edit-cat').value||'').trim();
+  const unit=document.getElementById('edit-unit').value;
+  const stock=parseFloat(document.getElementById('edit-stock').value)||0;
+  const max=parseFloat(document.getElementById('edit-max').value)||0;
+  if(!name){ toast('Name is required'); return; }
+  if(!cat){ toast('Category is required'); return; }
+  const {error}=await sb.from('inventory').update({name,cat,unit,stock,max_stock:max}).eq('id',id);
+  if(error){ toast('Update failed: '+error.message); return; }
+  Object.assign(item,{name,cat,unit,stock,max});
   closeModal();
   renderInventory();
-  toast('Stock updated ✓');
+  toast('Ingredient updated ✓');
+}
+
+function slugify(name){
+  let base=name.toLowerCase().trim().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'')||'item';
+  let id=base,n=2;
+  while(invData.some(i=>i.id===id)){ id=base+'_'+n; n++; }
+  return id;
+}
+
+function openAddItem(){
+  document.getElementById('modal-container').innerHTML=`
+    <div class="modal-bg"><div class="modal">
+      <h3>➕ Add Ingredient</h3>
+      <label class="ml">Name</label>
+      <input class="mi" type="text" id="new-name" placeholder="e.g. Fresh Basil (bundle)" maxlength="120" autofocus/>
+      <label class="ml" style="margin-top:10px">Category</label>
+      <input class="mi" type="text" id="new-cat" list="new-cat-list" placeholder="e.g. Vegetables" maxlength="40"/>
+      <datalist id="new-cat-list">${invCategoryOptions()}</datalist>
+      <label class="ml" style="margin-top:10px">Unit</label>
+      <select class="mi" id="new-unit">${invUnitOptions('pcs')}</select>
+      <label class="ml" style="margin-top:10px">Initial stock</label>
+      <input class="mi" type="number" id="new-stock" value="0" min="0"/>
+      <label class="ml" style="margin-top:10px">Max stock (for the level bar)</label>
+      <input class="mi" type="number" id="new-max" value="10" min="0"/>
+      <div class="mbtns">
+        <button class="mbtn ok" onclick="submitNewItem()">Add</button>
+        <button class="mbtn" onclick="closeModal()">Cancel</button>
+      </div>
+    </div></div>`;
+  setTimeout(()=>document.getElementById('new-name')?.focus(),50);
+}
+
+async function submitNewItem(){
+  const name=(document.getElementById('new-name').value||'').trim();
+  const cat=(document.getElementById('new-cat').value||'').trim();
+  const unit=document.getElementById('new-unit').value;
+  const stock=parseFloat(document.getElementById('new-stock').value)||0;
+  const max=parseFloat(document.getElementById('new-max').value)||0;
+  if(!name){ toast('Name is required'); return; }
+  if(!cat){ toast('Category is required'); return; }
+  const id=slugify(name);
+  const {error}=await sb.from('inventory').insert({id,name,cat,unit,stock,max_stock:max});
+  if(error){ toast('Add failed: '+error.message); return; }
+  invData.push({id,name,cat,unit,stock,max,reorder:invReorderFor(id,max)});
+  closeModal();
+  renderInventory();
+  toast('Ingredient added ✓');
 }
 
 async function restockAll(){
