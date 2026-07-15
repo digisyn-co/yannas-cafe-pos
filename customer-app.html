@@ -204,6 +204,16 @@ html,body{height:100%;background:var(--creme);color:var(--brown);font-family:'DM
 /* TOAST */
 .toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--brown);color:var(--creme);padding:12px 20px;border-radius:var(--rx);font-size:13px;font-weight:500;opacity:0;transition:.3s;pointer-events:none;white-space:nowrap;z-index:999}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* FLAVOR PICKER MODAL */
+.ft-modal-bg{position:fixed;inset:0;background:rgba(44,26,14,0.5);display:flex;align-items:flex-end;justify-content:center;z-index:500}
+.ft-modal{background:var(--white);border-radius:var(--rl) var(--rl) 0 0;padding:22px;width:100%;max-width:480px;box-shadow:var(--shadow-lg)}
+.ft-modal h3{font-family:'Playfair Display',serif;font-size:19px;color:var(--brown);margin-bottom:4px}
+.ft-modal .ft-sub{font-size:13px;color:var(--brown3);margin-bottom:14px;display:block}
+.ft-flavor-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ft-flavor-btn{padding:14px 8px;border-radius:var(--r);border:1.5px solid var(--creme3);background:var(--creme2);cursor:pointer;font-size:14px;font-weight:600;color:var(--brown);text-align:center}
+.ft-flavor-btn:active{background:var(--amber-l);border-color:var(--amber)}
+.ft-cancel-btn{width:100%;margin-top:14px;padding:12px;border-radius:var(--r);border:none;background:transparent;color:var(--brown3);font-size:14px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -468,8 +478,19 @@ function renderMenuItem(item){
   </div>`;
 }
 
+// Fruit Tea flavor -> syrup inventory id + ml per serving (matches Recipe Book B.3)
+const FLAVOR_SYRUP={
+  'Lychee':{id:'lychee_syrup',amt:25},
+  'Strawberry':{id:'strawberry_syrup',amt:35},
+  'Mango':{id:'mango_syrup',amt:40},
+  'Passion Fruit':{id:'passion_syrup',amt:30},
+  'Wintermelon':{id:'wintermelon_syrup',amt:30},
+};
+const FRUIT_TEA_FLAVORS=Object.keys(FLAVOR_SYRUP);
+
 function addToCart(id,temp){
   const item=MENU.find(m=>m.id===id);
+  if(id===9){ openFlavorPicker(id); return; } // Fruit Tea → pick a flavor first
   const key=id+(temp||'');
   const existing=cart.find(c=>c.key===key);
   if(existing){existing.qty++;} 
@@ -479,6 +500,34 @@ function addToCart(id,temp){
   }
   updateFab();
   toast(item.name+(temp?' ('+temp+')':'')+' added');
+}
+
+function openFlavorPicker(id){
+  const item=MENU.find(m=>m.id===id);
+  document.getElementById('flavor-modal-container').innerHTML=`
+    <div class="ft-modal-bg" onclick="if(event.target===this)closeFlavorPicker()">
+      <div class="ft-modal">
+        <h3>Choose a Flavour</h3>
+        <span class="ft-sub">${item.name} — ₱${item.price}</span>
+        <div class="ft-flavor-grid">
+          ${FRUIT_TEA_FLAVORS.map(f=>`<button class="ft-flavor-btn" onclick="addFruitTeaToCart(${id},'${f}')">${f}</button>`).join('')}
+        </div>
+        <button class="ft-cancel-btn" onclick="closeFlavorPicker()">Cancel</button>
+      </div>
+    </div>`;
+}
+function closeFlavorPicker(){ document.getElementById('flavor-modal-container').innerHTML=''; }
+function addFruitTeaToCart(id,flavor){
+  const item=MENU.find(m=>m.id===id);
+  const key=id+'-'+flavor.toLowerCase().replace(/\s+/g,'_');
+  const existing=cart.find(c=>c.key===key);
+  if(existing){existing.qty++;}
+  else {
+    cart.push({key,id,name:`${item.name} — ${flavor}`,cat:item.cat,temp:null,flavor,price:item.price,qty:1});
+  }
+  closeFlavorPicker();
+  updateFab();
+  toast(item.name+' — '+flavor+' added');
 }
 
 function updateFab(){
@@ -666,7 +715,7 @@ async function placeOrder(){
     order_number:orderNumber,
     customer_name:name,
     customer_phone:phone,
-    items:cart.map(i=>({id:i.id,name:i.name,qty:i.qty,price:i.price,cat:i.cat,temp:i.temp||null})),
+    items:cart.map(i=>({id:i.id,name:i.name,qty:i.qty,price:i.price,cat:i.cat,temp:i.temp||null,flavor:i.flavor||null})),
     total,
     payment_method:selectedPay,
     eta_minutes:selectedEta,
@@ -807,5 +856,6 @@ function toast(msg){
   setTimeout(()=>el.classList.remove('show'),2800);
 }
 </script>
+<div id="flavor-modal-container"></div>
 </body>
 </html>
