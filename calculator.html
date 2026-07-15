@@ -64,6 +64,8 @@ tr:hover td{background:rgba(233,193,108,0.03)}
 .cat-matcha{background:rgba(5,150,105,0.12);color:#059669}
 .cat-tea{background:rgba(13,148,136,0.12);color:#0D9488}
 .cat-food{background:rgba(99,102,241,0.12);color:#6366F1}
+.cat-kids{background:rgba(236,72,153,0.12);color:#EC4899}
+.cat-refreshers{background:rgba(52,199,89,0.12);color:#34C759}
 .mix-input{width:56px;padding:8px;border-radius:8px;border:1px solid var(--sep);background:var(--bg3);color:var(--text);font-size:14px;font-weight:700;text-align:center;font-family:inherit;outline:none}
 .mix-input:focus{border-color:var(--gold)}
 .mix-profit{font-size:13px;font-weight:700;color:var(--green);min-width:70px;text-align:right;font-variant-numeric:tabular-nums}
@@ -189,16 +191,16 @@ tr:hover td{background:rgba(233,193,108,0.03)}
 <script>
 // ── DATA ──
 const INGREDIENTS = [
-  {id:'robusta', name:'Dark Roast Robusta', unit:'per g', pkg:'₱/kg', factor:1000, default:450},
+  {id:'robusta', name:'Dark Roast Robusta', unit:'per g', pkg:'₱/kg', factor:1000, default:560},
   {id:'condensed', name:'Condensed Milk', unit:'per g', pkg:'₱/300g can', factor:300, default:80},
   {id:'fresh_milk', name:'Fresh Milk', unit:'per ml', pkg:'₱/L', factor:1000, default:90},
-  {id:'heavy_cream', name:'Heavy Cream', unit:'per ml', pkg:'₱/L', factor:1000, default:250},
-  {id:'coconut_cream', name:'Coconut Cream', unit:'per ml', pkg:'₱/400ml', factor:400, default:60},
-  {id:'eggs', name:'Eggs', unit:'per pc', pkg:'₱/pc', factor:1, default:8},
+  {id:'heavy_cream', name:'Heavy Cream', unit:'per ml', pkg:'₱/L', factor:1000, default:280},
+  {id:'coconut_cream', name:'Coconut Cream', unit:'per ml', pkg:'₱/L', factor:1000, default:180},
+  {id:'eggs', name:'Eggs', unit:'per pc', pkg:'₱/pc', factor:1, default:9.33},
   {id:'sea_salt', name:'Sea Salt (specialty)', unit:'per g', pkg:'₱/100g', factor:100, default:200},
   {id:'jasmine_tea', name:'Jasmine Tea', unit:'per g', pkg:'₱/100g', factor:100, default:50},
-  {id:'black_tea', name:'Black Tea', unit:'per g', pkg:'₱/100g', factor:100, default:40},
-  {id:'matcha', name:'Matcha Powder', unit:'per g', pkg:'₱/100g', factor:100, default:300},
+  {id:'black_tea', name:'Black Tea', unit:'per g', pkg:'₱/100g', factor:100, default:51},
+  {id:'matcha', name:'Matcha Powder', unit:'per g', pkg:'₱/100g', factor:100, default:138},
   {id:'baguette', name:'Baguette / Loaf', unit:'per pc', pkg:'₱/pc', factor:1, default:25},
   {id:'pork', name:'Pork Shoulder', unit:'per g', pkg:'₱/kg', factor:1000, default:350},
   {id:'chicken', name:'Chicken Thigh', unit:'per g', pkg:'₱/kg', factor:1000, default:280},
@@ -213,49 +215,95 @@ const INGREDIENTS = [
   {id:'tapa', name:'Cured Beef Tapa', unit:'per g', pkg:'₱/kg', factor:1000, default:550},
   {id:'cheese', name:'Cheese Slices', unit:'per pc', pkg:'₱/slice', factor:1, default:12},
   {id:'house_dip', name:'Signature House Dip', unit:'per g', pkg:'₱/kg', factor:1000, default:300},
+  // ── FRUIT TEA SYRUPS (verified from supplier receipts) ──
+  {id:'lychee_syrup', name:'Lychee Syrup (Injoy)', unit:'per ml', pkg:'₱/L bottle', factor:1000, default:104},
+  {id:'strawberry_syrup', name:'Strawberry Syrup (Injoy)', unit:'per ml', pkg:'₱/L bottle', factor:1000, default:126},
+  {id:'mango_syrup', name:'Mango Syrup (ACC)', unit:'per g', pkg:'₱/kg', factor:1000, default:165},
+  {id:'passion_syrup', name:'Passion Fruit Syrup (TC Top Series)', unit:'per ml', pkg:'₱/750ml bottle', factor:750, default:240},
+  {id:'wintermelon_syrup', name:'Wintermelon Syrup (TC Top Series)', unit:'per ml', pkg:'₱/750ml bottle', factor:750, default:305},
+  // ── FRIED RICE (estimates — confirm with supplier) ──
+  {id:'rice', name:'Rice', unit:'per g', pkg:'₱/kg (est.)', factor:1000, default:50},
+  {id:'garlic', name:'Garlic', unit:'per pc', pkg:'₱/head (est.)', factor:1, default:8},
+  {id:'pechay', name:'Pechay / Bok Choy', unit:'per pc', pkg:'₱/bundle (est.)', factor:1, default:20},
+  {id:'cooking_oil', name:'Cooking Oil', unit:'per ml', pkg:'₱/L (est.)', factor:1000, default:110},
+  {id:'soy_sauce', name:'Soy Sauce', unit:'per ml', pkg:'₱/L (est.)', factor:1000, default:90},
   {id:'hot_cups', name:'Hot Cups', unit:'per pc', pkg:'₱/pc', factor:1, default:3.5},
   {id:'cold_cups_16', name:'Cold Cups 16oz', unit:'per pc', pkg:'₱/pc', factor:1, default:5},
   {id:'cold_cups_22', name:'Cold Cups 22oz', unit:'per pc', pkg:'₱/pc', factor:1, default:6},
   {id:'paper_bags', name:'Paper Bags', unit:'per pc', pkg:'₱/pc', factor:1, default:3},
 ];
 
+// Ids kept aligned with the live POS (index.html) where the item is shared;
+// hot/cold and fruit-tea-flavor variants use new ids (60s/70s) since the live
+// POS handles those as a single menu entry with a temp/flavor picker instead.
 const RECIPE = {
-  1:{robusta:19},
-  2:{robusta:19,heavy_cream:40,fresh_milk:15,sea_salt:1,condensed:3},
-  3:{robusta:19,coconut_cream:40,condensed:20,fresh_milk:20},
-  4:{robusta:19,eggs:1,condensed:20},
-  5:{robusta:19,condensed:35},
-  6:{matcha:2,fresh_milk:210},
-  7:{matcha:2,heavy_cream:30,fresh_milk:40,sea_salt:1,condensed:3},
-  8:{matcha:2,eggs:1,condensed:30,heavy_cream:50},
-  9:{jasmine_tea:2},
+  1:{robusta:19},                                                   // Black Coffee (Hot)
+  61:{robusta:19},                                                   // Black Coffee (Cold)
+  2:{robusta:19,heavy_cream:40,fresh_milk:15,sea_salt:1,condensed:3}, // Salted Cream Coffee
+  3:{robusta:19,coconut_cream:40,condensed:20,fresh_milk:20},         // Coconut Coffee
+  4:{robusta:19,eggs:1,condensed:20},                                 // Egg Coffee (Hot)
+  62:{robusta:19,eggs:1,condensed:20},                                // Egg Coffee (Cold)
+  5:{robusta:19,condensed:35},                                        // Vietnamese Milk Coffee (Hot)
+  63:{robusta:19,condensed:35},                                       // Vietnamese Milk Coffee (Cold)
+  6:{matcha:2,fresh_milk:180},                                        // Matcha Latte — fresh_milk was 210, live is 180
+  7:{matcha:2,heavy_cream:30,fresh_milk:130,sea_salt:1,condensed:3},  // Salt Matcha — fresh_milk was 40, live is 130
+  8:{matcha:2,eggs:1,condensed:25,heavy_cream:40},                    // Egg Custard Matcha — condensed was 30→25, heavy_cream was 50→40
+  // ── FRUIT TEA, per flavor (was a single row with NO syrup cost at all) ──
+  71:{jasmine_tea:2,lychee_syrup:25},        // Lychee
+  72:{jasmine_tea:2,strawberry_syrup:35},    // Strawberry (purée; lemon garnish not costed)
+  73:{jasmine_tea:2,mango_syrup:40},         // Mango
+  74:{jasmine_tea:2,passion_syrup:30},       // Passion Fruit
+  75:{jasmine_tea:2,wintermelon_syrup:30},   // Wintermelon
   13:{baguette:1,pork:110,pickled_carrots:20,pickled_onions:10,cucumber:0.25,liver_spread:0.1},
   14:{baguette:1,chicken:110,pickled_carrots:20,pickled_onions:10,cucumber:0.25},
   15:{baguette:1,beef:110,pickled_carrots:20,pickled_onions:10,cucumber:0.25},
-  19:{pork:110,eggs:2,onions:0.2},
-  20:{chicken:110,eggs:2,onions:0.2},
-  21:{beef:110,eggs:2,onions:0.2},
+  // fried rice was missing rice/garlic/pechay/oil/soy entirely — added to match live RECIPE
+  19:{rice:200,pork:110,eggs:2,onions:0.2,garlic:5,pechay:30,cooking_oil:10,soy_sauce:10},
+  20:{rice:200,chicken:110,eggs:2,onions:0.2,garlic:5,pechay:30,cooking_oil:10,soy_sauce:10},
+  21:{rice:200,beef:110,eggs:2,onions:0.2,garlic:5,pechay:30,cooking_oil:10,soy_sauce:10},
   22:{bacon:50}, 23:{tocino:50}, 24:{tapa:60},
   25:{eggs:1}, 26:{eggs:1}, 27:{cheese:1}, 28:{house_dip:40},
+  // ── LITTLE YANNA'S CORNER (Kids) — new, matches live RECIPE ids 29-32 ──
+  29:{rice:150,chicken:80,eggs:1,onions:0.2,garlic:3,pechay:15,cooking_oil:8,soy_sauce:8},
+  30:{rice:150,pork:80,eggs:1,onions:0.2,garlic:3,pechay:15,cooking_oil:8,soy_sauce:8},
+  31:{chicken:100,rice:150,cooking_oil:15},
+  32:{baguette:0.5},
+  // ── FRESH FRUIT REFRESHERS — new, matches live ids 33-35 (fresh fruit itself isn't inventory-tracked live either) ──
+  33:{}, 34:{}, 35:{},
 };
 
 const MENU = [
-  {id:1, name:'Black Coffee', cat:'Coffee', price:112, cup:'hot_cups', star:false},
+  {id:1, name:'Black Coffee (Hot)', cat:'Coffee', price:105, cup:'hot_cups', star:false},
+  {id:61, name:'Black Coffee (Cold)', cat:'Coffee', price:120, cup:'cold_cups_16', star:false},
   {id:2, name:'Salted Cream Coffee', cat:'Coffee', price:160, cup:'cold_cups_16', star:true},
   {id:3, name:'Coconut Coffee', cat:'Coffee', price:175, cup:'cold_cups_16', star:true},
-  {id:4, name:'Egg Coffee', cat:'Coffee', price:177, cup:'hot_cups', star:true},
-  {id:5, name:'Milk Coffee', cat:'Coffee', price:122, cup:'hot_cups', star:false},
+  {id:4, name:'Egg Coffee (Hot)', cat:'Coffee', price:170, cup:'hot_cups', star:true},
+  {id:62, name:'Egg Coffee (Cold)', cat:'Coffee', price:185, cup:'cold_cups_16', star:true},
+  {id:5, name:'Vietnamese Milk Coffee (Hot)', cat:'Coffee', price:115, cup:'hot_cups', star:false},
+  {id:63, name:'Vietnamese Milk Coffee (Cold)', cat:'Coffee', price:130, cup:'cold_cups_16', star:false},
   {id:6, name:'Matcha Latte', cat:'Matcha', price:160, cup:'cold_cups_16', star:true},
   {id:7, name:'Salt Matcha', cat:'Matcha', price:175, cup:'cold_cups_16', star:true},
   {id:8, name:'Egg Custard Matcha', cat:'Matcha', price:185, cup:'cold_cups_16', star:true},
-  {id:9, name:'Fruit Tea', cat:'Tea', price:110, cup:'cold_cups_22', star:false},
+  {id:71, name:'Fruit Tea — Lychee', cat:'Tea', price:110, cup:'cold_cups_22', star:false},
+  {id:72, name:'Fruit Tea — Strawberry', cat:'Tea', price:110, cup:'cold_cups_22', star:false},
+  {id:73, name:'Fruit Tea — Mango', cat:'Tea', price:110, cup:'cold_cups_22', star:false},
+  {id:74, name:'Fruit Tea — Passion Fruit', cat:'Tea', price:110, cup:'cold_cups_22', star:false},
+  {id:75, name:'Fruit Tea — Wintermelon', cat:'Tea', price:110, cup:'cold_cups_22', star:false},
   {id:13, name:'BBQ Pork Sandwich', cat:'Food', price:170, cup:'paper_bags', star:false},
   {id:14, name:'Chicken BBQ Sandwich', cat:'Food', price:165, cup:'paper_bags', star:false},
   {id:15, name:'Beef BBQ Sandwich', cat:'Food', price:180, cup:'paper_bags', star:false},
   {id:19, name:'Pork Fried Rice', cat:'Food', price:130, cup:'paper_bags', star:false},
   {id:20, name:'Chicken Fried Rice', cat:'Food', price:115, cup:'paper_bags', star:false},
   {id:21, name:'Beef Fried Rice', cat:'Food', price:145, cup:'paper_bags', star:false},
+  {id:29, name:'Mini Chicken Fried Rice', cat:'Kids', price:89, cup:'paper_bags', star:false},
+  {id:30, name:'Mini Pork Fried Rice', cat:'Kids', price:95, cup:'paper_bags', star:false},
+  {id:31, name:'Chicken Bites & Rice', cat:'Kids', price:99, cup:'paper_bags', star:false},
+  {id:32, name:'Chocolate Banana Toast', cat:'Kids', price:85, cup:'paper_bags', star:false},
+  {id:33, name:'Fresh Apple', cat:'Refreshers', price:95, cup:'cold_cups_16', star:false},
+  {id:34, name:'Fresh Pineapple', cat:'Refreshers', price:95, cup:'cold_cups_16', star:false},
+  {id:35, name:'Fresh Mango', cat:'Refreshers', price:105, cup:'cold_cups_16', star:true},
 ];
+
 
 const catColors = {Coffee:'#D97706',Matcha:'#059669',Tea:'#0D9488',Food:'#6366F1'};
 
