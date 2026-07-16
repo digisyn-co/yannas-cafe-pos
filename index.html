@@ -66,10 +66,11 @@ body{background:#FAF9F6;color:var(--text1);font-size:14px;font-family:var(--font
 .page-scroll{flex:1;overflow-y:auto}
 
 @media(max-width:700px){
-  .sidenav{width:64px}
+  .sidenav{width:68px}
   .sidenav .tab-label,.sidenav .logo div,.sidenav > .topbar > div:last-child span{display:none}
-  .sidenav .tab{justify-content:center;padding:12px 4px}
-  .sidenav > .topbar > div:last-child button{text-align:center;padding:8px 2px}
+  .sidenav .tab{justify-content:center;padding:13px 4px;min-height:48px}
+  .sidenav .tab-icon{font-size:18px}
+  .sidenav > .topbar > div:last-child button{text-align:center;padding:10px 2px;min-height:44px}
 }
 
 /* POS */
@@ -487,9 +488,12 @@ body{background:#FAF9F6;color:var(--text1);font-size:14px;font-family:var(--font
   /* real two-column POS in BOTH orientations (never a bottom sheet).
      NOTE: do NOT hard-code the topbar height — it measures 65px, not the
      57px the base CSS assumes, which pushed the page 8px past the fold.
-     Use a flex column so the wrap fills whatever height is actually left. */
+     Use a flex column so the wrap fills whatever height is actually left.
+     #app itself must stay a ROW here (sidenav | main-col) — the fill-exact-
+     height treatment now applies one level down, to .page-scroll, since
+     that's what actually wraps .page.active inside .main-col. */
   body{overflow:hidden}                 /* the PAGE never scrolls on a POS */
-  #app{display:flex;flex-direction:column;height:100vh;height:100dvh}
+  .page-scroll{display:flex;flex-direction:column;overflow:hidden}
   .page.active{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
   .pos-wrap{
     display:grid;
