@@ -35,11 +35,11 @@ h1{font-family:'Playfair Display',serif;font-size:clamp(28px,5vw,36px);font-weig
 .card{background:var(--surface);border-radius:14px;border:1px solid var(--border);margin-bottom:10px;overflow:hidden;transition:.2s}
 .card.open{box-shadow:0 4px 20px rgba(0,0,0,0.06)}
 .card.is-batch{border-left:4px solid var(--gold)}
-.card-head{display:flex;align-items:center;gap:12px;padding:16px 20px;cursor:pointer;user-select:none;transition:.1s}
+.card-head{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px;padding:16px 20px;cursor:pointer;user-select:none;transition:.1s}
 .card-head:hover{background:var(--surface2)}
 .card-arrow{width:24px;height:24px;border-radius:6px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text3);flex-shrink:0;transition:.2s}
 .card.open .card-arrow{transform:rotate(90deg);background:var(--gold-bg);color:var(--gold)}
-.card-name{flex:1;font-size:15px;font-weight:700}
+.card-name{flex:1;min-width:130px;font-size:15px;font-weight:700}
 .card-name .star{color:var(--gold);font-size:13px}
 .card-tag{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:6px;flex-shrink:0}
 .tag-coffee{background:#FFF3E0;color:#E65100}
