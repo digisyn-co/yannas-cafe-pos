@@ -3,7 +3,7 @@
 <head>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Work+Sans:wght@400;500;600&family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,500&display=swap" rel="stylesheet">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>Yanna's Vietnamese Cafe — POS</title>
@@ -28,6 +28,13 @@
   --surface:#FAF9F6;--primary:#271310;--text:#1A1C1A;
   --sage-container:#C8F17A;--sage-on:#4E6E00;
   --err-container:#FFDAD6;--err-on:#93000A;
+  --rb-bg:#FAF8F4;--rb-surface:#fff;--rb-surface2:#F5F2ED;
+  --rb-border:#E8E3DA;--rb-border2:#D4CEC4;
+  --rb-text:#1A1815;--rb-text2:#6B665C;--rb-text3:#9E9889;
+  --rb-gold:#B8943D;--rb-gold-bg:#FBF6EC;--rb-gold-border:#E8D9B0;
+  --rb-green:#1B7A43;--rb-green-bg:#ECFDF3;
+  --rb-amber:#92610E;--rb-amber-bg:#FFFBEB;
+  --rb-blue:#1D4ED8;
 }
 body{background:#FAF9F6;color:var(--text1);font-size:14px;font-family:var(--font-body);min-height:100vh}
 
@@ -344,8 +351,7 @@ body{background:#FAF9F6;color:var(--text1);font-size:14px;font-family:var(--font
 .restock-btn:hover{background:rgba(73,104,0,0.28)}
 
 /* ORDERS */
-#page-recipes.active{display:flex!important;flex-direction:column;height:calc(100vh - 56px)}
-#page-recipes iframe{flex:1;min-height:0}
+
 
 /* Order card title styling */
 .log-id{font-size:20px!important;font-weight:800!important;color:var(--text1)!important;letter-spacing:0;font-family:Arial,Helvetica,sans-serif!important;font-variant-numeric:tabular-nums}
@@ -387,30 +393,69 @@ body{background:#FAF9F6;color:var(--text1);font-size:14px;font-family:var(--font
 @media(max-width:480px){.inv-chat{width:calc(100% - 32px);right:16px;bottom:80px}}
 
 
-.recipe-card{background:var(--surface);border-radius:12px;border:1px solid var(--border);margin-bottom:10px;overflow:hidden}
-.recipe-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer}
-.recipe-head:active{background:rgba(0,0,0,0.02)}
-.recipe-name{font-size:14px;font-weight:700;color:var(--text)}
-.recipe-cat{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:2px 8px;border-radius:6px}
-.recipe-body{padding:0 16px 16px;display:block}
-.recipe-body.open{display:block}
-.recipe-scale{display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:10px 14px;background:var(--bg);border-radius:10px}
-.recipe-scale label{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.06em}
-.recipe-slider{flex:1;-webkit-appearance:none;appearance:none;height:10px;border-radius:5px;background:var(--border);outline:none;cursor:pointer}
-.recipe-slider::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;border-radius:50%;background:var(--primary);cursor:pointer;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3)}
-.recipe-val{font-size:28px;font-weight:800;color:var(--primary);min-width:48px;text-align:center}
-.recipe-table{width:100%}
-.recipe-table th{text-align:left;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;padding:6px 8px;border-bottom:2px solid var(--border)}
-.recipe-table td{padding:8px;font-size:13px;border-bottom:1px solid var(--border)}
-.recipe-table td:first-child{font-weight:600;color:var(--text)}
-.recipe-table td:nth-child(2){color:var(--text2);font-size:12px}
-.recipe-table td:last-child{font-weight:700;color:var(--primary);text-align:right;font-variant-numeric:tabular-nums}
-.recipe-total{margin-top:10px;padding:10px 14px;background:rgba(34,197,94,0.06);border-radius:8px;border:1px solid rgba(34,197,94,0.15)}
-.recipe-total-title{font-size:10px;font-weight:700;color:#22c55e;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
-.recipe-total-row{display:flex;justify-content:space-between;font-size:12px;color:var(--text2);padding:2px 0}
-.recipe-total-row span:last-child{font-weight:700;color:var(--text)}
-.recipe-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:20px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:inherit;transition:.15s}
-.recipe-btn:active{background:var(--primary);color:#fff;border-color:var(--primary)}
+#page-recipes{font-family:'DM Sans',var(--font-body);color:var(--rb-text)}
+#page-recipes .header{margin-bottom:32px}
+#page-recipes .badge{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--rb-text3);margin-bottom:14px}
+#page-recipes .badge-dot{width:5px;height:5px;border-radius:50%;background:var(--rb-gold)}
+#page-recipes h1{font-family:'Playfair Display',serif;font-size:clamp(24px,5vw,32px);font-weight:700;line-height:1.15;margin-bottom:6px;color:var(--rb-text)}
+#page-recipes .sub{font-size:14px;color:var(--rb-text2);line-height:1.6}
+#page-recipes .cats{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px;position:sticky;top:0;background:var(--rb-bg);padding:12px 0;z-index:10}
+#page-recipes .cat-btn{padding:7px 16px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid var(--rb-border);background:var(--rb-surface);color:var(--rb-text2);cursor:pointer;font-family:inherit;transition:.15s}
+#page-recipes .cat-btn.on{background:var(--rb-text);color:#fff;border-color:var(--rb-text)}
+#page-recipes .cat-btn:hover:not(.on){border-color:var(--rb-text2)}
+#page-recipes .rb-card{background:var(--rb-surface);border-radius:14px;border:1px solid var(--rb-border);margin-bottom:10px;overflow:hidden;transition:.2s}
+#page-recipes .rb-card.open{box-shadow:0 4px 20px rgba(0,0,0,0.06)}
+#page-recipes .rb-card.is-batch{border-left:4px solid var(--rb-gold)}
+#page-recipes .rb-card-head{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px;padding:16px 20px;cursor:pointer;user-select:none;transition:.1s}
+#page-recipes .rb-card-head:hover{background:var(--rb-surface2)}
+#page-recipes .rb-card-arrow{width:24px;height:24px;border-radius:6px;background:var(--rb-surface2);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--rb-text3);flex-shrink:0;transition:.2s}
+#page-recipes .rb-card.open .rb-card-arrow{transform:rotate(90deg);background:var(--rb-gold-bg);color:var(--rb-gold)}
+#page-recipes .rb-card-name{flex:1;min-width:130px;font-size:15px;font-weight:700}
+#page-recipes .rb-card-name .rb-star{color:var(--rb-gold);font-size:13px}
+#page-recipes .rb-card-tag{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:6px;flex-shrink:0}
+#page-recipes .rb-tag-coffee{background:#FFF3E0;color:#E65100}
+#page-recipes .rb-tag-matcha{background:#E8F5E9;color:#2E7D32}
+#page-recipes .rb-tag-tea{background:#E0F2F1;color:#00695C}
+#page-recipes .rb-tag-food{background:#EDE7F6;color:#4527A0}
+#page-recipes .rb-tag-batch{background:#FBF6EC;color:#8A6A1F}
+#page-recipes .rb-tag-kids{background:#FCE4EC;color:#AD1457}
+#page-recipes .rb-tag-refreshers{background:#FFF8E1;color:#B26A00}
+#page-recipes .rb-card-price{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:var(--rb-gold);flex-shrink:0;margin-left:6px}
+#page-recipes .rb-card-body{display:none;border-top:1px solid var(--rb-border)}
+#page-recipes .rb-card.open .rb-card-body{display:block}
+#page-recipes .rb-serving-bar{display:flex;align-items:center;gap:10px;padding:14px 20px;background:var(--rb-surface2);border-bottom:1px solid var(--rb-border)}
+#page-recipes .rb-serving-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--rb-text3)}
+#page-recipes .rb-s-btn{width:34px;height:34px;border-radius:50%;border:1px solid var(--rb-border2);background:var(--rb-surface);color:var(--rb-text);font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;transition:.12s;flex-shrink:0}
+#page-recipes .rb-s-btn:active{background:var(--rb-gold-bg);border-color:var(--rb-gold);color:var(--rb-gold)}
+#page-recipes .rb-s-slider{flex:1;-webkit-appearance:none;appearance:none;height:8px;border-radius:4px;background:var(--rb-border);outline:none;cursor:pointer}
+#page-recipes .rb-s-slider::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:var(--rb-gold);cursor:pointer;border:3px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,0.15)}
+#page-recipes .rb-s-val{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--rb-text);min-width:36px;text-align:center}
+#page-recipes .rb-ing-table{width:100%;border-collapse:collapse}
+#page-recipes .rb-ing-table th{text-align:left;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--rb-text3);padding:10px 20px;border-bottom:2px solid var(--rb-border)}
+#page-recipes .rb-ing-table th.r{text-align:right}
+#page-recipes .rb-ing-table td{padding:9px 20px;border-bottom:1px solid rgba(0,0,0,0.04);font-size:13px}
+#page-recipes .rb-ing-table td.name{font-weight:600}
+#page-recipes .rb-ing-table td.unit{color:var(--rb-text3);font-size:12px}
+#page-recipes .rb-ing-table td.amt{text-align:right;font-weight:700;color:var(--rb-gold);font-variant-numeric:tabular-nums;font-size:14px}
+#page-recipes .rb-ing-table tr:last-child td{border-bottom:none}
+#page-recipes .rb-steps-section{padding:16px 20px;border-top:1px solid var(--rb-border)}
+#page-recipes .rb-steps-title{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--rb-green);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+#page-recipes .rb-step{display:flex;gap:12px;margin-bottom:12px;align-items:flex-start}
+#page-recipes .rb-step:last-child{margin-bottom:0}
+#page-recipes .rb-step-num{width:24px;height:24px;border-radius:50%;background:var(--rb-text);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+#page-recipes .rb-step-text{font-size:13px;color:var(--rb-text2);line-height:1.6}
+#page-recipes .rb-step-text strong{color:var(--rb-text)}
+#page-recipes .rb-note{margin:0 20px 16px;padding:12px 16px;border-radius:10px;font-size:12px;line-height:1.6}
+#page-recipes .rb-note.warn{background:#FFF3E0;border:1px solid #FFE0B2;color:#E65100}
+#page-recipes .rb-note.info{background:var(--rb-gold-bg);border:1px solid var(--rb-gold-border);color:var(--rb-amber)}
+#page-recipes .rb-note.speed{background:var(--rb-green-bg);border:1px solid #A3DFBB;color:var(--rb-green)}
+#page-recipes .rb-footer{margin-top:40px;text-align:center;font-size:12px;color:var(--rb-text3);padding-top:20px;border-top:1px solid var(--rb-border)}
+@media(max-width:480px){
+  #page-recipes .rb-card-head{padding:14px 16px}
+  #page-recipes .rb-serving-bar{padding:12px 16px}
+  #page-recipes .rb-ing-table td,#page-recipes .rb-ing-table th{padding:8px 16px}
+  #page-recipes .rb-steps-section{padding:14px 16px}
+}
 
 .log-entry{border:0.5px solid #D3C3C0;border-radius:var(--rl);padding:12px 16px;background:var(--bg2)}
 .log-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
@@ -750,8 +795,15 @@ body{background:#FAF9F6;color:var(--text1);font-size:14px;font-family:var(--font
 
 <div id="modal-container"></div>
 
-<div class="page" id="page-recipes" style="padding:0;overflow:hidden">
-  <iframe src="/recipes" style="width:100%;border:none;display:block" title="Recipe Book"></iframe>
+<div class="page" id="page-recipes">
+  <div class="header">
+    <div class="badge"><span class="badge-dot"></span> Yanna's Vietnamese Coffee</div>
+    <h1>📖 Recipe Book</h1>
+    <div class="sub">Batch prep and per-order assembly. Every amount is exact — no ranges. Tap any item for ingredients and step-by-step instructions. Use the slider to scale from 1 to 50 servings.</div>
+  </div>
+  <div class="cats" id="recipe-cats"></div>
+  <div id="recipe-list"></div>
+  <div class="rb-footer">Yanna's Vietnamese Coffee · San Enrique, Iloilo · Recipe Book v3</div>
 </div>
 </div></div><!-- /page-scroll /main-col -->
 
@@ -2508,89 +2560,636 @@ let __reportsUnlocked=false;
 let __shiftsUnlocked=false;
 
 // ── RECIPES TAB ──
-let recipeFilter='All';
+const RECIPE_BOOK=[
+  // ══════════ BATCH PREP ══════════
+  {
+    id:101, name:"Coffee Concentrate", cat:"Batch", price:"30 servings", star:false, batch:true,
+    ingredients:[
+      {name:"Trung Nguyen S ground coffee",unit:"g",amt:540},
+      {name:"Filtered water (93°C)",unit:"ml",amt:2560},
+    ],
+    steps:[
+      "Heat the water to <strong>93°C</strong>. Use a thermometer — above 94°C is bitter, below 92°C is weak.",
+      "Split across 2 phin filters: <strong>270g coffee + 1280ml water</strong> each. Tap the bed level.",
+      "<strong>BLOOM:</strong> pour 50ml water into each phin. Wait <strong>30 seconds</strong>. Do not skip this.",
+      "Pour the remaining 1230ml into each phin. Fit the lid.",
+      "Let it drip <strong>12 minutes</strong>. Do not press. Do not rush.",
+      "Combine both. Expected yield: <strong>1900ml</strong>.",
+      "Cool to room temp within 30 min. Bottle, label with date and time, refrigerate below 5°C.",
+    ],
+    notes:[
+      {type:"info",text:"Yield check — Under 1800ml: grind coarser. Over 2000ml: grind finer."},
+      {type:"warn",text:"Shelf life 48 hours. No label = discard."},
+    ]
+  },
+  {
+    id:102, name:"Egg Custard Cream", cat:"Batch", price:"30 servings", star:false, batch:true,
+    ingredients:[
+      {name:"Egg yolks (same-day fresh)",unit:"yolks",amt:18},
+      {name:"Condensed milk",unit:"ml",amt:540},
+      {name:"Alaska Crema heavy cream",unit:"ml",amt:900},
+      {name:"White sugar",unit:"g",amt:180},
+    ],
+    steps:[
+      "Separate <strong>18 egg yolks</strong>. Any shell or white ruins the texture — start over if it happens.",
+      "Whisk yolks + <strong>540ml condensed milk</strong> + <strong>180g sugar</strong> for <strong>3 minutes</strong>, until pale and thickened.",
+      "Add the <strong>900ml cream SLOWLY</strong> while whisking. Never dump it in — it will split.",
+      "Texture target: silky, slightly thick, pours off a spoon in a ribbon.",
+      "Transfer to a sealed container. Sit it in a bowl of ice during service.",
+      "Expected yield: <strong>1800ml</strong>.",
+    ],
+    notes:[
+      {type:"warn",text:"⚠ SAME DAY ONLY. Raw yolks. Discard every drop at close of shift. No exceptions."},
+      {type:"warn",text:"Never out of refrigeration more than 1 hour. Keep it on ice at the bar."},
+    ]
+  },
+  {
+    id:103, name:"Salt Cream Foam", cat:"Batch", price:"30 servings", star:false, batch:true,
+    ingredients:[
+      {name:"Alaska Crema heavy cream",unit:"ml",amt:1300},
+      {name:"Alaska Barista Milk",unit:"ml",amt:520},
+      {name:"Sea salt",unit:"g",amt:21},
+      {name:"Condensed milk",unit:"g",amt:104},
+    ],
+    steps:[
+      "Combine all four ingredients <strong>COLD</strong> in a clean pitcher.",
+      "Froth with a hand mixer until light and pourable. <strong>NOT stiff peaks.</strong>",
+      "Texture target: pour a little on a spoon — it should flow slowly, like melted ice cream.",
+      "Too stiff? Add 50ml milk and re-froth. Too thin? Froth 30 more seconds.",
+      "Refrigerate immediately. Label with the time made. Expected yield: <strong>1900ml</strong>.",
+    ],
+    notes:[{type:"warn",text:"Shelf life 24 hours. Re-froth briefly before each use — it settles in the fridge."}]
+  },
+  {
+    id:104, name:"Coconut Coffee Mix", cat:"Batch", price:"30 servings", star:false, batch:true,
+    ingredients:[
+      {name:"Coconut milk",unit:"ml",amt:1600},
+      {name:"Alaska Barista Milk",unit:"ml",amt:600},
+      {name:"Condensed milk",unit:"ml",amt:200},
+    ],
+    steps:[
+      "Whisk all three <strong>cold</strong> until completely smooth and uniform. No heat needed.",
+      "Pour into squeeze bottles for fast service.",
+      "Label and refrigerate. Expected yield: <strong>2400ml</strong>.",
+    ],
+    notes:[{type:"warn",text:"Shelf life 48 hours. SHAKE BEFORE EVERY USE — coconut cream separates in the bottle."}]
+  },
+  {
+    id:105, name:"Black Tea Base", cat:"Batch", price:"30 servings", star:true, batch:true,
+    ingredients:[
+      {name:"Ceylon or Assam black tea (loose leaf)",unit:"g",amt:81},
+      {name:"Filtered water (95°C)",unit:"ml",amt:4500},
+    ],
+    steps:[
+      "Heat the water to <strong>95°C</strong>. Use a thermometer.",
+      "<strong>Weigh 81g</strong> black tea on a digital scale. Add to the water.",
+      "Steep for <strong>exactly 5 minutes</strong>. SET A TIMER. Over-steeping makes it bitter and no amount of syrup fixes it.",
+      "<strong>Strain immediately</strong> at 5 minutes. Do not let the leaves sit.",
+      "Chill quickly — an ice bath is faster than the fridge.",
+      "Expected yield: <strong>4200ml</strong> (the leaves absorb some water).",
+      "Bottle, label with date and time, refrigerate below 5°C.",
+    ],
+    notes:[
+      {type:"info",text:"Café standard: 18g tea per 1L water at 95°C, exactly 5 minutes. At this ratio the tea survives being diluted by both ice and fruit syrup. A weaker brew disappears and the drink tastes like sugar water."},
+      {type:"info",text:"Reference only — Iced tea served straight: 11g/L at 93°C, 4 min. Milk tea: 23g/L at 95°C, 6 min."},
+      {type:"warn",text:"Shelf life 48 hours. Label the bottle."},
+    ]
+  },
+  {
+    id:106, name:"Simple Syrup", cat:"Batch", price:"~90 servings", star:false, batch:true,
+    ingredients:[
+      {name:"White sugar",unit:"g",amt:1000},
+      {name:"Filtered water",unit:"ml",amt:1000},
+    ],
+    steps:[
+      "Combine sugar and water in a pot.",
+      "Heat and stir until fully dissolved and clear. <strong>Do not boil.</strong>",
+      "Cool completely. Bottle. Label. Expected yield: <strong>1400ml</strong>.",
+    ],
+    notes:[{type:"warn",text:"Shelf life 14 days. If it goes cloudy or develops strands, discard and make a fresh batch."}]
+  },
+  {
+    id:107, name:"Jim's Mayo Butter", cat:"Batch", price:"~40 sandwiches", star:false, batch:true,
+    ingredients:[
+      {name:"Mayonnaise",unit:"ml",amt:240},
+      {name:"Butter (softened)",unit:"g",amt:160},
+      {name:"Salt",unit:"g",amt:2},
+      {name:"Calamansi juice",unit:"ml",amt:20},
+    ],
+    steps:["Whisk until completely smooth and uniform.","Store in a squeeze bottle, refrigerated."],
+    notes:[{type:"warn",text:"Shelf life 7 days. This is the signature flavour layer — do not substitute ingredients."}]
+  },
+  {
+    id:108, name:"Pickled Carrots & Onions", cat:"Batch", price:"~30 sandwiches", star:false, batch:true,
+    ingredients:[
+      {name:"Carrots (julienned)",unit:"g",amt:600},
+      {name:"Onions (julienned)",unit:"g",amt:300},
+      {name:"White vinegar",unit:"ml",amt:400},
+      {name:"White sugar",unit:"g",amt:120},
+      {name:"Salt",unit:"g",amt:8},
+    ],
+    steps:[
+      "Combine everything in a sealed jar.",
+      "Refrigerate <strong>overnight</strong> — prepare the night before so the flavour sets.",
+      "Target flavour: bright and tangy, <strong>not sour</strong>.",
+    ],
+    notes:[{type:"warn",text:"Shelf life 7 days sealed in the fridge."}]
+  },
+  {
+    id:109, name:"Crunchy Baked Rice", cat:"Batch", price:"30 servings", star:false, batch:true,
+    ingredients:[
+      {name:"Day-old cooked rice",unit:"g",amt:1500},
+    ],
+    steps:[
+      "Spread the rice on baking trays.",
+      "Bake at <strong>low heat</strong> until fully dried and crunchy all the way through.",
+      "<strong>Cool completely</strong> before storing — warm rice steams in the container and goes soft.",
+      "Store airtight <strong>AT ROOM TEMPERATURE</strong>.",
+    ],
+    notes:[{type:"warn",text:"⚠ NEVER refrigerate. Fridge moisture kills the crunch, which is the entire point. Shelf life 2 days at room temp."}]
+  },
 
-function buildRecipes(){
-  const cats=['All','Coffee','Matcha','Tea','Food','Kids','Refreshers'];
-  const catEl=document.getElementById('recipe-cats');
-  catEl.innerHTML=cats.map(c=>'<button style="padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid var(--border);background:'+(c===recipeFilter?'var(--primary);color:#fff;border-color:var(--primary)':'var(--surface);color:var(--text2)')+';cursor:pointer;font-family:inherit" onclick="recipeFilter=\''+c+'\';buildRecipes()">'+c+'</button>').join('');
+  // ══════════ COFFEE ══════════
+  {
+    id:1, name:"Traditional Black Coffee", cat:"Coffee", price:"Hot ₱105 / Cold ₱120", star:false,
+    ingredients:[
+      {name:"Coffee concentrate",unit:"ml",amt:65},
+      {name:"Water (hot 275ml / cold 200ml)",unit:"ml",amt:275},
+      {name:"Ice — cold only",unit:"g",amt:200},
+      {name:"Cup + lid",unit:"set",amt:1},
+    ],
+    steps:[
+      "<strong>HOT (12oz):</strong> Pour <strong>65ml concentrate</strong> into the cup. Add <strong>275ml hot water</strong>. Offer condensed milk on the side.",
+      "<strong>COLD (16oz):</strong> Fill the cup <strong>70% with ice (200g)</strong>. Add <strong>65ml concentrate</strong> and <strong>200ml cold water</strong>. Stir once, seal, serve.",
+    ],
+    notes:[]
+  },
+  {
+    id:5, name:"Vietnamese Milk Coffee", cat:"Coffee", price:"Hot ₱115 / Cold ₱130", star:false,
+    ingredients:[
+      {name:"Condensed milk",unit:"ml",amt:37},
+      {name:"Coffee concentrate",unit:"ml",amt:60},
+      {name:"Hot water — hot only",unit:"ml",amt:150},
+      {name:"Ice — cold only",unit:"g",amt:200},
+      {name:"Cup + lid",unit:"set",amt:1},
+    ],
+    steps:[
+      "Put <strong>37ml condensed milk</strong> in the bottom of the cup.",
+      "<strong>HOT (12oz):</strong> Pour <strong>60ml concentrate</strong> over it, then <strong>150ml hot water</strong>. Serve layered — the customer stirs it.",
+      "<strong>COLD (16oz):</strong> Fill <strong>70% ice (200g)</strong>. Pour <strong>60ml concentrate</strong> over the ice. Stir and serve.",
+    ],
+    notes:[]
+  },
+  {
+    id:2, name:"Salted Cream Coffee", cat:"Coffee", price:"₱160 (16oz Cold)", star:true,
+    ingredients:[
+      {name:"Coffee concentrate",unit:"ml",amt:60},
+      {name:"Salt cream foam (Batch)",unit:"ml",amt:60},
+      {name:"Ice",unit:"g",amt:200},
+      {name:"Cold cup + lid + straw",unit:"set",amt:1},
+    ],
+    steps:[
+      "Pour <strong>60ml concentrate</strong> into the cup.",
+      "Fill <strong>70% with ice (200g)</strong>.",
+      "Pour <strong>60ml salt cream</strong> slowly over the back of a spoon so it layers cleanly.",
+      "<strong>DO NOT STIR.</strong> Serve immediately — the customer drinks through the cream.",
+    ],
+    notes:[{type:"info",text:"Re-froth the salt cream briefly before pouring. It settles in the fridge."}]
+  },
+  {
+    id:3, name:"Coconut Coffee", cat:"Coffee", price:"₱175 (16oz Cold)", star:true,
+    ingredients:[
+      {name:"Coffee concentrate",unit:"ml",amt:60},
+      {name:"Coconut coffee mix (Batch)",unit:"ml",amt:80},
+      {name:"Ice",unit:"g",amt:200},
+      {name:"Cold cup + lid + straw",unit:"set",amt:1},
+    ],
+    steps:[
+      "<strong>Shake the coconut mix bottle</strong> before pouring.",
+      "Pour <strong>60ml concentrate</strong> and <strong>80ml coconut mix</strong> into the cup.",
+      "Fill <strong>70% with ice (200g)</strong>. Stir and serve.",
+    ],
+    notes:[{type:"warn",text:"⚠ SHAKE THE BOTTLE every single time. The bottom of the bottle is not the same drink as the top."}]
+  },
+  {
+    id:4, name:"Egg Coffee", cat:"Coffee", price:"Hot ₱170 / Cold ₱185", star:true,
+    ingredients:[
+      {name:"Coffee concentrate",unit:"ml",amt:60},
+      {name:"Egg custard cream (Batch)",unit:"ml",amt:60},
+      {name:"Ice — cold only",unit:"g",amt:170},
+      {name:"Matcha or cocoa dusting — cold only",unit:"g",amt:1},
+      {name:"Cup + lid",unit:"set",amt:1},
+    ],
+    steps:[
+      "<strong>HOT (12oz):</strong> Pour <strong>60ml hot concentrate</strong>. Spoon <strong>60ml egg custard</strong> on top. <strong>DO NOT STIR</strong> — serve as visible layers.",
+      "<strong>COLD (16oz):</strong> Pour <strong>60ml chilled concentrate</strong>. Fill <strong>60% ice (170g)</strong> — less than other drinks, the custard needs room. Dollop <strong>60ml egg custard</strong> on top.",
+      "Cold version: dust with <strong>1g matcha or cocoa powder</strong>.",
+    ],
+    notes:[{type:"warn",text:"⚠ Egg custard is SAME DAY USE ONLY."}]
+  },
 
-  const list=document.getElementById('recipe-list');
-  const items=MENU.filter(m=>RECIPE[m.id]&&(recipeFilter==='All'||m.cat===recipeFilter));
+  // ══════════ MATCHA ══════════
+  {
+    id:6, name:"Matcha Latte", cat:"Matcha", price:"₱160 (16oz Cold)", star:true,
+    ingredients:[
+      {name:"Matcha powder",unit:"g",amt:2},
+      {name:"Water at 78°C",unit:"ml",amt:60},
+      {name:"Alaska Barista Milk (cold)",unit:"ml",amt:180},
+      {name:"Ice",unit:"g",amt:150},
+      {name:"Cold cup + lid + straw",unit:"set",amt:1},
+    ],
+    steps:[
+      "<strong>Sift 2g matcha</strong> into a bowl. Sifting is what stops lumps — do not skip it.",
+      "Add <strong>60ml water at 78°C</strong>. Whisk until smooth and lightly frothy.",
+      "Cool the base <strong>2 minutes</strong> before it touches ice.",
+      "Fill the cup <strong>70% ice (150g)</strong>, add <strong>180ml cold milk</strong>.",
+      "Pour the matcha over the back of a spoon for clean green-on-white layers.",
+    ],
+    notes:[{type:"warn",text:"⚠ MATCHA WATER MUST BE 78°C. Never above 80°C — it burns the matcha and cannot be fixed."}]
+  },
+  {
+    id:7, name:"Salt Matcha", cat:"Matcha", price:"₱175 (16oz Cold)", star:true,
+    ingredients:[
+      {name:"Matcha powder",unit:"g",amt:2},
+      {name:"Water at 78°C",unit:"ml",amt:60},
+      {name:"Alaska Barista Milk (cold)",unit:"ml",amt:130},
+      {name:"Salt cream foam (Batch)",unit:"ml",amt:60},
+      {name:"Ice",unit:"g",amt:150},
+      {name:"Cold cup + lid + straw",unit:"set",amt:1},
+    ],
+    steps:[
+      "Sift <strong>2g matcha</strong>, whisk with <strong>60ml water at 78°C</strong>. Cool 2 minutes.",
+      "Fill <strong>70% ice (150g)</strong>, add <strong>130ml cold milk</strong>.",
+      "Pour the matcha base over the ice.",
+      "Top with <strong>60ml salt cream foam</strong>. <strong>DO NOT STIR.</strong> Serve immediately.",
+    ],
+    notes:[{type:"warn",text:"⚠ Matcha water never above 80°C."}]
+  },
+  {
+    id:8, name:"Egg Custard Matcha", cat:"Matcha", price:"₱185 (16oz Cold)", star:true,
+    ingredients:[
+      {name:"Matcha powder",unit:"g",amt:2},
+      {name:"Water at 78°C",unit:"ml",amt:60},
+      {name:"Alaska Barista Milk (cold)",unit:"ml",amt:130},
+      {name:"Egg custard cream (Batch)",unit:"ml",amt:50},
+      {name:"Ice",unit:"g",amt:150},
+      {name:"Matcha powder for dusting",unit:"g",amt:1},
+      {name:"Cold cup + lid + straw",unit:"set",amt:1},
+    ],
+    steps:[
+      "Sift <strong>2g matcha</strong>, whisk with <strong>60ml water at 78°C</strong>. Cool 2 minutes.",
+      "Fill <strong>70% ice (150g)</strong>, add <strong>130ml cold milk</strong>.",
+      "Pour the matcha base over the ice.",
+      "Top with <strong>50ml egg custard cream</strong>. Dust with <strong>1g matcha powder</strong>.",
+    ],
+    notes:[
+      {type:"warn",text:"⚠ Matcha water never above 80°C."},
+      {type:"warn",text:"⚠ Egg custard is SAME DAY USE ONLY."},
+    ]
+  },
 
-  list.innerHTML=items.map(m=>{
-    const r=RECIPE[m.id];
-    const catColors={Coffee:'#D97706',Matcha:'#059669',Tea:'#0D9488',Food:'#6366F1',Combo:'#8B5CF6',Kids:'#EC4899',Refreshers:'#F59E0B'};
-    const catColor=catColors[m.cat]||'#888';
-    const ingRows=Object.entries(r).map(([ingId,amt])=>{
-      const inv=invData.find(i=>i.id===ingId);
-      const name=inv?inv.name:ingId;
-      const unit=inv?inv.unit:'';
-      return {name,unit,baseAmt:amt};
-    });
+  // ══════════ TEA ══════════
+  {
+    id:9, name:"Fruit Tea", cat:"Tea", price:"₱110 (22oz Cold)", star:false,
+    ingredients:[
+      {name:"Black tea base (Batch)",unit:"ml",amt:135},
+      {name:"Fruit syrup — see flavour chart",unit:"ml",amt:30},
+      {name:"Simple syrup (Batch)",unit:"ml",amt:12},
+      {name:"Ice",unit:"g",amt:200},
+      {name:"22oz cup + lid + wide straw",unit:"set",amt:1},
+    ],
+    steps:[
+      "Fill the cup <strong>75% with ice (200g) FIRST</strong>. Ice always goes in first for fruit teas.",
+      "Pour <strong>135ml tea base</strong>.",
+      "Add the fruit syrup — <strong>Lychee 25ml</strong> · <strong>Strawberry 35ml purée + 5ml lemon</strong> · <strong>Mango 40ml purée</strong> · <strong>Passion Fruit 30ml</strong> · <strong>Wintermelon 30ml</strong>.",
+      "Add <strong>12ml simple syrup</strong>.",
+      "Garnish — Lychee: 3 lychee pieces. Strawberry: 1 lemon slice. Mango / Passion: small fruit pieces. Wintermelon: none (syrup only).",
+      "<strong>DO NOT STIR.</strong> The colour layers are the presentation. Serve with a wide straw.",
+    ],
+    notes:[{type:"info",text:"Assembly is identical for every flavour — only the syrup changes. Available flavours vary with fruit availability."}]
+  },
 
-    return '<div class="recipe-card" id="rc-'+m.id+'">'+
-      '<div class="recipe-head" onclick="toggleRecipe('+m.id+')">'+
-        '<span class="recipe-name">'+esc(m.name.replace(/ \(.*\)/,''))+'</span>'+
-        '<span class="recipe-cat" style="background:'+catColor+'15;color:'+catColor+'">'+m.cat+'</span>'+
-      '</div>'+
-      '<div class="recipe-body" id="rb-'+m.id+'">'+
-        '<div class="recipe-scale">'+
-          '<label>SERVINGS (1-50)</label>'+
-          '<button class="recipe-btn" onclick="adjustServing('+m.id+',-1)">−</button>'+
-          '<input type="range" class="recipe-slider" id="rs-'+m.id+'" min="1" max="50" value="1" oninput="scaleRecipe('+m.id+',this.value)">'+
-          '<button class="recipe-btn" onclick="adjustServing('+m.id+',1)">+</button>'+
-          '<span class="recipe-val" id="rv-'+m.id+'">1</span>'+
-        '</div>'+
-        '<table class="recipe-table">'+
-          '<thead><tr><th>Ingredient</th><th>Unit</th><th>Amount</th></tr></thead>'+
-          '<tbody id="rt-'+m.id+'">'+
-            ingRows.map(i=>'<tr><td>'+esc(i.name)+'</td><td>'+i.unit+'</td><td class="ra" data-base="'+i.baseAmt+'">'+fmtAmt(i.baseAmt)+'</td></tr>').join('')+
-          '</tbody>'+
-        '</table>'+
-        '<div class="recipe-total" id="rtotal-'+m.id+'">'+
-          '<div class="recipe-total-title">Cost Estimate (1 serving)</div>'+
-          '<div class="recipe-total-row"><span>Price</span><span>₱'+(m.price||m.coldPrice||0)+'</span></div>'+
-        '</div>'+
-      '</div>'+
-    '</div>';
-  }).join('');
+  // ══════════ FOOD ══════════
+  {
+    id:13, name:"BBQ Pork Sandwich", cat:"Food", price:"₱170", star:false,
+    ingredients:[
+      {name:"Baguette",unit:"pc",amt:1},
+      {name:"BBQ pork (pre-cooked)",unit:"g",amt:120},
+      {name:"Reno liver spread",unit:"g",amt:15},
+      {name:"Jim's mayo butter (Batch)",unit:"g",amt:15},
+      {name:"Pickled carrots & onions (Batch)",unit:"g",amt:35},
+      {name:"Fresh cucumber",unit:"slices",amt:5},
+      {name:"Sandwich box",unit:"pc",amt:1},
+    ],
+    steps:[
+      "Slice the baguette horizontally <strong>WITHOUT cutting through</strong>. Leave it hinged like a book.",
+      "Toast both inner faces on the flat grill until golden and crunchy. <strong>90 seconds per side</strong>.",
+      "Spread <strong>15g liver spread</strong> on the bottom half.",
+      "Spread <strong>15g Jim's mayo butter</strong> over the liver spread — the signature flavour layer.",
+      "Layer <strong>35g pickled carrots and onions</strong>. Be generous.",
+      "Add <strong>5 cucumber slices, 3mm thick</strong>.",
+      "Add <strong>120g BBQ pork</strong> (6 slices).",
+      "Close the bread, press lightly. Serve immediately while the meat is warm.",
+    ],
+    notes:[
+      {type:"speed",text:"⏱ Target: under 5 minutes. Speed comes from having meat pre-portioned."},
+      {type:"info",text:"Add-ons — Farm-Fresh Egg +₱30 (1 egg) · Cheese +₱20 (1 slice) · Signature House Dip +₱40 (40g). Any spice level at no extra charge."},
+    ]
+  },
+  {
+    id:14, name:"Chicken BBQ Sandwich", cat:"Food", price:"₱165", star:false,
+    ingredients:[
+      {name:"Baguette",unit:"pc",amt:1},
+      {name:"BBQ chicken (pre-cooked)",unit:"g",amt:120},
+      {name:"Reno liver spread",unit:"g",amt:15},
+      {name:"Jim's mayo butter (Batch)",unit:"g",amt:15},
+      {name:"Pickled carrots & onions (Batch)",unit:"g",amt:35},
+      {name:"Fresh cucumber",unit:"slices",amt:5},
+      {name:"Sandwich box",unit:"pc",amt:1},
+    ],
+    steps:["Same assembly as the Pork Sandwich.","Use <strong>120g BBQ chicken thigh</strong> (4 strips)."],
+    notes:[{type:"speed",text:"⏱ Target: under 5 minutes."}]
+  },
+  {
+    id:15, name:"Beef BBQ Sandwich", cat:"Food", price:"₱180", star:false,
+    ingredients:[
+      {name:"Baguette",unit:"pc",amt:1},
+      {name:"BBQ beef (pre-cooked)",unit:"g",amt:120},
+      {name:"Reno liver spread",unit:"g",amt:15},
+      {name:"Jim's mayo butter (Batch)",unit:"g",amt:15},
+      {name:"Pickled carrots & onions (Batch)",unit:"g",amt:35},
+      {name:"Fresh cucumber",unit:"slices",amt:5},
+      {name:"Sandwich box",unit:"pc",amt:1},
+    ],
+    steps:["Same assembly as the Pork Sandwich.","Use <strong>120g thin-sliced BBQ beef</strong>."],
+    notes:[{type:"speed",text:"⏱ Target: under 5 minutes."}]
+  },
+  {
+    id:19, name:"Pork Crunchy Egg Fried Rice", cat:"Food", price:"₱130", star:false,
+    ingredients:[
+      {name:"Day-old cooked rice",unit:"g",amt:250},
+      {name:"BBQ pork (pre-cooked)",unit:"g",amt:120},
+      {name:"Eggs",unit:"pcs",amt:2},
+      {name:"Onion (diced)",unit:"g",amt:60},
+      {name:"Garlic (minced)",unit:"g",amt:5},
+      {name:"Pechay (chopped)",unit:"g",amt:30},
+      {name:"Carrots (julienned)",unit:"g",amt:15},
+      {name:"Soy sauce",unit:"ml",amt:15},
+      {name:"Cooking oil",unit:"ml",amt:10},
+      {name:"Crunchy baked rice (Batch)",unit:"g",amt:50},
+      {name:"Rice box",unit:"pc",amt:1},
+    ],
+    steps:[
+      "Use <strong>250g DAY-OLD rice</strong>. Never fresh rice — it steams and turns to mush.",
+      "Beat <strong>2 eggs</strong> with a pinch of salt. Set aside.",
+      "Heat the wok to <strong>MAXIMUM</strong>. Add <strong>10ml oil</strong>. Wait until it shimmers, almost smoking.",
+      "Pour in the eggs. Scramble fast, <strong>30 seconds</strong>, until just set. Push to one side.",
+      "Sauté the <strong>diced onion + 5g garlic</strong> for <strong>15 seconds only</strong>. Do not burn it.",
+      "Add the <strong>250g rice</strong>. Spread flat. <strong>LET IT SIT 30 SECONDS UNTOUCHED</strong> — this makes the crust. Then toss.",
+      "Add <strong>30g pechay + 15g carrots</strong>. Toss <strong>1 minute</strong> until the pechay wilts.",
+      "Drizzle <strong>15ml soy sauce along the EDGE of the wok</strong> — not on the rice. The hot metal caramelizes it. Toss.",
+      "Add <strong>120g BBQ pork</strong>. Toss <strong>1 minute</strong> until heated through.",
+      "Plate in a wide bowl. Top with <strong>50g crunchy baked rice</strong>. Garnish with spring onions.",
+    ],
+    notes:[
+      {type:"warn",text:"⚠ THE WOK MUST BE SCREAMING HOT. Low heat = steamed rice, not fried rice."},
+      {type:"warn",text:"⚠ NEVER use freshly cooked rice. Day-old only."},
+      {type:"speed",text:"⏱ Target: under 7 minutes."},
+      {type:"info",text:"Add-ons — Cured Beef Tapa +₱70 (60g) · Smoked Bacon +₱55 (50g) · Sweet Cured Tocino +₱55 (50g) · Egg +₱25 (1 egg)."},
+    ]
+  },
+  {
+    id:20, name:"Chicken Crunchy Egg Fried Rice", cat:"Food", price:"₱115", star:false,
+    ingredients:[
+      {name:"Day-old cooked rice",unit:"g",amt:250},
+      {name:"BBQ chicken (pre-cooked)",unit:"g",amt:120},
+      {name:"Eggs",unit:"pcs",amt:2},
+      {name:"Onion, garlic, pechay, carrots",unit:"set",amt:1},
+      {name:"Soy sauce",unit:"ml",amt:15},
+      {name:"Cooking oil",unit:"ml",amt:10},
+      {name:"Crunchy baked rice (Batch)",unit:"g",amt:50},
+      {name:"Rice box",unit:"pc",amt:1},
+    ],
+    steps:["Same wok method as the Pork Fried Rice. Use <strong>120g BBQ chicken</strong>."],
+    notes:[{type:"warn",text:"⚠ Wok on maximum. Day-old rice only."},{type:"speed",text:"⏱ Target: under 7 minutes."}]
+  },
+  {
+    id:21, name:"Beef Crunchy Egg Fried Rice", cat:"Food", price:"₱145", star:false,
+    ingredients:[
+      {name:"Day-old cooked rice",unit:"g",amt:250},
+      {name:"BBQ beef (pre-cooked)",unit:"g",amt:120},
+      {name:"Eggs",unit:"pcs",amt:2},
+      {name:"Onion, garlic, pechay, carrots",unit:"set",amt:1},
+      {name:"Soy sauce",unit:"ml",amt:15},
+      {name:"Cooking oil",unit:"ml",amt:10},
+      {name:"Crunchy baked rice (Batch)",unit:"g",amt:50},
+      {name:"Rice box",unit:"pc",amt:1},
+    ],
+    steps:["Same wok method as the Pork Fried Rice. Use <strong>120g BBQ beef</strong>."],
+    notes:[{type:"warn",text:"⚠ Wok on maximum. Day-old rice only."},{type:"speed",text:"⏱ Target: under 7 minutes."}]
+  },
+
+  // ══════════ KIDS ══════════
+  {
+    id:29, name:"Mini Chicken Fried Rice", cat:"Kids", price:"₱89", star:false,
+    ingredients:[
+      {name:"Day-old cooked rice",unit:"g",amt:150},
+      {name:"BBQ chicken (pre-cooked)",unit:"g",amt:80},
+      {name:"Egg",unit:"pc",amt:1},
+      {name:"Onion (diced)",unit:"g",amt:30},
+      {name:"Garlic (minced)",unit:"g",amt:3},
+      {name:"Pechay (chopped)",unit:"g",amt:15},
+      {name:"Soy sauce",unit:"ml",amt:8},
+      {name:"Cooking oil",unit:"ml",amt:8},
+      {name:"Crunchy baked rice (Batch)",unit:"g",amt:30},
+    ],
+    steps:[
+      "Same wok method as the full-size fried rice — just smaller portions.",
+      "<strong>Season lightly.</strong> This is for children.",
+      "Top with <strong>30g crunchy baked rice</strong>.",
+    ],
+    notes:[{type:"info",text:"Kid-sized portion. Same crispy technique, gentler seasoning."}]
+  },
+  {
+    id:30, name:"Mini Pork Fried Rice", cat:"Kids", price:"₱95", star:false,
+    ingredients:[
+      {name:"Day-old cooked rice",unit:"g",amt:150},
+      {name:"BBQ pork (pre-cooked)",unit:"g",amt:80},
+      {name:"Egg",unit:"pc",amt:1},
+      {name:"Onion (diced)",unit:"g",amt:30},
+      {name:"Garlic (minced)",unit:"g",amt:3},
+      {name:"Pechay (chopped)",unit:"g",amt:15},
+      {name:"Soy sauce",unit:"ml",amt:8},
+      {name:"Cooking oil",unit:"ml",amt:8},
+      {name:"Crunchy baked rice (Batch)",unit:"g",amt:30},
+    ],
+    steps:[
+      "Same wok method as the full-size fried rice — just smaller portions.",
+      "<strong>Season lightly.</strong> This is for children.",
+      "Top with <strong>30g crunchy baked rice</strong>.",
+    ],
+    notes:[{type:"info",text:"Kid-sized portion. Same crispy technique, gentler seasoning."}]
+  },
+  {
+    id:31, name:"Chicken Bites & Rice", cat:"Kids", price:"₱99", star:true,
+    ingredients:[
+      {name:"Chicken (bite pieces)",unit:"g",amt:100},
+      {name:"Steamed rice",unit:"g",amt:150},
+      {name:"Cooking oil (for frying)",unit:"ml",amt:15},
+      {name:"Ketchup (on the side)",unit:"g",amt:20},
+    ],
+    steps:[
+      "Cut the chicken into <strong>bite-sized pieces</strong>.",
+      "Fry until <strong>golden and crispy</strong>.",
+      "Serve with <strong>150g fluffy steamed rice</strong> and <strong>20g ketchup on the side</strong>.",
+    ],
+    notes:[]
+  },
+  {
+    id:32, name:"Chocolate Banana Toast", cat:"Kids", price:"₱85", star:false,
+    ingredients:[
+      {name:"Sliced bread",unit:"slices",amt:2},
+      {name:"Banana (sliced)",unit:"pc",amt:1},
+      {name:"Chocolate syrup",unit:"ml",amt:20},
+      {name:"Butter",unit:"g",amt:5},
+    ],
+    steps:[
+      "Butter the bread with <strong>5g butter</strong> and toast until warm and golden.",
+      "Top with <strong>1 sliced banana</strong>.",
+      "Drizzle <strong>20ml chocolate syrup</strong> over it.",
+    ],
+    notes:[]
+  },
+
+  // ══════════ REFRESHERS ══════════
+  {
+    id:33, name:"Fresh Apple", cat:"Refreshers", price:"₱95", star:false,
+    ingredients:[
+      {name:"Fresh apple (cored, chopped)",unit:"g",amt:150},
+      {name:"Cold water",unit:"ml",amt:100},
+      {name:"Simple syrup (Batch)",unit:"ml",amt:10},
+      {name:"Ice",unit:"g",amt:150},
+      {name:"Cold cup + lid + straw",unit:"set",amt:1},
+    ],
+    steps:[
+      "Blend <strong>150g apple + 100ml cold water + 10ml simple syrup</strong> until completely smooth.",
+      "Fill the cup with <strong>150g ice</strong>.",
+      "Pour the blended fruit over the ice. Serve immediately.",
+    ],
+    notes:[{type:"info",text:"Naturally caffeine-free. Use ripe fruit only — underripe fruit needs extra sugar and then it just tastes like sugar."}]
+  },
+  {
+    id:34, name:"Fresh Pineapple", cat:"Refreshers", price:"₱95", star:false,
+    ingredients:[
+      {name:"Fresh pineapple (chopped)",unit:"g",amt:150},
+      {name:"Cold water",unit:"ml",amt:100},
+      {name:"Simple syrup (Batch)",unit:"ml",amt:10},
+      {name:"Ice",unit:"g",amt:150},
+      {name:"Cold cup + lid + straw",unit:"set",amt:1},
+    ],
+    steps:[
+      "Blend <strong>150g pineapple + 100ml cold water + 10ml simple syrup</strong> until completely smooth.",
+      "Fill the cup with <strong>150g ice</strong>.",
+      "Pour the blended fruit over the ice. Serve immediately.",
+    ],
+    notes:[{type:"info",text:"Naturally caffeine-free. Use ripe fruit only."}]
+  },
+  {
+    id:35, name:"Fresh Mango", cat:"Refreshers", price:"₱105", star:true,
+    ingredients:[
+      {name:"Ripe Philippine mango (chopped)",unit:"g",amt:150},
+      {name:"Cold water",unit:"ml",amt:80},
+      {name:"Simple syrup (Batch)",unit:"ml",amt:10},
+      {name:"Ice",unit:"g",amt:150},
+      {name:"Cold cup + lid + straw",unit:"set",amt:1},
+    ],
+    steps:[
+      "Blend <strong>150g ripe mango + 80ml cold water + 10ml simple syrup</strong> until completely smooth.",
+      "Fill the cup with <strong>150g ice</strong>.",
+      "Pour the blended fruit over the ice. Serve immediately.",
+    ],
+    notes:[{type:"info",text:"Naturally caffeine-free. Ripe Philippine mangoes only — the whole point of the drink."}]
+  },
+];
+
+// ── Recipe Book (kitchen reference — independent of live inventory) ──────
+// Ingredient names/units/amounts here are hardcoded per recipe, same as the
+// standalone recipe book used to be. This is a reference tool for staff, not
+// tied to the POS's live `inventory` table or the `RECIPE` deduction map
+// (that one is separate and still drives automatic stock deduction on order).
+const RB_CATS=['All','Batch','Coffee','Matcha','Tea','Food','Kids','Refreshers'];
+let rbFilter='All', rbOpenId=null;
+const rbServings={};
+function rbGetServing(id){ return rbServings[id]||1; }
+function rbSetServing(id,v){
+  v=Math.max(1,Math.min(50,parseInt(v)||1));
+  rbServings[id]=v;
+  renderRecipeBook();
 }
-
-function adjustServing(id, delta){
-  const slider = document.getElementById('rs-'+id);
-  if(!slider) return;
-  let val = parseInt(slider.value) + delta;
-  if(val < 1) val = 1;
-  if(val > 50) val = 50;
-  slider.value = val;
-  scaleRecipe(id, val);
-}
-
-function toggleRecipe(id){
-  const el=document.getElementById('rb-'+id);
-  el.classList.toggle('open');
-}
-
-function scaleRecipe(id,val){
-  document.getElementById('rv-'+id).textContent=val;
-  const cells=document.querySelectorAll('#rt-'+id+' .ra');
-  cells.forEach(td=>{
-    const base=parseFloat(td.dataset.base);
-    td.textContent=fmtAmt(base*val);
-  });
-  const m=MENU.find(x=>x.id===id);
-  const price=m?(m.price||m.coldPrice||0):0;
-  const totalEl=document.getElementById('rtotal-'+id);
-  totalEl.innerHTML='<div class="recipe-total-title">'+(val==1?'1 Serving':val+' Servings')+'</div>'+
-    '<div class="recipe-total-row"><span>Unit Price</span><span>₱'+price+'</span></div>'+
-    '<div class="recipe-total-row"><span>Total Revenue</span><span>₱'+(price*val).toLocaleString()+'</span></div>';
-}
-
-function fmtAmt(n){
+function rbAdjustServing(id,d){ rbSetServing(id,rbGetServing(id)+d); }
+function rbToggleCard(id){ rbOpenId=rbOpenId===id?null:id; renderRecipeBook(); }
+function rbSetFilter(c){ rbFilter=c; rbOpenId=null; renderRecipeBook(); }
+function rbFmt(n){
   if(n>=1000) return (n/1000).toFixed(1)+'kg';
+  if(n>=100) return Math.round(n).toString();
   if(n%1===0) return n.toString();
   return n.toFixed(1);
+}
+
+function renderRecipeBook(){
+  const catsEl=document.getElementById('recipe-cats');
+  if(!catsEl) return;
+  catsEl.innerHTML=RB_CATS.map(c=>
+    '<button class="cat-btn'+(c===rbFilter?' on':'')+'" onclick="rbSetFilter(\''+c+'\')">'+esc(c)+'</button>'
+  ).join('');
+
+  const items=RECIPE_BOOK.filter(r=>rbFilter==='All'||r.cat===rbFilter);
+  document.getElementById('recipe-list').innerHTML=items.map(r=>{
+    const isOpen=rbOpenId===r.id;
+    const tagClass={Coffee:'rb-tag-coffee',Matcha:'rb-tag-matcha',Tea:'rb-tag-tea',Food:'rb-tag-food',Batch:'rb-tag-batch',Kids:'rb-tag-kids',Refreshers:'rb-tag-refreshers'}[r.cat]||'';
+    const star=r.star?' <span class="rb-star">★</span>':'';
+
+    let body='';
+    if(isOpen){
+      const sv=rbGetServing(r.id);
+      body+='<div class="rb-serving-bar">'+
+        '<span class="rb-serving-label">Servings (1–50)</span>'+
+        '<button class="rb-s-btn" onclick="event.stopPropagation();rbAdjustServing('+r.id+',-1)">−</button>'+
+        '<input type="range" class="rb-s-slider" min="1" max="50" value="'+sv+'" oninput="event.stopPropagation();rbSetServing('+r.id+',this.value)">'+
+        '<button class="rb-s-btn" onclick="event.stopPropagation();rbAdjustServing('+r.id+',1)">+</button>'+
+        '<span class="rb-s-val" id="rb-sv-'+r.id+'">'+sv+'</span>'+
+      '</div>';
+
+      body+='<table class="rb-ing-table"><thead><tr><th>Ingredient</th><th>Unit</th><th class="r">Amount</th></tr></thead><tbody>';
+      r.ingredients.forEach(i=>{
+        const scaled=i.amt*sv;
+        body+='<tr><td class="name">'+esc(i.name)+'</td><td class="unit">'+esc(i.unit)+'</td><td class="amt">'+rbFmt(scaled)+'</td></tr>';
+      });
+      body+='</tbody></table>';
+
+      r.notes.forEach(n=>{
+        body+='<div class="rb-note '+n.type+'">'+n.text+'</div>';
+      });
+
+      if(r.steps.length){
+        body+='<div class="rb-steps-section"><div class="rb-steps-title">👨‍🍳 How to Make It</div>';
+        r.steps.forEach((s,i)=>{
+          body+='<div class="rb-step"><div class="rb-step-num">'+(i+1)+'</div><div class="rb-step-text">'+s+'</div></div>';
+        });
+        body+='</div>';
+      }
+    }
+
+    return '<div class="rb-card'+(isOpen?' open':'')+(r.batch?' is-batch':'')+'" id="rb-card-'+r.id+'">'+
+      '<div class="rb-card-head" onclick="rbToggleCard('+r.id+')">'+
+        '<div class="rb-card-arrow">›</div>'+
+        '<div class="rb-card-name">'+esc(r.name)+star+'</div>'+
+        '<span class="rb-card-tag '+tagClass+'">'+esc(r.cat)+'</span>'+
+        '<span class="rb-card-price">'+esc(r.price)+'</span>'+
+      '</div>'+
+      '<div class="rb-card-body">'+body+'</div>'+
+    '</div>';
+  }).join('');
 }
 
 function switchTab(tab){
@@ -2601,7 +3200,7 @@ function switchTab(tab){
   });
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+tab).classList.add('active');
-  if(tab==='recipes')buildRecipes();
+  if(tab==='recipes')renderRecipeBook();
   if(tab==='inventory'){renderInventory().then(()=>updateLowStockBadge());}
   if(tab==='orders') renderOrders();
   if(tab==='reports') renderReports();
