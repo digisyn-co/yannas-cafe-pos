@@ -422,6 +422,10 @@ body{background:#FAF9F6;color:var(--text1);font-size:14px;font-family:var(--font
 .log-method{font-size:11px;padding:2px 8px;border-radius:10px;background:var(--bg3);color:var(--text2)}
 .reprint-btn{font-size:11px;padding:3px 10px;border-radius:var(--r);border:0.5px solid #827472;background:transparent;cursor:pointer;color:var(--text2);transition:all .15s}
 .reprint-btn:hover{background:var(--bg3);color:var(--text1)}
+.addon-btn{padding:3px 9px;border-radius:5px;border:0.5px solid rgba(63,143,94,0.4);background:rgba(63,143,94,0.08);color:#3f8f5e;font-size:11px;cursor:pointer;font-family:var(--font-body);font-weight:600}
+.addon-btn:hover{background:rgba(63,143,94,0.18)}
+#addon-banner{background:#fff3cd;color:#7a5b00;padding:8px 10px;font-size:12px;font-weight:600;align-items:center;gap:8px}
+#addon-banner button{background:none;border:1px solid #7a5b00;color:#7a5b00;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;font-family:var(--font-body)}
 
 /* REPORTS */
 .metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px}
@@ -618,6 +622,10 @@ body{background:#FAF9F6;color:var(--text1);font-size:14px;font-family:var(--font
         <div class="order-head">
           <h3>🧾 Current Order</h3>
           <button class="clr-btn" onclick="clearOrder()">Clear</button>
+        </div>
+        <div id="addon-banner" style="display:none">
+          <span id="addon-banner-text"></span>
+          <button onclick="cancelAddOn()">Cancel add-on</button>
         </div>
         <div class="order-items" id="order-items">
           <div class="empty-order">Tap items to add</div>
@@ -1034,6 +1042,7 @@ async function loadOrders(filter){
     items:d.items,total:d.total,method:d.payment_method,
     discountData:d.discount_ids?{type:d.discount_type,ids:d.discount_ids,pax:d.discount_pax||1,discAmt:d.discount_amount||0}:null,
     voided:d.voided||false,
+    status:d.status||'incoming',
     created_at:d.created_at,
     order_type:d.order_type||'Dine-in'
   }));
@@ -1047,7 +1056,7 @@ function subscribeRealtime(){
     sb.channel('orders-channel')
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'orders'},payload=>{
         const d=payload.new;
-        const entry={id:d.order_number,time:new Date(d.created_at).toLocaleString('en-PH',{dateStyle:'short',timeStyle:'short'}),items:d.items,total:d.total,method:d.payment_method,voided:d.voided||false,order_type:d.order_type||'Dine-in',created_at:d.created_at,discountData:d.discount_ids?{type:d.discount_type,ids:d.discount_ids,pax:d.discount_pax||1,discAmt:d.discount_amount||0}:null,cashier:d.cashier_name||null,tendered:d.cash_tendered??null,change:d.change_given??null};
+        const entry={id:d.order_number,time:new Date(d.created_at).toLocaleString('en-PH',{dateStyle:'short',timeStyle:'short'}),items:d.items,total:d.total,method:d.payment_method,voided:d.voided||false,status:d.status||'incoming',order_type:d.order_type||'Dine-in',created_at:d.created_at,discountData:d.discount_ids?{type:d.discount_type,ids:d.discount_ids,pax:d.discount_pax||1,discAmt:d.discount_amount||0}:null,cashier:d.cashier_name||null,tendered:d.cash_tendered??null,change:d.change_given??null};
         if(!orderHistory.find(o=>o.id===entry.id)){
           orderHistory.unshift(entry);
           if(document.getElementById('page-orders').classList.contains('active')) renderOrders();
@@ -1205,7 +1214,89 @@ function selectPayMethod(method){
 }
 function placeOrder(){
   if(!order.length) return;
+  if(addOnTarget){ confirmAddOnFlow(); return; }
   checkout(currentPayMethod);
+}
+
+// ── ADD ITEMS TO AN EXISTING ORDER ─────────────
+// Lets a cashier top up an order that was already placed (customer came back a
+// few minutes later and wants more) instead of creating a brand-new, disconnected
+// order. The new items are merged into the SAME orders row (same order_number),
+// so the receipt, the kitchen board, and reports all show one order.
+function startAddOn(orderNumber){
+  if(order.length && !confirm('This will clear your current cart to start adding items to Order '+orderNumber+'. Continue?')) return;
+  addOnTarget=orderNumber;
+  order=[];
+  discountData=null;
+  posAppliedReward=null;
+  ['disc-pwd','disc-sc','disc-friendly'].forEach(id=>document.getElementById(id)?.classList.remove('active'));
+  switchTab('pos');
+  renderOrder();
+  toast('➕ Adding items to Order '+orderNumber+' — tap items to add, then confirm below');
+}
+
+function cancelAddOn(){
+  addOnTarget=null;
+  order=[];
+  renderOrder();
+  toast('Add-on cancelled');
+}
+
+function confirmAddOnFlow(){
+  const target=addOnTarget;
+  const subtotal=order.reduce((s,o)=>s+o.price*o.qty,0);
+  document.getElementById('modal-container').innerHTML=`
+    <div class="modal-bg"><div class="modal">
+      <h3>➕ Add to Order ${esc(target)}</h3>
+      <span class="ml" style="margin-bottom:8px;display:block">These items will be added to the existing order:</span>
+      <div style="max-height:200px;overflow-y:auto;margin-bottom:10px">
+        ${order.map(o=>`<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:13px"><span>${o.qty}× ${esc(o.name)}${o.note?' <span style=\"color:#999\">('+esc(o.note)+')</span>':''}</span><span>₱${o.price*o.qty}</span></div>`).join('')}
+      </div>
+      <div style="display:flex;justify-content:space-between;font-weight:700;padding-top:8px;border-top:1px solid #ddd;margin-bottom:14px">
+        <span>Add-on subtotal</span><span>₱${subtotal}</span>
+      </div>
+      <span class="ml" style="font-size:11px;color:#888;display:block;margin-bottom:10px">This adds ₱${subtotal} to Order ${esc(target)}'s total. No separate discount is applied to add-on items.</span>
+      <div class="mbtns">
+        <button class="mbtn ok" onclick="finalizeAddOn()">Confirm — Add ₱${subtotal}</button>
+        <button class="mbtn" onclick="closeModal()">Back</button>
+      </div>
+    </div></div>`;
+}
+
+let __savingAddOn=false;
+async function finalizeAddOn(){
+  if(__savingAddOn) return;
+  const target=addOnTarget;
+  if(!target){ closeModal(); return; }
+  __savingAddOn=true;
+  try{
+    const {data:ord,error:fetchErr}=await sb.from('orders').select('items,total,status,voided').eq('order_number',target).single();
+    if(fetchErr||!ord){ toast('Could not find Order '+target+' — it may have been removed'); closeModal(); __savingAddOn=false; return; }
+    if(ord.voided){ toast('Order '+target+' is voided and cannot be added to'); closeModal(); __savingAddOn=false; return; }
+    if(['picked_up','completed','done'].includes(ord.status||'incoming')){ toast('Order '+target+' is already completed — start a new order instead'); closeModal(); __savingAddOn=false; return; }
+    const addedAt=new Date().toISOString();
+    const newItems=order.map(o=>({id:o.id,name:o.displayName||o.name,qty:o.qty,price:o.price,cat:o.cat,temp:o.temp||null,note:o.note||null,added_at:addedAt}));
+    const oldItems=Array.isArray(ord.items)?ord.items:[];
+    const mergedItems=[...oldItems,...newItems];
+    const addSubtotal=newItems.reduce((s,o)=>s+o.price*o.qty,0);
+    const newTotal=Math.round((Number(ord.total)+addSubtotal)*100)/100;
+    const newStatus=(ord.status==='ready')?'preparing':(ord.status||'incoming');
+    const {error:updErr}=await sb.from('orders').update({items:mergedItems,total:newTotal,status:newStatus}).eq('order_number',target);
+    if(updErr){ toast('Add-on failed: '+updErr.message); closeModal(); __savingAddOn=false; return; }
+    await deductInventory([...order]);
+    updateLowStockBadge();
+    addOnTarget=null;
+    order=[];
+    closeModal();
+    renderOrder();
+    toast('✅ Added '+newItems.length+' item'+(newItems.length!==1?'s':'')+' to Order '+target+' — new total ₱'+newTotal+(newStatus==='preparing'&&ord.status==='ready'?' (moved back to Preparing)':''));
+    switchTab('orders');
+  }catch(e){
+    console.error('finalizeAddOn',e);
+    toast('Add-on failed — see console for details');
+    closeModal();
+  }
+  __savingAddOn=false;
 }
 
 
@@ -1234,6 +1325,7 @@ function saveItemNote(id){
 
 // ── DISCOUNT MODAL ────────────────────────────
 let discountData=null; // {type, ids:[{name,idNum}], pax, discAmt}
+let addOnTarget=null; // order_number of the existing order being topped up, or null for a normal new order
 let posLoyaltyPhone='',posLoyaltyBalance=0,posLoyaltyRewardsList=[],posAppliedReward=null,posLoyaltyTimer=null;
 
 function toggleDiscount(type){
@@ -1437,6 +1529,19 @@ function renderOrder(){
     if(discountData){ discountData=null; ['disc-pwd','disc-sc','disc-friendly'].forEach(id=>document.getElementById(id)?.classList.remove('active')); }
     discLine.style.display='none';
     const loyLineEmpty=document.getElementById('loy-line'); if(loyLineEmpty) loyLineEmpty.style.display='none';
+    const banner0=document.getElementById('addon-banner');
+    const discRow0=document.querySelector('.disc-row');
+    const payBtns0=document.querySelector('.pay-btns');
+    if(addOnTarget){
+      if(discRow0) discRow0.style.display='none';
+      if(payBtns0){ payBtns0.querySelectorAll('.pbtn:not(#place-btn)').forEach(b=>b.style.display='none'); }
+      if(banner0){ banner0.style.display='flex'; document.getElementById('addon-banner-text').textContent='➕ Adding items to Order '+addOnTarget; }
+      btn.textContent='➕ Add to Order '+addOnTarget;
+    } else {
+      if(discRow0) discRow0.style.display='flex';
+      if(payBtns0){ payBtns0.querySelectorAll('.pbtn:not(#place-btn)').forEach(b=>b.style.display=''); }
+      if(banner0) banner0.style.display='none';
+    }
     btn.disabled=true;return;
   }
   const subtotal=order.reduce((s,o)=>s+o.price*o.qty,0);
@@ -1482,7 +1587,20 @@ function renderOrder(){
   document.getElementById('total-amt').textContent='₱'+total;
   document.getElementById('item-count').textContent=count+' item'+(count!==1?'s':'');
   btn.disabled=false;
-  btn.textContent='Place Order · '+currentPayMethod;
+  const discRow=document.querySelector('.disc-row');
+  const payBtns=document.querySelector('.pay-btns');
+  const banner=document.getElementById('addon-banner');
+  if(addOnTarget){
+    if(discRow) discRow.style.display='none';
+    if(payBtns){ payBtns.querySelectorAll('.pbtn:not(#place-btn)').forEach(b=>b.style.display='none'); }
+    if(banner){ banner.style.display='flex'; document.getElementById('addon-banner-text').textContent='➕ Adding items to Order '+addOnTarget; }
+    btn.textContent='➕ Add to Order '+addOnTarget;
+  } else {
+    if(discRow) discRow.style.display='flex';
+    if(payBtns){ payBtns.querySelectorAll('.pbtn:not(#place-btn)').forEach(b=>b.style.display=''); }
+    if(banner) banner.style.display='none';
+    btn.textContent='Place Order · '+currentPayMethod;
+  }
 }
 
 // ── LOYALTY (POS) ──────────────────────────────
@@ -2330,7 +2448,7 @@ async function renderOrders(){
         <span class="log-total" style="${o.voided?'text-decoration:line-through':''}">₱${o.total}</span>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
           <span class="log-method">${o.method}</span>
-          ${o.voided?'<span class="voided-badge">VOIDED</span>':`<button class="void-btn" onclick='confirmVoid("${o.id}")'>Void</button>`}
+          ${o.voided?'<span class="voided-badge">VOIDED</span>':`<button class="void-btn" onclick='confirmVoid("${o.id}")'>Void</button>${['picked_up','completed','done'].includes(o.status)?'':`<button class="addon-btn" onclick='startAddOn("${o.id}")'>➕ Add</button>`}`}
           <button class="reprint-btn" onclick="reprintById('${esc(o.id)}')">🖨️ Reprint</button>
         </div>
       </div>
