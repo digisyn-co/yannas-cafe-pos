@@ -821,85 +821,7 @@ const MENU=[
 // in the source docs. Manually track inventory for combo components at the station
 // until an owner decision is made (see handoff notes).
 
-const INIT_INV=[
-  // ── COFFEE & TEA ──
-  {id:'robusta',name:"Trung Nguyen S Coffee (500g pack)",unit:"pcs",stock:0,reorder:3,max:20,cat:"Coffee"},
-  {id:'condensed',name:"Condensed Milk (300g can)",unit:"pcs",stock:0,reorder:6,max:48,cat:"Coffee"},
-  {id:'assam_tea',name:"Assam Black Tea (500g pack)",unit:"pcs",stock:0,reorder:2,max:10,cat:"Tea"},
-  {id:'jasmine_tea',name:"Jasmine Tea (500g pack)",unit:"pcs",stock:0,reorder:2,max:10,cat:"Tea"},
-  {id:'matcha',name:"ACC Matcha Powder (1kg bag)",unit:"pcs",stock:0,reorder:1,max:5,cat:"Matcha"},
-  {id:'ceremonial_matcha',name:"Ceremonial Matcha (100g tin)",unit:"pcs",stock:0,reorder:2,max:10,cat:"Matcha"},
 
-  // ── MILK & CREAM ──
-  {id:'fresh_milk',name:"Alaska Barista Milk (1L box)",unit:"pcs",stock:0,reorder:4,max:24,cat:"Dairy"},
-  {id:'oat_milk',name:"Oatbedient Barista Oat Milk (1L box)",unit:"pcs",stock:0,reorder:2,max:12,cat:"Dairy"},
-  {id:'heavy_cream',name:"Alaska Crema (250ml can)",unit:"pcs",stock:0,reorder:6,max:36,cat:"Dairy"},
-  {id:'coconut_cream',name:"Coconut Milk (1L carton)",unit:"pcs",stock:0,reorder:2,max:12,cat:"Dairy"},
-
-  // ── SYRUPS & FLAVORS ──
-  {id:'strawberry_syrup',name:"Injoy Strawberry Syrup (1L bottle)",unit:"pcs",stock:0,reorder:1,max:6,cat:"Syrup"},
-  {id:'lychee_syrup',name:"Injoy Lychee Syrup (1L bottle)",unit:"pcs",stock:0,reorder:1,max:6,cat:"Syrup"},
-  {id:'mango_syrup',name:"ACC Mango Syrup (1kg bag)",unit:"pcs",stock:0,reorder:1,max:6,cat:"Syrup"},
-  {id:'passion_syrup',name:"TC Top Series Passion Fruit Syrup (750ml bottle)",unit:"pcs",stock:0,reorder:1,max:6,cat:"Syrup"},
-  {id:'wintermelon_syrup',name:"TC Top Series Wintermelon Syrup (750ml bottle)",unit:"pcs",stock:0,reorder:1,max:6,cat:"Syrup"},
-  {id:'vanilla',name:"McCormick Vanilla Flavor (20ml)",unit:"pcs",stock:0,reorder:1,max:6,cat:"Syrup"},
-  {id:'fruit_jelly',name:"BobaTea Rainbow Fruit Jelly (2.5kg tub)",unit:"pcs",stock:0,reorder:1,max:4,cat:"Syrup"},
-  {id:'sugar',name:"White Sugar (1kg bag)",unit:"pcs",stock:0,reorder:2,max:10,cat:"Supplies"},
-  {id:'sea_salt',name:"Sea Salt (100g pack)",unit:"pcs",stock:0,reorder:2,max:10,cat:"Supplies"},
-
-  // ── EGGS ──
-  {id:'eggs',name:"Eggs (tray of 30)",unit:"pcs",stock:0,reorder:2,max:10,cat:"Food"},
-
-  // ── MEAT (per kg) ──
-  {id:'pork',name:"Pork Shoulder (per kg)",unit:"kg",stock:0,reorder:3,max:20,cat:"Meat"},
-  {id:'chicken',name:"Chicken Thigh (per kg)",unit:"kg",stock:0,reorder:3,max:20,cat:"Meat"},
-  {id:'beef',name:"Beef Sirloin (per kg)",unit:"kg",stock:0,reorder:2,max:15,cat:"Meat"},
-  {id:'bacon',name:"Smoked Bacon (per kg)",unit:"kg",stock:0,reorder:1,max:5,cat:"Meat"},
-  {id:'tocino',name:"Sweet Cured Tocino (per kg)",unit:"kg",stock:0,reorder:1,max:5,cat:"Meat"},
-  {id:'tapa',name:"Cured Beef Tapa (per kg)",unit:"kg",stock:0,reorder:1,max:5,cat:"Meat"},
-
-  // ── BREAD & PRODUCE ──
-  {id:'baguette',name:"Baguette / Pandesal Roll",unit:"pcs",stock:0,reorder:20,max:100,cat:"Food"},
-  {id:'cucumber',name:"Cucumber",unit:"pcs",stock:0,reorder:6,max:30,cat:"Vegetables"},
-  {id:'onions',name:"Onions",unit:"pcs",stock:0,reorder:6,max:30,cat:"Vegetables"},
-  {id:'garlic',name:"Garlic (head)",unit:"pcs",stock:0,reorder:3,max:20,cat:"Vegetables"},
-  {id:'pechay',name:"Pechay / Bok Choy (bundle)",unit:"pcs",stock:0,reorder:3,max:15,cat:"Vegetables"},
-  {id:'carrots',name:"Carrots",unit:"pcs",stock:0,reorder:5,max:20,cat:"Vegetables"},
-  {id:'pickled_carrots',name:"Pickled Carrots & Onions (batch jar)",unit:"batch",stock:0,reorder:2,max:10,cat:"Prep"},
-  {id:'liver_spread',name:"Reno Liver Spread (can)",unit:"pcs",stock:0,reorder:3,max:12,cat:"Food"},
-  {id:'cheese',name:"Cheese Slices (pack)",unit:"pcs",stock:0,reorder:2,max:10,cat:"Food"},
-  {id:'house_dip',name:"Signature House Dip (batch)",unit:"batch",stock:0,reorder:1,max:5,cat:"Prep"},
-
-  // ── SAUCES & OIL ──
-  {id:'soy_sauce',name:"Soy Sauce (1L bottle)",unit:"pcs",stock:0,reorder:1,max:6,cat:"Supplies"},
-  {id:'fish_sauce',name:"Fish Sauce (1L bottle)",unit:"pcs",stock:0,reorder:1,max:4,cat:"Supplies"},
-  {id:'oyster_sauce',name:"Oyster Sauce (bottle)",unit:"pcs",stock:0,reorder:1,max:4,cat:"Supplies"},
-  {id:'cooking_oil',name:"Cooking Oil (1L bottle)",unit:"pcs",stock:0,reorder:2,max:6,cat:"Supplies"},
-  {id:'mayo',name:"Mayonnaise (jar)",unit:"pcs",stock:0,reorder:1,max:4,cat:"Supplies"},
-  {id:'butter',name:"Butter (block)",unit:"pcs",stock:0,reorder:1,max:4,cat:"Supplies"},
-
-  // ── RICE ──
-  {id:'rice',name:"Rice (5kg sack)",unit:"pcs",stock:0,reorder:2,max:10,cat:"Food"},
-  {id:'crunchy_rice',name:"Crunchy Baked Rice (batch)",unit:"batch",stock:0,reorder:1,max:5,cat:"Prep"},
-
-  // ── CUPS & PACKAGING (from receipt) ──
-  {id:'cup_hot',name:"Hot Cup Double Wall 100s",unit:"pcs",stock:0,reorder:2,max:10,cat:"Packaging"},
-  {id:'cup_cold_single',name:"Cold Cup Single Wall 100s",unit:"pcs",stock:0,reorder:2,max:10,cat:"Packaging"},
-  {id:'cup_22oz',name:"22oz U-Cup Mario/Luigi 50s",unit:"pcs",stock:0,reorder:2,max:10,cat:"Packaging"},
-  {id:'lid',name:"Cup Lids (pack of 100)",unit:"pcs",stock:0,reorder:2,max:10,cat:"Packaging"},
-  {id:'straw',name:"Straws (pack of 100)",unit:"pcs",stock:0,reorder:2,max:10,cat:"Packaging"},
-  {id:'sandwich_box',name:"Clamshell Hotdog Box 25s",unit:"pcs",stock:0,reorder:2,max:10,cat:"Packaging"},
-  {id:'rice_box',name:"Hi-Meal Box T-47 Brown 25s",unit:"pcs",stock:0,reorder:2,max:10,cat:"Packaging"},
-  {id:'paper_bag',name:"Paper Bags (pack)",unit:"pcs",stock:0,reorder:2,max:10,cat:"Packaging"},
-
-  {id:'banana',name:"Bananas (bunch)",unit:"pcs",stock:0,reorder:2,max:10,cat:"Fruit"},
-  {id:'chocolate',name:"Chocolate Syrup/Spread",unit:"pcs",stock:0,reorder:1,max:6,cat:"Supplies"},
-  {id:'apple',name:"Apples (per kg)",unit:"kg",stock:0,reorder:2,max:10,cat:"Fruit"},
-  {id:'pineapple',name:"Pineapple (whole)",unit:"pcs",stock:0,reorder:4,max:10,cat:"Fruit"},
-  {id:'mango',name:"Mangoes (per kg)",unit:"kg",stock:0,reorder:2,max:10,cat:"Fruit"},
-  {id:'bread',name:"Sliced Bread (loaf)",unit:"pcs",stock:0,reorder:2,max:10,cat:"Food"},
-  {id:'ketchup',name:"Ketchup (bottle)",unit:"pcs",stock:0,reorder:1,max:4,cat:"Supplies"},
-];
 
 let sb,order=[],activeCategory='All',currentPayMethod='Cash',currentOrderType='Dine-in',reportFilter='today',ordersFilter='today';
 let invData=[],orderHistory=[];
@@ -971,13 +893,10 @@ async function loadApp(){
   setTimeout(()=>loadOnlineOrders(),1200);
 }
 
-// Low-stock threshold: use INIT_INV's reorder point where the item still
-// matches a code-defined id, otherwise fall back to ~15% of max stock (or 3
-// if max isn't set) — used for items added straight from the Inventory tab,
-// which have no code entry to carry a reorder point.
+// Low-stock threshold: 15% of max stock (or 3 if max isn't set). Inventory is
+// fully manual now — every item's reorder point is derived the same way,
+// whether it was added via + Add Item or edited later from the Inventory tab.
 function invReorderFor(id,maxStock){
-  const def=INIT_INV.find(i=>i.id===id);
-  if(def&&def.reorder!=null) return def.reorder;
   return Math.max(1,Math.round((maxStock||10)*0.15));
 }
 function mapInvRow(row){
@@ -985,40 +904,14 @@ function mapInvRow(row){
           reorder:invReorderFor(row.id,row.max_stock)};
 }
 
+// Inventory is fully manual now — the app never seeds or auto-inserts items.
+// Whatever exists is exactly what staff added via + Add Item / Edit in the
+// Inventory tab. An empty table just means an empty inventory list; nothing
+// gets pushed into it from code.
 async function setupInventory(){
   const {data,error}=await sb.from('inventory').select('*');
-
-  // Empty table -> seed it from INIT_INV.
-  if(error||!data||data.length===0){
-    const rows=INIT_INV.map(i=>({id:i.id,name:i.name,unit:i.unit,stock:i.stock,max_stock:i.max,cat:i.cat}));
-    await sb.from('inventory').upsert(rows,{onConflict:'id'});
-    invData=INIT_INV.map(i=>({...i}));
-    return;
-  }
-
-  // Table has rows. Only INSERT items that are brand new in the code —
-  // never overwrite an existing row's name/unit/max/cat. Those fields are
-  // now editable live from the Inventory tab (Edit button / + Add Item), so
-  // a code push must not silently undo a manager's rename or re-category —
-  // the DB is the source of truth for a row's definition once it exists.
-  const byId=new Map(data.map(d=>[d.id,d]));
-  const inserts=[];
-  for(const def of INIT_INV){
-    if(!byId.has(def.id)){
-      inserts.push({id:def.id,name:def.name,unit:def.unit,stock:0,max_stock:def.max,cat:def.cat});
-    }
-  }
-  if(inserts.length){
-    try{
-      await sb.from('inventory').upsert(inserts,{onConflict:'id'});
-      console.info(`[inventory] added ${inserts.length} new item(s) from code`);
-    }catch(e){ console.warn('[inventory] insert failed:',e); }
-  }
-
-  // invData = every row in the DB, including items added straight from the
-  // Inventory tab (which have no INIT_INV entry at all — previously those
-  // were hidden from the UI entirely).
-  invData=[...byId.values(),...inserts].map(mapInvRow);
+  if(error){ console.warn('[inventory] load failed:',error); invData=[]; return; }
+  invData=(data||[]).map(mapInvRow);
 }
 
 function getDateRange(filter){
@@ -2630,7 +2523,7 @@ function buildRecipes(){
     const catColors={Coffee:'#D97706',Matcha:'#059669',Tea:'#0D9488',Food:'#6366F1',Combo:'#8B5CF6',Kids:'#EC4899',Refreshers:'#F59E0B'};
     const catColor=catColors[m.cat]||'#888';
     const ingRows=Object.entries(r).map(([ingId,amt])=>{
-      const inv=INIT_INV.find(i=>i.id===ingId);
+      const inv=invData.find(i=>i.id===ingId);
       const name=inv?inv.name:ingId;
       const unit=inv?inv.unit:'';
       return {name,unit,baseAmt:amt};
