@@ -2105,7 +2105,7 @@ async function confirmOrder(){
     else if(cashIn<total && !confirm(`Cash entered (₱${cashIn}) is short by ₱${(total-cashIn).toFixed(2)}.\nPlace the order anyway?`)) return;
   }
   const short=checkStock(order);
-  if(short.length && !confirm('Low / out of stock:\n• '+short.join('\n• ')+'\n\nPlace the order anyway?')) return;
+  if(short.length) console.warn('Low/out of stock (order placed anyway):', short.join(' | '));
   __savingOrder=true;
   const cBtn=document.querySelector('#receipt-content .btn-confirm'); if(cBtn){cBtn.disabled=true;cBtn.textContent='Saving…';}
   try{
