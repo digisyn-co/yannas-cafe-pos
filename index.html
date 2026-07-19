@@ -2010,10 +2010,14 @@ async function confirmOrder(){
     const msg=((res.error.message||'')+' '+(res.error.code||'')+' '+(res.error.details||''));
     const schemaIssue=/column|does not exist|42703|schema cache|could not find/i.test(msg);
     if(schemaIssue){
-      // DB not migrated yet → fall back to client-side number + legacy columns only (keeps POS working)
+      // DB not migrated yet → fall back to client-side number + legacy columns only (keeps POS working).
+      // IMPORTANT: discPayload is intentionally dropped here — it's the most likely cause of a schema
+      // error (see supabase_discount_columns.sql), and resending it would just fail identically again.
+      if(dd) console.warn('Order saved WITHOUT discount info — run supabase_discount_columns.sql to fix this permanently.');
       orderNum='#'+new Date().toISOString().slice(11,19).replace(/:/g,'')+'-'+String(Math.floor(Math.random()*900)+100);
-      res=await sb.from('orders').insert({order_number:orderNum,items:itemsPayload,total,payment_method:currentPayMethod,order_type:currentOrderType,customer_phone:loyPhoneKey||null,customer_name:loyName,...discPayload}).select('order_number').single();
+      res=await sb.from('orders').insert({order_number:orderNum,items:itemsPayload,total,payment_method:currentPayMethod,order_type:currentOrderType,customer_phone:loyPhoneKey||null,customer_name:loyName}).select('order_number').single();
       saveErr=res.error;
+      if(!saveErr&&dd) toast('⚠️ Order saved, but discount details were NOT recorded (DB needs a migration). Total is still correct.');
     } else if(res.error?.message?.includes('duplicate key')||res.error?.details?.includes('duplicate')){
       // Duplicate order number — retry with a new unique number
       orderNum='#'+new Date().toISOString().slice(11,19).replace(/:/g,'')+'-'+String(Math.floor(Math.random()*900)+100);
