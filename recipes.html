@@ -136,24 +136,23 @@ const RECIPES = [
     ]
   },
   {
-    id:102, name:"Egg Custard Cream", cat:"Batch", price:"30 servings", star:false, batch:true,
+    id:102, name:"Custard Cream (Cream & Yema Fudge)", cat:"Batch", price:"30 servings", star:false, batch:true,
     ingredients:[
-      {name:"Egg yolks (same-day fresh)",unit:"yolks",amt:18},
-      {name:"Condensed milk",unit:"ml",amt:540},
-      {name:"Alaska Crema heavy cream",unit:"ml",amt:900},
-      {name:"White sugar",unit:"g",amt:180},
+      {name:"All-Purpose Cream (Alaska)",unit:"ml",amt:1125},
+      {name:"La Crema Yema Fudge",unit:"g",amt:675},
     ],
     steps:[
-      "Separate <strong>18 egg yolks</strong>. Any shell or white ruins the texture — start over if it happens.",
-      "Whisk yolks + <strong>540ml condensed milk</strong> + <strong>180g sugar</strong> for <strong>3 minutes</strong>, until pale and thickened.",
-      "Add the <strong>900ml cream SLOWLY</strong> while whisking. Never dump it in — it will split.",
-      "Texture target: silky, slightly thick, pours off a spoon in a ribbon.",
-      "Transfer to a sealed container. Sit it in a bowl of ice during service.",
-      "Expected yield: <strong>1800ml</strong>.",
+      "Pour <strong>1125ml cold All-Purpose Cream</strong> into a clean pitcher, straight from the fridge.",
+      "Add <strong>675g La Crema Yema Fudge</strong>. Weigh it — the ratio is <strong>1L cream : 600g fudge</strong>.",
+      "If the fudge resists mixing, gently warm the cream first (<strong>do not boil</strong>) to help it dissolve.",
+      "Whisk until completely smooth — <strong>no lumps or streaks of fudge</strong> remaining.",
+      "Sit the container in a bowl of ice or refrigerate immediately.",
+      "Expected yield: <strong>~1800ml</strong>.",
     ],
     notes:[
-      {type:"warn",text:"⚠ SAME DAY ONLY. Raw yolks. Discard every drop at close of shift. No exceptions."},
-      {type:"warn",text:"Never out of refrigeration more than 1 hour. Keep it on ice at the bar."},
+      {type:"info",text:"UPDATED RECIPE — no raw egg yolks, condensed milk, or sugar. Replaced with cream + La Crema Yema Fudge."},
+      {type:"warn",text:"⚠ Shelf life 24 hours, sealed and refrigerated — confirm a final shelf life with your own food-safety testing before extending it."},
+      {type:"warn",text:"Never out of refrigeration more than 1 hour. Still a dairy product — keep it cold at the bar."},
     ]
   },
   {
@@ -328,17 +327,17 @@ const RECIPES = [
     id:4, name:"Egg Coffee", cat:"Coffee", price:"Hot ₱170 / Cold ₱185", star:true,
     ingredients:[
       {name:"Coffee concentrate",unit:"ml",amt:60},
-      {name:"Egg custard cream (Batch)",unit:"ml",amt:60},
+      {name:"Custard cream (Batch)",unit:"ml",amt:60},
       {name:"Ice — cold only",unit:"g",amt:170},
       {name:"Matcha or cocoa dusting — cold only",unit:"g",amt:1},
       {name:"Cup + lid",unit:"set",amt:1},
     ],
     steps:[
-      "<strong>HOT (12oz):</strong> Pour <strong>60ml hot concentrate</strong>. Spoon <strong>60ml egg custard</strong> on top. <strong>DO NOT STIR</strong> — serve as visible layers.",
-      "<strong>COLD (16oz):</strong> Pour <strong>60ml chilled concentrate</strong>. Fill <strong>60% ice (170g)</strong> — less than other drinks, the custard needs room. Dollop <strong>60ml egg custard</strong> on top.",
+      "<strong>HOT (12oz):</strong> Pour <strong>60ml hot concentrate</strong>. Spoon <strong>60ml custard cream</strong> on top. <strong>DO NOT STIR</strong> — serve as visible layers.",
+      "<strong>COLD (16oz):</strong> Pour <strong>60ml chilled concentrate</strong>. Fill <strong>60% ice (170g)</strong> — less than other drinks, the custard needs room. Dollop <strong>60ml custard cream</strong> on top.",
       "Cold version: dust with <strong>1g matcha or cocoa powder</strong>.",
     ],
-    notes:[{type:"warn",text:"⚠ Egg custard is SAME DAY USE ONLY."}]
+    notes:[{type:"warn",text:"⚠ Custard cream: 24h sealed & refrigerated — confirm via your own testing."}]
   },
 
   // ══════════ MATCHA ══════════
@@ -384,7 +383,7 @@ const RECIPES = [
       {name:"Matcha powder",unit:"g",amt:2},
       {name:"Water at 78°C",unit:"ml",amt:60},
       {name:"Alaska Barista Milk (cold)",unit:"ml",amt:130},
-      {name:"Egg custard cream (Batch)",unit:"ml",amt:50},
+      {name:"Custard cream (Batch)",unit:"ml",amt:50},
       {name:"Ice",unit:"g",amt:150},
       {name:"Matcha powder for dusting",unit:"g",amt:1},
       {name:"Cold cup + lid + straw",unit:"set",amt:1},
@@ -393,11 +392,11 @@ const RECIPES = [
       "Sift <strong>2g matcha</strong>, whisk with <strong>60ml water at 78°C</strong>. Cool 2 minutes.",
       "Fill <strong>70% ice (150g)</strong>, add <strong>130ml cold milk</strong>.",
       "Pour the matcha base over the ice.",
-      "Top with <strong>50ml egg custard cream</strong>. Dust with <strong>1g matcha powder</strong>.",
+      "Top with <strong>50ml custard cream</strong>. Dust with <strong>1g matcha powder</strong>.",
     ],
     notes:[
       {type:"warn",text:"⚠ Matcha water never above 80°C."},
-      {type:"warn",text:"⚠ Egg custard is SAME DAY USE ONLY."},
+      {type:"warn",text:"⚠ Custard cream: 24h sealed & refrigerated — confirm via your own testing."},
     ]
   },
 
@@ -540,6 +539,77 @@ const RECIPES = [
     ],
     steps:["Same wok method as the Pork Fried Rice. Use <strong>120g BBQ beef</strong>."],
     notes:[{type:"warn",text:"⚠ Wok on maximum. Day-old rice only."},{type:"speed",text:"⏱ Target: under 7 minutes."}]
+  },
+
+  {
+    id:36, name:"Pork Broken Rice (Cơm Tấm)", cat:"Food", price:"₱185", star:true,
+    ingredients:[
+      {name:"Broken rice (raw)",unit:"g",amt:100},
+      {name:"Marinated pork (Batch A.6)",unit:"g",amt:150},
+      {name:"Egg",unit:"pcs",amt:1},
+      {name:"Pickled carrots & onions (Batch)",unit:"g",amt:30},
+      {name:"Cucumber (3mm slices)",unit:"g",amt:25},
+      {name:"Cooking oil",unit:"ml",amt:10},
+      {name:"Rice box",unit:"pc",amt:1},
+    ],
+    steps:[
+      "Cook <strong>100g raw broken rice</strong> per plate (steam or boil on your rice cooker's broken-rice setting).",
+      "Take a <strong>150g portion of pre-marinated pork</strong> from Batch A.6 — no separate marinade needed.",
+      "Pan-fry on the flat grill, <strong>medium-high, ~2 min per side</strong>, to internal <strong>68°C</strong>. Rest 5 min.",
+      "Fry <strong>1 egg sunny-side up</strong>, crisp edges.",
+      "Plate the rice. <strong>Slice and fan the meat</strong> over it.",
+      "Add the fried egg, <strong>30g pickled carrots & onions</strong>, and <strong>25g cucumber slices (3mm)</strong>.",
+      "Spoon a little of the <strong>pan drippings/marinade</strong> over the meat before serving.",
+    ],
+    notes:[
+      {type:"info",text:"NEW ITEM — built entirely from components already batched for the sandwich and fried-rice lines."},
+      {type:"warn",text:"⚠ Pork must reach internal 68°C. Use a thermometer."},
+      {type:"speed",text:"⏱ Target: under 7 minutes."},
+      {type:"info",text:"Add-on — Extra Egg +₱25 (1 egg)."},
+      {type:"info",text:"Cost reference ≈₱79/plate. Confirm actual rice/pickle/cucumber costs to tighten this."},
+    ]
+  },
+  {
+    id:37, name:"Chicken Broken Rice (Cơm Tấm)", cat:"Food", price:"₱175", star:true,
+    ingredients:[
+      {name:"Broken rice (raw)",unit:"g",amt:100},
+      {name:"Marinated chicken (Batch A.6)",unit:"g",amt:150},
+      {name:"Egg",unit:"pcs",amt:1},
+      {name:"Pickled carrots & onions (Batch)",unit:"g",amt:30},
+      {name:"Cucumber (3mm slices)",unit:"g",amt:25},
+      {name:"Cooking oil",unit:"ml",amt:10},
+      {name:"Rice box",unit:"pc",amt:1},
+    ],
+    steps:[
+      "Same plating method as the Pork Broken Rice. Use a <strong>150g portion of marinated chicken</strong>.",
+      "Pan-fry on the flat grill, medium-high, ~2 min per side, to internal <strong>74°C — never above 80°C</strong>.",
+    ],
+    notes:[
+      {type:"warn",text:"⚠ Chicken must reach internal 74°C. Never exceed 80°C — it dries out."},
+      {type:"speed",text:"⏱ Target: under 7 minutes."},
+      {type:"info",text:"Add-on — Extra Egg +₱25 (1 egg). Cost reference ≈₱61/plate."},
+    ]
+  },
+  {
+    id:38, name:"Beef Broken Rice (Cơm Tấm)", cat:"Food", price:"₱195", star:true,
+    ingredients:[
+      {name:"Broken rice (raw)",unit:"g",amt:100},
+      {name:"Marinated beef (Batch A.6)",unit:"g",amt:150},
+      {name:"Egg",unit:"pcs",amt:1},
+      {name:"Pickled carrots & onions (Batch)",unit:"g",amt:30},
+      {name:"Cucumber (3mm slices)",unit:"g",amt:25},
+      {name:"Cooking oil",unit:"ml",amt:10},
+      {name:"Rice box",unit:"pc",amt:1},
+    ],
+    steps:[
+      "Same plating method as the Pork Broken Rice. Use a <strong>150g portion of marinated beef</strong>.",
+      "<strong>Sear high, 90 seconds per side</strong> on the flat grill.",
+    ],
+    notes:[
+      {type:"warn",text:"⚠ Beef marinated over 8 hours turns mushy — never exceed it (Batch A.6)."},
+      {type:"speed",text:"⏱ Target: under 7 minutes."},
+      {type:"info",text:"Add-on — Extra Egg +₱25 (1 egg). Cost reference ≈₱91/plate."},
+    ]
   },
 
   // ══════════ KIDS ══════════

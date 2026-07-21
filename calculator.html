@@ -196,6 +196,7 @@ const INGREDIENTS = [
   {id:'fresh_milk', name:'Fresh Milk', unit:'per ml', pkg:'₱/L', factor:1000, default:90},
   {id:'heavy_cream', name:'Heavy Cream', unit:'per ml', pkg:'₱/L', factor:1000, default:280},
   {id:'coconut_cream', name:'Coconut Cream', unit:'per ml', pkg:'₱/L', factor:1000, default:180},
+  {id:'yema_fudge', name:'La Crema Yema Fudge', unit:'per g', pkg:'₱/kg', factor:1000, default:265},
   {id:'eggs', name:'Eggs', unit:'per pc', pkg:'₱/pc', factor:1, default:9.33},
   {id:'sea_salt', name:'Sea Salt (specialty)', unit:'per g', pkg:'₱/100g', factor:100, default:200},
   {id:'jasmine_tea', name:'Jasmine Tea', unit:'per g', pkg:'₱/100g', factor:100, default:50},
@@ -223,6 +224,7 @@ const INGREDIENTS = [
   {id:'wintermelon_syrup', name:'Wintermelon Syrup (TC Top Series)', unit:'per ml', pkg:'₱/750ml bottle', factor:750, default:305},
   // ── FRIED RICE (estimates — confirm with supplier) ──
   {id:'rice', name:'Rice', unit:'per g', pkg:'₱/kg (est.)', factor:1000, default:50},
+  {id:'broken_rice', name:'Broken Rice (Cơm Tấm)', unit:'per g', pkg:'₱/kg (est.)', factor:1000, default:55},
   {id:'garlic', name:'Garlic', unit:'per pc', pkg:'₱/head (est.)', factor:1, default:8},
   {id:'pechay', name:'Pechay / Bok Choy', unit:'per pc', pkg:'₱/bundle (est.)', factor:1, default:20},
   {id:'cooking_oil', name:'Cooking Oil', unit:'per ml', pkg:'₱/L (est.)', factor:1000, default:110},
@@ -241,13 +243,17 @@ const RECIPE = {
   61:{robusta:19},                                                   // Black Coffee (Cold)
   2:{robusta:19,heavy_cream:40,fresh_milk:15,sea_salt:1,condensed:3}, // Salted Cream Coffee
   3:{robusta:19,coconut_cream:40,condensed:20,fresh_milk:20},         // Coconut Coffee
-  4:{robusta:19,eggs:1,condensed:20},                                 // Egg Coffee (Hot)
+  4:{robusta:19,heavy_cream:38,yema_fudge:23},                        // Egg Coffee (Hot) — 60ml custard cream (cream+yema fudge)
   62:{robusta:19,eggs:1,condensed:20},                                // Egg Coffee (Cold)
   5:{robusta:19,condensed:35},                                        // Vietnamese Milk Coffee (Hot)
   63:{robusta:19,condensed:35},                                       // Vietnamese Milk Coffee (Cold)
   6:{matcha:2,fresh_milk:180},                                        // Matcha Latte — fresh_milk was 210, live is 180
   7:{matcha:2,heavy_cream:30,fresh_milk:130,sea_salt:1,condensed:3},  // Salt Matcha — fresh_milk was 40, live is 130
-  8:{matcha:2,eggs:1,condensed:25,heavy_cream:40},                    // Egg Custard Matcha — condensed was 30→25, heavy_cream was 50→40
+  8:{matcha:2,heavy_cream:31,yema_fudge:19},                          // Egg Custard Matcha — 50ml custard cream (cream+yema fudge)
+  // ── BROKEN RICE (Cơm Tấm) ──
+  36:{broken_rice:100,pork:150,eggs:1,pickled_carrots:20,pickled_onions:10,cucumber:0.25,cooking_oil:10},    // Pork Broken Rice
+  37:{broken_rice:100,chicken:150,eggs:1,pickled_carrots:20,pickled_onions:10,cucumber:0.25,cooking_oil:10}, // Chicken Broken Rice
+  38:{broken_rice:100,beef:150,eggs:1,pickled_carrots:20,pickled_onions:10,cucumber:0.25,cooking_oil:10},    // Beef Broken Rice
   // ── FRUIT TEA, per flavor (was a single row with NO syrup cost at all) ──
   71:{jasmine_tea:2,lychee_syrup:25},        // Lychee
   72:{jasmine_tea:2,strawberry_syrup:35},    // Strawberry (purée; lemon garnish not costed)
@@ -295,6 +301,9 @@ const MENU = [
   {id:19, name:'Pork Fried Rice', cat:'Food', price:130, cup:'paper_bags', star:false},
   {id:20, name:'Chicken Fried Rice', cat:'Food', price:115, cup:'paper_bags', star:false},
   {id:21, name:'Beef Fried Rice', cat:'Food', price:145, cup:'paper_bags', star:false},
+  {id:36, name:'Pork Broken Rice (Cơm Tấm)', cat:'Food', price:185, cup:'paper_bags', star:true},
+  {id:37, name:'Chicken Broken Rice (Cơm Tấm)', cat:'Food', price:175, cup:'paper_bags', star:true},
+  {id:38, name:'Beef Broken Rice (Cơm Tấm)', cat:'Food', price:195, cup:'paper_bags', star:true},
   {id:29, name:'Mini Chicken Fried Rice', cat:'Kids', price:89, cup:'paper_bags', star:false},
   {id:30, name:'Mini Pork Fried Rice', cat:'Kids', price:95, cup:'paper_bags', star:false},
   {id:31, name:'Chicken Bites & Rice', cat:'Kids', price:99, cup:'paper_bags', star:false},
