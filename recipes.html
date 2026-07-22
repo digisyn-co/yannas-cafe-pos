@@ -248,7 +248,7 @@ const RECIPES = [
     notes:[{type:"warn",text:"Shelf life 7 days sealed in the fridge."}]
   },
   {
-    id:109, name:"Crunchy Baked Rice", cat:"Batch", price:"30 servings", star:false, batch:true,
+    id:109, name:"Crunchy Baked Rice (NOT CURRENTLY USED)", cat:"Batch", price:"30 servings", star:false, batch:true,
     ingredients:[
       {name:"Day-old cooked rice",unit:"g",amt:1500},
     ],
@@ -258,7 +258,8 @@ const RECIPES = [
       "<strong>Cool completely</strong> before storing — warm rice steams in the container and goes soft.",
       "Store airtight <strong>AT ROOM TEMPERATURE</strong>.",
     ],
-    notes:[{type:"warn",text:"⚠ NEVER refrigerate. Fridge moisture kills the crunch, which is the entire point. Shelf life 2 days at room temp."}]
+    notes:[
+      {type:"warn",text:"⚠ NOT CURRENTLY USED — this was the topping for the Crunchy Egg Fried Rice, which was removed from the menu on 22 July 2026. No dish uses it now. Stop making it daily unless the owner brings the dish back."},{type:"warn",text:"⚠ NEVER refrigerate. Fridge moisture kills the crunch, which is the entire point. Shelf life 2 days at room temp."}]
   },
 
   // ══════════ COFFEE ══════════
@@ -476,70 +477,6 @@ const RECIPES = [
     steps:["Same assembly as the Pork Sandwich.","Use <strong>120g thin-sliced BBQ beef</strong>."],
     notes:[{type:"speed",text:"⏱ Target: under 5 minutes."}]
   },
-  {
-    id:19, name:"Pork Crunchy Egg Fried Rice", cat:"Food", price:"₱130", star:false,
-    ingredients:[
-      {name:"Day-old cooked rice",unit:"g",amt:250},
-      {name:"BBQ pork (pre-cooked)",unit:"g",amt:120},
-      {name:"Eggs",unit:"pcs",amt:2},
-      {name:"Onion (diced)",unit:"g",amt:60},
-      {name:"Garlic (minced)",unit:"g",amt:5},
-      {name:"Pechay (chopped)",unit:"g",amt:30},
-      {name:"Carrots (julienned)",unit:"g",amt:15},
-      {name:"Soy sauce",unit:"ml",amt:15},
-      {name:"Cooking oil",unit:"ml",amt:10},
-      {name:"Crunchy baked rice (Batch)",unit:"g",amt:50},
-      {name:"Rice box",unit:"pc",amt:1},
-    ],
-    steps:[
-      "Use <strong>250g DAY-OLD rice</strong>. Never fresh rice — it steams and turns to mush.",
-      "Beat <strong>2 eggs</strong> with a pinch of salt. Set aside.",
-      "Heat the wok to <strong>MAXIMUM</strong>. Add <strong>10ml oil</strong>. Wait until it shimmers, almost smoking.",
-      "Pour in the eggs. Scramble fast, <strong>30 seconds</strong>, until just set. Push to one side.",
-      "Sauté the <strong>diced onion + 5g garlic</strong> for <strong>15 seconds only</strong>. Do not burn it.",
-      "Add the <strong>250g rice</strong>. Spread flat. <strong>LET IT SIT 30 SECONDS UNTOUCHED</strong> — this makes the crust. Then toss.",
-      "Add <strong>30g pechay + 15g carrots</strong>. Toss <strong>1 minute</strong> until the pechay wilts.",
-      "Drizzle <strong>15ml soy sauce along the EDGE of the wok</strong> — not on the rice. The hot metal caramelizes it. Toss.",
-      "Add <strong>120g BBQ pork</strong>. Toss <strong>1 minute</strong> until heated through.",
-      "Plate in a wide bowl. Top with <strong>50g crunchy baked rice</strong>. Garnish with spring onions.",
-    ],
-    notes:[
-      {type:"warn",text:"⚠ THE WOK MUST BE SCREAMING HOT. Low heat = steamed rice, not fried rice."},
-      {type:"warn",text:"⚠ NEVER use freshly cooked rice. Day-old only."},
-      {type:"speed",text:"⏱ Target: under 7 minutes."},
-      {type:"info",text:"Add-ons — Cured Beef Tapa +₱70 (60g) · Smoked Bacon +₱55 (50g) · Sweet Cured Tocino +₱55 (50g) · Egg +₱25 (1 egg)."},
-    ]
-  },
-  {
-    id:20, name:"Chicken Crunchy Egg Fried Rice", cat:"Food", price:"₱115", star:false,
-    ingredients:[
-      {name:"Day-old cooked rice",unit:"g",amt:250},
-      {name:"BBQ chicken (pre-cooked)",unit:"g",amt:120},
-      {name:"Eggs",unit:"pcs",amt:2},
-      {name:"Onion, garlic, pechay, carrots",unit:"set",amt:1},
-      {name:"Soy sauce",unit:"ml",amt:15},
-      {name:"Cooking oil",unit:"ml",amt:10},
-      {name:"Crunchy baked rice (Batch)",unit:"g",amt:50},
-      {name:"Rice box",unit:"pc",amt:1},
-    ],
-    steps:["Same wok method as the Pork Fried Rice. Use <strong>120g BBQ chicken</strong>."],
-    notes:[{type:"warn",text:"⚠ Wok on maximum. Day-old rice only."},{type:"speed",text:"⏱ Target: under 7 minutes."}]
-  },
-  {
-    id:21, name:"Beef Crunchy Egg Fried Rice", cat:"Food", price:"₱145", star:false,
-    ingredients:[
-      {name:"Day-old cooked rice",unit:"g",amt:250},
-      {name:"BBQ beef (pre-cooked)",unit:"g",amt:120},
-      {name:"Eggs",unit:"pcs",amt:2},
-      {name:"Onion, garlic, pechay, carrots",unit:"set",amt:1},
-      {name:"Soy sauce",unit:"ml",amt:15},
-      {name:"Cooking oil",unit:"ml",amt:10},
-      {name:"Crunchy baked rice (Batch)",unit:"g",amt:50},
-      {name:"Rice box",unit:"pc",amt:1},
-    ],
-    steps:["Same wok method as the Pork Fried Rice. Use <strong>120g BBQ beef</strong>."],
-    notes:[{type:"warn",text:"⚠ Wok on maximum. Day-old rice only."},{type:"speed",text:"⏱ Target: under 7 minutes."}]
-  },
 
   {
     id:36, name:"Pork Broken Rice (Cơm Tấm)", cat:"Food", price:"₱175", star:true,
@@ -565,7 +502,6 @@ const RECIPES = [
       {type:"info",text:"NEW ITEM — built entirely from components already batched for the sandwich and fried-rice lines."},
       {type:"warn",text:"⚠ Pork must reach internal 68°C. Use a thermometer."},
       {type:"speed",text:"⏱ Target: under 7 minutes."},
-      {type:"info",text:"Add-on — Extra Egg +₱25 (1 egg)."},
       {type:"info",text:"Cost reference ≈₱79/plate. Confirm actual rice/pickle/cucumber costs to tighten this."},
     ]
   },
@@ -587,7 +523,7 @@ const RECIPES = [
     notes:[
       {type:"warn",text:"⚠ Chicken must reach internal 74°C. Never exceed 80°C — it dries out."},
       {type:"speed",text:"⏱ Target: under 7 minutes."},
-      {type:"info",text:"Add-on — Extra Egg +₱25 (1 egg). Cost reference ≈₱61/plate."},
+      {type:"info",text:"Cost reference ≈₱61/plate."},
     ]
   },
   {
@@ -608,51 +544,11 @@ const RECIPES = [
     notes:[
       {type:"warn",text:"⚠ Beef marinated over 8 hours turns mushy — never exceed it (Batch A.6)."},
       {type:"speed",text:"⏱ Target: under 7 minutes."},
-      {type:"info",text:"Add-on — Extra Egg +₱25 (1 egg). Cost reference ≈₱91/plate."},
+      {type:"info",text:"Cost reference ≈₱91/plate."},
     ]
   },
 
   // ══════════ KIDS ══════════
-  {
-    id:29, name:"Mini Chicken Fried Rice", cat:"Kids", price:"₱89", star:false,
-    ingredients:[
-      {name:"Day-old cooked rice",unit:"g",amt:150},
-      {name:"BBQ chicken (pre-cooked)",unit:"g",amt:80},
-      {name:"Egg",unit:"pc",amt:1},
-      {name:"Onion (diced)",unit:"g",amt:30},
-      {name:"Garlic (minced)",unit:"g",amt:3},
-      {name:"Pechay (chopped)",unit:"g",amt:15},
-      {name:"Soy sauce",unit:"ml",amt:8},
-      {name:"Cooking oil",unit:"ml",amt:8},
-      {name:"Crunchy baked rice (Batch)",unit:"g",amt:30},
-    ],
-    steps:[
-      "Same wok method as the full-size fried rice — just smaller portions.",
-      "<strong>Season lightly.</strong> This is for children.",
-      "Top with <strong>30g crunchy baked rice</strong>.",
-    ],
-    notes:[{type:"info",text:"Kid-sized portion. Same crispy technique, gentler seasoning."}]
-  },
-  {
-    id:30, name:"Mini Pork Fried Rice", cat:"Kids", price:"₱95", star:false,
-    ingredients:[
-      {name:"Day-old cooked rice",unit:"g",amt:150},
-      {name:"BBQ pork (pre-cooked)",unit:"g",amt:80},
-      {name:"Egg",unit:"pc",amt:1},
-      {name:"Onion (diced)",unit:"g",amt:30},
-      {name:"Garlic (minced)",unit:"g",amt:3},
-      {name:"Pechay (chopped)",unit:"g",amt:15},
-      {name:"Soy sauce",unit:"ml",amt:8},
-      {name:"Cooking oil",unit:"ml",amt:8},
-      {name:"Crunchy baked rice (Batch)",unit:"g",amt:30},
-    ],
-    steps:[
-      "Same wok method as the full-size fried rice — just smaller portions.",
-      "<strong>Season lightly.</strong> This is for children.",
-      "Top with <strong>30g crunchy baked rice</strong>.",
-    ],
-    notes:[{type:"info",text:"Kid-sized portion. Same crispy technique, gentler seasoning."}]
-  },
   {
     id:31, name:"Chicken Bites & Rice", cat:"Kids", price:"₱99", star:true,
     ingredients:[
