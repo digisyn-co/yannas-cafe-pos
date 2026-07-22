@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Menu — Yanna's Vietnamese Coffee</title>
+<meta name="description" content="Yanna's Vietnamese Coffee — San Enrique, Iloilo. Phin drip coffee, specialty matcha, fruit teas and Jim's Signature Fusion menu.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;0,900;1,500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0A0A;
+  --bg-card:#121212;
+  --bg-card-2:#171717;
+  --gold:#C7A252;
+  --gold-bright:#F2C230;
+  --gold-dark:#8A6A2E;
+  --cream:#F7F3E9;
+  --cream-dim:rgba(247,243,233,0.62);
+  --cream-faint:rgba(247,243,233,0.38);
+  --line:rgba(199,162,82,0.22);
+  --line-soft:rgba(199,162,82,0.10);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--cream);
+  font-family:'DM Sans',system-ui,sans-serif;
+  line-height:1.5;
+  padding-bottom:env(safe-area-inset-bottom);
+  overflow-x:hidden;
+}
+
+/* ─── Header ─── */
+.hero{
+  position:relative;
+  text-align:center;
+  padding:44px 20px 30px;
+  border-bottom:1px solid var(--line-soft);
+}
+.corner{position:absolute;width:74px;height:74px;opacity:.55;pointer-events:none}
+.corner.tl{top:10px;left:10px}
+.corner.tr{top:10px;right:10px;transform:scaleX(-1)}
+.hero-mark{width:52px;height:52px;margin:0 auto 12px;display:block}
+.hero h1{
+  font-family:'Playfair Display',serif;
+  font-weight:900;
+  font-size:clamp(38px,11vw,62px);
+  letter-spacing:.055em;
+  line-height:1;
+  color:var(--cream);
+}
+.hero .sub{
+  font-size:clamp(9px,2.6vw,12px);
+  letter-spacing:.44em;
+  text-transform:uppercase;
+  color:var(--gold);
+  margin-top:9px;
+  font-weight:500;
+  padding-left:.44em;
+}
+.hero .tag{
+  font-family:'Playfair Display',serif;
+  font-style:italic;
+  font-size:clamp(12px,3.4vw,15px);
+  color:var(--cream-dim);
+  margin-top:14px;
+}
+
+/* ─── Sticky category nav ─── */
+.nav{
+  position:sticky;top:0;z-index:50;
+  background:rgba(10,10,10,.94);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line-soft);
+}
+.nav-scroll{
+  display:flex;gap:7px;
+  padding:11px 14px;
+  overflow-x:auto;
+  scrollbar-width:none;
+}
+.nav-scroll::-webkit-scrollbar{display:none}
+.chip{
+  flex:0 0 auto;
+  font-family:'DM Sans',sans-serif;
+  font-size:12px;font-weight:600;
+  letter-spacing:.07em;text-transform:uppercase;
+  color:var(--cream-dim);
+  background:transparent;
+  border:1px solid var(--line);
+  border-radius:999px;
+  padding:8px 15px;
+  cursor:pointer;
+  transition:background .18s ease,color .18s ease,border-color .18s ease;
+  white-space:nowrap;
+}
+.chip:hover{color:var(--cream);border-color:var(--gold)}
+.chip[aria-selected="true"]{
+  background:var(--gold);
+  color:#0A0A0A;
+  border-color:var(--gold);
+}
+
+/* ─── Search ─── */
+.search-wrap{padding:0 14px 11px}
+.search{
+  width:100%;
+  background:var(--bg-card);
+  border:1px solid var(--line);
+  border-radius:10px;
+  color:var(--cream);
+  font-family:inherit;font-size:14px;
+  padding:11px 14px;
+  outline:none;
+  transition:border-color .18s ease;
+}
+.search::placeholder{color:var(--cream-faint)}
+.search:focus{border-color:var(--gold)}
+
+/* ─── Sections ─── */
+main{max-width:940px;margin:0 auto;padding:8px 14px 60px}
+.section{margin-top:34px;scroll-margin-top:120px}
+.section-head{
+  display:flex;align-items:center;gap:13px;
+  margin-bottom:16px;
+}
+.section-head::before,.section-head::after{
+  content:"";height:1px;flex:1;
+  background:linear-gradient(90deg,transparent,var(--line),transparent);
+}
+.section-head h2{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(17px,4.4vw,23px);
+  font-weight:700;
+  letter-spacing:.13em;
+  text-transform:uppercase;
+  color:var(--gold);
+  text-align:center;
+  white-space:nowrap;
+}
+
+/* ─── Item card ─── */
+.item{
+  background:var(--bg-card);
+  border:1px solid var(--line-soft);
+  border-radius:13px;
+  margin-bottom:9px;
+  overflow:hidden;
+  transition:border-color .2s ease,background .2s ease;
+}
+.item:hover{border-color:var(--line)}
+.item.open{border-color:var(--gold);background:var(--bg-card-2)}
+.item-btn{
+  width:100%;
+  display:flex;align-items:center;gap:12px;
+  background:none;border:none;
+  color:inherit;font:inherit;text-align:left;
+  padding:15px 16px;
+  cursor:pointer;
+}
+.item-main{flex:1;min-width:0}
+.item-name{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(15px,4vw,18px);
+  font-weight:700;
+  line-height:1.25;
+  display:flex;align-items:center;gap:7px;flex-wrap:wrap;
+}
+.item-viet{
+  font-family:'Playfair Display',serif;
+  font-style:italic;
+  font-size:13px;
+  color:var(--gold);
+  font-weight:500;
+  margin-top:2px;
+}
+.star{color:var(--gold-bright);font-size:13px;line-height:1}
+.badge-new{
+  font-size:9px;font-weight:700;letter-spacing:.1em;
+  background:var(--gold-bright);color:#0A0A0A;
+  padding:2px 7px;border-radius:4px;
+  text-transform:uppercase;
+}
+.item-prices{
+  display:flex;flex-direction:column;align-items:flex-end;gap:2px;
+  flex:0 0 auto;
+}
+.price-row{display:flex;align-items:baseline;gap:7px;white-space:nowrap}
+.price-label{
+  font-size:9px;font-weight:700;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--gold-dark);
+}
+.price{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(15px,4vw,19px);
+  font-weight:700;color:var(--gold);
+  font-variant-numeric:tabular-nums;
+}
+.chev{
+  flex:0 0 auto;width:9px;height:9px;
+  border-right:1.8px solid var(--gold-dark);
+  border-bottom:1.8px solid var(--gold-dark);
+  transform:rotate(45deg);
+  transition:transform .25s ease;
+  margin-top:-4px;
+}
+.item.open .chev{transform:rotate(225deg);margin-top:3px}
+
+/* expandable body */
+.item-body{
+  display:grid;grid-template-rows:0fr;
+  transition:grid-template-rows .28s ease;
+}
+.item.open .item-body{grid-template-rows:1fr}
+.item-body-inner{overflow:hidden}
+.item-desc{
+  padding:0 16px 15px;
+  font-size:14px;
+  color:var(--cream-dim);
+  line-height:1.62;
+}
+.item-meta{
+  display:flex;flex-wrap:wrap;gap:6px;
+  padding:0 16px 15px;
+}
+.meta-pill{
+  font-size:11px;font-weight:500;
+  color:var(--cream-dim);
+  border:1px solid var(--line-soft);
+  border-radius:6px;
+  padding:4px 9px;
+}
+.meta-pill b{color:var(--gold);font-weight:600}
+
+/* variant / protein rows */
+.variants{padding:0 16px 15px;display:flex;flex-direction:column;gap:6px}
+.variant{
+  display:flex;justify-content:space-between;align-items:center;
+  background:rgba(199,162,82,.05);
+  border:1px solid var(--line-soft);
+  border-radius:8px;
+  padding:9px 12px;
+  font-size:13px;
+}
+.variant-name{font-weight:500}
+.variant-price{
+  font-family:'Playfair Display',serif;
+  font-weight:700;color:var(--gold);
+  font-variant-numeric:tabular-nums;
+}
+
+/* flavours */
+.flavours{display:flex;flex-wrap:wrap;gap:7px;padding:0 16px 15px}
+.flavour{
+  font-size:12px;
+  background:rgba(199,162,82,.07);
+  border:1px solid var(--line-soft);
+  border-radius:999px;
+  padding:5px 12px;
+  color:var(--cream-dim);
+}
+
+/* ─── Empty state ─── */
+.empty{
+  text-align:center;padding:52px 20px;
+  color:var(--cream-faint);
+  font-style:italic;
+  font-family:'Playfair Display',serif;
+}
+
+/* ─── Values strip ─── */
+.values{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(148px,1fr));
+  gap:1px;
+  background:var(--line-soft);
+  border:1px solid var(--line-soft);
+  border-radius:12px;
+  overflow:hidden;
+  margin-top:40px;
+}
+.value{
+  background:var(--bg);
+  padding:18px 14px;
+  text-align:center;
+  font-size:11px;
+  letter-spacing:.09em;
+  text-transform:uppercase;
+  color:var(--cream-dim);
+  font-weight:500;
+  line-height:1.5;
+}
+.value span{display:block;font-size:19px;margin-bottom:7px}
+
+/* ─── Footer ─── */
+footer{
+  border-top:1px solid var(--line-soft);
+  margin-top:40px;padding:28px 14px 40px;
+  text-align:center;
+}
+.hours{
+  display:flex;justify-content:center;gap:26px;flex-wrap:wrap;
+  margin-bottom:20px;
+}
+.hours div{font-size:12px;color:var(--cream-dim);line-height:1.8}
+.hours b{
+  display:block;color:var(--gold);
+  font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  margin-bottom:3px;font-weight:600;
+}
+.loc{
+  font-family:'Playfair Display',serif;
+  font-size:15px;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;
+  color:var(--gold);
+}
+.loc-sub{
+  font-family:'Playfair Display',serif;font-style:italic;
+  font-size:13px;color:var(--cream-dim);margin-top:5px;
+}
+.social{font-size:12px;color:var(--cream-faint);margin-top:16px;line-height:1.9}
+.note{
+  font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--gold-dark);margin-top:18px;
+}
+
+@media(max-width:420px){
+  .item-btn{padding:13px 13px;gap:9px}
+  .price-label{font-size:8px}
+}
+@media(prefers-reduced-motion:reduce){
+  *{transition:none!important;scroll-behavior:auto!important}
+}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <svg class="corner tl" viewBox="0 0 100 100" fill="none" aria-hidden="true">
+    <path d="M2 34C2 16 16 2 34 2" stroke="#C7A252" stroke-width="1.4"/>
+    <path d="M2 52C2 24 24 2 52 2" stroke="#C7A252" stroke-width=".7" opacity=".55"/>
+    <circle cx="15" cy="15" r="2.4" fill="#C7A252"/>
+  </svg>
+  <svg class="corner tr" viewBox="0 0 100 100" fill="none" aria-hidden="true">
+    <path d="M2 34C2 16 16 2 34 2" stroke="#C7A252" stroke-width="1.4"/>
+    <path d="M2 52C2 24 24 2 52 2" stroke="#C7A252" stroke-width=".7" opacity=".55"/>
+    <circle cx="15" cy="15" r="2.4" fill="#C7A252"/>
+  </svg>
+
+  <svg class="hero-mark" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+    <rect x="20" y="9" width="24" height="7" rx="1.6" stroke="#C7A252" stroke-width="1.8"/>
+    <path d="M23 16h18v10a9 9 0 01-18 0V16z" stroke="#C7A252" stroke-width="1.8"/>
+    <path d="M25 36h14v9a7 7 0 01-14 0v-9z" stroke="#C7A252" stroke-width="1.8"/>
+    <path d="M39 39h4a3.5 3.5 0 010 7h-4" stroke="#C7A252" stroke-width="1.8"/>
+    <path d="M21 55h22" stroke="#C7A252" stroke-width="1.8" stroke-linecap="round"/>
+  </svg>
+
+  <h1>YANNA'S</h1>
+  <div class="sub">Vietnamese Coffee</div>
+  <div class="tag">Brewed with love, served with joy. ♡</div>
+</header>
+
+<nav class="nav" aria-label="Menu categories">
+  <div class="nav-scroll" id="chips" role="tablist"></div>
+  <div class="search-wrap">
+    <input class="search" id="search" type="search" placeholder="Search the menu…" aria-label="Search menu items">
+  </div>
+</nav>
+
+<main id="menu"></main>
+
+<footer>
+  <div class="hours">
+    <div><b>Monday – Thursday</b>8:00 AM – 6:00 PM</div>
+    <div><b>Friday – Sunday</b>8:00 AM – 8:00 PM</div>
+  </div>
+  <div class="loc">San Enrique, Iloilo</div>
+  <div class="loc-sub">From Hoi An with love, for San Enrique. ♡</div>
+  <div class="social">
+    @yannasvietnamesecoffee_ilo<br>#BrewedWithLoveServedWithJoy
+  </div>
+  <div class="note">★ All prices are in Philippine pesos (PHP)</div>
+</footer>
+
+<script>
+/* ═══════════════════════════════════════════════════
+   MENU DATA — mirrors the printed menu board.
+   Prices verified against the POS (index.html) on
+   July 22, 2026. Keep the two in sync.
+   ═══════════════════════════════════════════════════ */
+const MENU=[
+ {cat:"Vietnamese Signature Coffee", items:[
+  {name:"Traditional Black Coffee", viet:"Cà Phê Đen",
+   desc:"Intense, clean, and perfectly balanced.",
+   hot:105, cold:120,
+   meta:["Phin drip","12oz hot · 16oz cold"]},
+  {name:"Vietnamese Milk Coffee", viet:"Cà Phê Sữa",
+   desc:"Smooth blend of traditional robusta drip and sweetened condensed milk.",
+   hot:115, cold:130,
+   meta:["Phin drip","Condensed milk"]},
+  {name:"Salted Cream Coffee", viet:"Cà Phê Muối", star:true,
+   desc:"Rich phin drip coffee crowned with our artisanal, velvety salt cream.",
+   cold:160,
+   meta:["Cold only","Do not stir — layered"]},
+  {name:"Coconut Coffee", viet:"Cà Phê Cốt Dừa", star:true,
+   desc:"An indulgent tropical escape featuring traditional drip coffee over fresh, creamy coconut purée.",
+   cold:175,
+   meta:["Cold only","Shake before serving"]},
+  {name:"Egg Coffee", viet:"Cà Phê Trứng", star:true,
+   desc:"Rich Vietnamese coffee topped with our silky custard cream.",
+   hot:170, cold:185,
+   meta:["Layered — do not stir","Cocoa or matcha dusting"]},
+ ]},
+
+ {cat:"Specialty Matcha", items:[
+  {name:"Matcha Latte", viet:"Matcha Sữa", star:true,
+   desc:"Smooth, premium matcha perfectly whisked with milk.",
+   cold:160,
+   meta:["Cold only · 16oz","Whisked at 78°C"]},
+  {name:"Salt Matcha", viet:"Matcha Muối", star:true,
+   desc:"The earthy depth of matcha contrasted with our signature salted cream.",
+   cold:175,
+   meta:["Cold only · 16oz","Do not stir"]},
+  {name:"Egg Custard Matcha", viet:"Matcha Trứng", star:true,
+   desc:"Decadent, traditional custard cream meets vibrant premium matcha.",
+   cold:185,
+   meta:["Cold only · 16oz","Dusted with matcha"]},
+ ]},
+
+ {cat:"Refreshing Fruit Teas", items:[
+  {name:"Artisanal Fruit Tea", viet:"Trà Trái Cây",
+   desc:"Freshly brewed tea base over ice, layered with real fruit syrup. Served with a wide straw — the colour layers are the presentation.",
+   cold:110,
+   meta:["22oz","Flat rate, any flavour"],
+   flavours:["🍓 Strawberry","🥭 Mango","🌸 Passionfruit","🍑 Lychee"]},
+ ]},
+
+ {cat:"Jim's Midnight Collection", items:[
+  {name:"Vietnamese Style Grilled Rice Meal", viet:"Cơm Tấm", isNew:true,
+   desc:"A Vietnamese classic served with fragrant rice, fried egg, fresh cucumber, pickled vegetables, signature sauce, and refreshing cucumber juice.",
+   variants:[["Pork",175],["Chicken",165],["Beef",195]],
+   meta:["Under 7 minutes","Add extra egg +₱25"]},
+  {name:"Jim's Signature Fusion Sandwich",
+   desc:"Toasted baguette layered with liver spread, our signature mayo butter, pickled vegetables, fresh cucumber and your choice of protein.",
+   variants:[["Beef",180],["Pork",170],["Chicken",165]],
+   meta:["Under 5 minutes"],
+   addons:[["Cheese",20],["Signature House Dip",40]]},
+ ]},
+
+ {cat:"Little Yanna's Corner", items:[
+  {name:"Chicken Bites & Rice", star:true,
+   desc:"Bite-sized golden fried chicken with steamed rice and ketchup on the side.",
+   cold:99, priceOnly:true},
+  {name:"Chocolate Banana Toast",
+   desc:"Toasted buttered bread with fresh sliced banana and chocolate syrup.",
+   cold:85, priceOnly:true},
+  {name:"Fresh Apple",
+   desc:"Freshly blended apple over ice. Naturally caffeine-free.",
+   cold:95, priceOnly:true},
+  {name:"Fresh Pineapple",
+   desc:"Freshly blended pineapple over ice. Naturally caffeine-free.",
+   cold:95, priceOnly:true},
+  {name:"Fresh Mango", star:true,
+   desc:"Ripe mango blended fresh to order over ice. Naturally caffeine-free.",
+   cold:105, priceOnly:true},
+ ]},
+];
+
+const VALUES=[
+  ["☕","Authentic Vietnamese Coffee"],
+  ["🌿","Made with Quality Ingredients"],
+  ["🏠","Cozy Countryside Vibes"],
+  ["♡","Made with Love, Served with Joy"],
+];
+
+/* ─── Render ─── */
+const menuEl=document.getElementById('menu');
+const chipsEl=document.getElementById('chips');
+const searchEl=document.getElementById('search');
+let activeCat='All';
+let query='';
+
+function peso(n){return '₱'+n}
+
+function priceBlock(it){
+  if(it.variants) {
+    const lo=Math.min(...it.variants.map(v=>v[1]));
+    return `<div class="price-row"><span class="price-label">from</span><span class="price">${peso(lo)}</span></div>`;
+  }
+  let rows='';
+  if(it.hot!=null) rows+=`<div class="price-row"><span class="price-label">Hot</span><span class="price">${peso(it.hot)}</span></div>`;
+  if(it.cold!=null) rows+=`<div class="price-row">${it.priceOnly?'':`<span class="price-label">${it.hot!=null?'Cold':'Cold only'}</span>`}<span class="price">${peso(it.cold)}</span></div>`;
+  return rows;
+}
+
+function itemHTML(it,idx,cat){
+  const id=`it-${cat.replace(/\W/g,'')}-${idx}`;
+  const meta=(it.meta||[]).map(m=>`<span class="meta-pill">${m}</span>`).join('');
+  const variants=(it.variants||[]).map(v=>
+    `<div class="variant"><span class="variant-name">${v[0]}</span><span class="variant-price">${peso(v[1])}</span></div>`).join('');
+  const addons=(it.addons||[]).map(a=>
+    `<div class="variant"><span class="variant-name">+ ${a[0]}</span><span class="variant-price">+${peso(a[1])}</span></div>`).join('');
+  const flavours=(it.flavours||[]).map(f=>`<span class="flavour">${f}</span>`).join('');
+
+  return `
+  <article class="item" data-name="${(it.name+' '+(it.viet||'')).toLowerCase()}">
+    <button class="item-btn" aria-expanded="false" aria-controls="${id}">
+      <span class="item-main">
+        <span class="item-name">${it.name}${it.star?'<span class="star">★</span>':''}${it.isNew?'<span class="badge-new">New</span>':''}</span>
+        ${it.viet?`<span class="item-viet">(${it.viet})</span>`:''}
+      </span>
+      <span class="item-prices">${priceBlock(it)}</span>
+      <span class="chev" aria-hidden="true"></span>
+    </button>
+    <div class="item-body" id="${id}">
+      <div class="item-body-inner">
+        <p class="item-desc">${it.desc}</p>
+        ${variants?`<div class="variants">${variants}</div>`:''}
+        ${addons?`<div class="variants">${addons}</div>`:''}
+        ${flavours?`<div class="flavours">${flavours}</div>`:''}
+        ${meta?`<div class="item-meta">${meta}</div>`:''}
+      </div>
+    </div>
+  </article>`;
+}
+
+function render(){
+  const cats=MENU.filter(s=>activeCat==='All'||s.cat===activeCat);
+  let html='';
+  let shown=0;
+
+  cats.forEach(sec=>{
+    const items=sec.items.filter(it=>{
+      if(!query) return true;
+      return (it.name+' '+(it.viet||'')+' '+it.desc).toLowerCase().includes(query);
+    });
+    if(!items.length) return;
+    shown+=items.length;
+    html+=`<section class="section" id="sec-${sec.cat.replace(/\W/g,'')}">
+      <div class="section-head"><h2>${sec.cat}</h2></div>
+      ${items.map((it,i)=>itemHTML(it,i,sec.cat)).join('')}
+    </section>`;
+  });
+
+  if(!shown){
+    html=`<div class="empty">No items match "${query}".</div>`;
+  } else if(activeCat==='All' && !query){
+    html+=`<div class="values">${VALUES.map(v=>
+      `<div class="value"><span>${v[0]}</span>${v[1]}</div>`).join('')}</div>`;
+  }
+
+  menuEl.innerHTML=html;
+}
+
+/* chips */
+function buildChips(){
+  const cats=['All',...MENU.map(s=>s.cat)];
+  chipsEl.innerHTML=cats.map(c=>
+    `<button class="chip" role="tab" aria-selected="${c===activeCat}" data-cat="${c}">${c==='All'?'All':c}</button>`
+  ).join('');
+}
+
+chipsEl.addEventListener('click',e=>{
+  const b=e.target.closest('.chip'); if(!b) return;
+  activeCat=b.dataset.cat;
+  buildChips(); render();
+  window.scrollTo({top:0,behavior:'smooth'});
+});
+
+/* accordion — event delegation so it survives re-render */
+menuEl.addEventListener('click',e=>{
+  const btn=e.target.closest('.item-btn'); if(!btn) return;
+  const item=btn.closest('.item');
+  const open=item.classList.toggle('open');
+  btn.setAttribute('aria-expanded',open?'true':'false');
+});
+
+/* search — debounced */
+let t;
+searchEl.addEventListener('input',e=>{
+  clearTimeout(t);
+  t=setTimeout(()=>{ query=e.target.value.trim().toLowerCase(); render(); },140);
+});
+
+buildChips();
+render();
+</script>
+</body>
+</html>
