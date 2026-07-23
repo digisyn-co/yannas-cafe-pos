@@ -745,19 +745,27 @@ body{background:#FAF9F6;color:var(--text1);font-size:14px;font-family:var(--font
 
   <!-- Reports -->
   <div class="page" id="page-reports">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
       <div class="date-filter" id="rep-date-filter" style="margin-bottom:0">
         <button class="df-btn active" onclick="setReportFilter('today',this)">Today</button>
         <button class="df-btn" onclick="setReportFilter('yesterday',this)">Yesterday</button>
         <button class="df-btn" onclick="setReportFilter('week',this)">This Week</button>
         <button class="df-btn" onclick="setReportFilter('month',this)">This Month</button>
       </div>
-      <button class="zrpt-btn" onclick="showZReport()">🖨 End-of-Day Z-Report</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="zrpt-btn" onclick="openCashMovement()">＋ Log Cash In/Out</button>
+        <button class="zrpt-btn" onclick="openItemCosts()">✎ Item Costs</button>
+        <button class="zrpt-btn" onclick="showZReport()">🖨 End-of-Day Z-Report</button>
+      </div>
     </div>
     <div class="metrics-grid" id="metrics-grid"></div>
     <div class="rep-row">
       <div class="rep-card"><h4>🏆 Top Selling Items</h4><div id="top-items"><div class="no-data">No sales yet</div></div></div>
       <div class="rep-card"><h4>💰 Revenue by Category</h4><div id="rev-cat"><div class="no-data">No sales yet</div></div></div>
+    </div>
+    <div class="rep-card" style="margin-top:12px">
+      <h4>💵 Cash In/Out Log</h4>
+      <div id="cash-log"><div class="no-data">No entries yet</div></div>
     </div>
   </div>
 
@@ -864,6 +872,11 @@ const MENU=[
 let sb,order=[],activeCategory='All',currentPayMethod='Cash',currentOrderType='Dine-in',reportFilter='today',ordersFilter='today';
 let invData=[],orderHistory=[];
 let currentUser=null;
+// Reports: manual cash-drawer log (cash taken out for supplies/expenses, or added back in)
+// and per-menu-item cost price (id -> cost), used to estimate Gross Profit. Both are
+// stored in Supabase (cash_movements / menu_costs — see supabase_cash_reports.sql) so
+// they can be logged/edited in-app without a code change.
+let cashMovements=[],menuCosts={};
 
 async function init(){
   setLoading('Connecting to database…');
@@ -916,7 +929,7 @@ async function loadApp(){
   setLoading('Setting up inventory…');
   await setupInventory();
   setLoading('Loading orders…');
-  await loadOrders();
+  await Promise.all([loadOrders(), loadMenuCosts()]);
   setLoading('Almost ready…');
   setTimeout(()=>subscribeRealtime(),800);
   document.getElementById('loading').style.display='none';
@@ -978,6 +991,28 @@ async function loadOrders(filter){
     order_type:d.order_type||'Dine-in'
   }));
 }
+
+// Manual cash-drawer log for the selected Reports date range (cash taken out
+// for supplies/expenses = 'out', cash added back into the drawer = 'in').
+async function loadCashMovements(filter){
+  filter=filter||'today';
+  const {from,to}=getDateRange(filter);
+  const {data,error}=await sb.from('cash_movements').select('*')
+    .gte('created_at',from+'T00:00:00+08:00').lte('created_at',to+'T23:59:59+08:00')
+    .order('created_at',{ascending:false});
+  if(error){ console.warn('[cash_movements] load failed:',error); cashMovements=[]; return; }
+  cashMovements=data||[];
+}
+
+// Per-menu-item cost price (loaded once at startup, refreshed after edits in
+// Reports → ✎ Item Costs). Returns null when no cost has been entered yet.
+async function loadMenuCosts(){
+  const {data,error}=await sb.from('menu_costs').select('*');
+  if(error){ console.warn('[menu_costs] load failed:',error); menuCosts={}; return; }
+  menuCosts={};
+  (data||[]).forEach(r=>{ menuCosts[r.item_id]=Number(r.cost); });
+}
+function getItemCost(id){ return menuCosts[id]!=null?menuCosts[id]:null; }
 
 let __realtimeSubscribed=false; // guard against duplicate channels if loadApp() runs again (e.g. logout -> login without a full page reload)
 function subscribeRealtime(){
@@ -1206,7 +1241,7 @@ async function finalizeAddOn(){
     if(ord.voided){ toast('Order '+target+' is voided and cannot be added to'); closeModal(); __savingAddOn=false; return; }
     if(['picked_up','completed','done'].includes(ord.status||'incoming')){ toast('Order '+target+' is already completed — start a new order instead'); closeModal(); __savingAddOn=false; return; }
     const addedAt=new Date().toISOString();
-    const newItems=order.map(o=>({id:o.id,name:o.displayName||o.name,qty:o.qty,price:o.price,cat:o.cat,temp:o.temp||null,note:o.note||null,added_at:addedAt}));
+    const newItems=order.map(o=>({id:o.id,name:o.displayName||o.name,qty:o.qty,price:o.price,cat:o.cat,temp:o.temp||null,note:o.note||null,added_at:addedAt,cost:getItemCost(o.id)}));
     const oldItems=Array.isArray(ord.items)?ord.items:[];
     const mergedItems=[...oldItems,...newItems];
     const addSubtotal=newItems.reduce((s,o)=>s+o.price*o.qty,0);
@@ -2043,7 +2078,7 @@ async function confirmOrder(){
   const cashInVal=parseFloat(document.getElementById('cash-in')?.value)||0;
   const tendered=(currentPayMethod==='Cash'&&cashInVal>0)?cashInVal:null;
   const changeGiven=(tendered!=null)?Math.round((tendered-total)*100)/100:null;
-  const itemsPayload=order.map(o=>({id:o.id,name:o.displayName||o.name,qty:o.qty,price:o.price,cat:o.cat,temp:o.temp||null,note:o.note||null}));
+  const itemsPayload=order.map(o=>({id:o.id,name:o.displayName||o.name,qty:o.qty,price:o.price,cat:o.cat,temp:o.temp||null,note:o.note||null,cost:getItemCost(o.id)}));
   const discPayload=dd?{discount_type:dd.type,discount_amount:dd.discAmt,discount_ids:dd.ids,discount_pax:dd.pax}:{};
   const cashierEmail=currentUser?.email||null;
   const cashierName=cashierEmail?cashierEmail.split('@')[0]:null;
@@ -2434,7 +2469,7 @@ function setReportFilter(f,el){
   renderReports();
 }
 async function renderReports(){
-  await loadOrders(reportFilter);
+  await Promise.all([loadOrders(reportFilter), loadCashMovements(reportFilter)]);
   const active=orderHistory.filter(o=>!o.voided);
   const totalRev=active.reduce((s,o)=>s+o.total,0);
   const grossRev=active.reduce((s,o)=>s+o.items.reduce((x,i)=>x+i.price*i.qty,0),0);
@@ -2444,11 +2479,22 @@ async function renderReports(){
   const cashTotal=active.filter(o=>o.method==='Cash').reduce((s,o)=>s+o.total,0);
   const gcashTotal=active.filter(o=>o.method==='GCash').reduce((s,o)=>s+o.total,0);
   const itemCounts={},catRev={};
+  // Cost-of-goods coverage: only items with a recorded cost (see menu_costs /
+  // ✎ Item Costs) count toward Gross Profit, so it stays honest instead of
+  // silently treating unknown-cost items as zero cost.
+  let coveredRev=0,totalCOGS=0;
   active.forEach(o=>o.items.forEach(i=>{
     itemCounts[i.name]=(itemCounts[i.name]||0)+i.qty;
     catRev[i.cat]=(catRev[i.cat]||0)+i.price*i.qty;
+    const c=(i.cost!=null)?Number(i.cost):getItemCost(i.id);
+    if(c!=null){ coveredRev+=i.price*i.qty; totalCOGS+=c*i.qty; }
   }));
   const topCat=Object.keys(catRev).sort((a,b)=>catRev[b]-catRev[a])[0]||'—';
+  const cashInOther=cashMovements.filter(m=>m.type==='in').reduce((s,m)=>s+Number(m.amount),0);
+  const cashOutOther=cashMovements.filter(m=>m.type==='out').reduce((s,m)=>s+Number(m.amount),0);
+  const netProfit=totalRev-cashOutOther;
+  const grossProfit=coveredRev-totalCOGS;
+  const costCoverage=grossRev?Math.round(coveredRev/grossRev*100):0;
   const filterLabels={today:'Today',yesterday:'Yesterday',week:'This Week',month:'This Month'};
   document.getElementById('metrics-grid').innerHTML=`
     <div class="metric-card"><div class="metric-lbl">Revenue · ${filterLabels[reportFilter]}</div><div class="metric-val" style="color:var(--green)">₱${totalRev.toLocaleString()}</div></div>
@@ -2458,7 +2504,11 @@ async function renderReports(){
     <div class="metric-card"><div class="metric-lbl">💵 Cash Collected</div><div class="metric-val">₱${cashTotal.toLocaleString()}</div></div>
     <div class="metric-card"><div class="metric-lbl">📱 GCash Collected</div><div class="metric-val">₱${gcashTotal.toLocaleString()}</div></div>
     <div class="metric-card"><div class="metric-lbl">Discounts Given</div><div class="metric-val" style="color:#E07050">₱${totalDisc.toLocaleString()}</div></div>
-    <div class="metric-card"><div class="metric-lbl">Voided Orders</div><div class="metric-val">${orderHistory.filter(o=>o.voided).length}</div></div>`;
+    <div class="metric-card"><div class="metric-lbl">Voided Orders</div><div class="metric-val">${orderHistory.filter(o=>o.voided).length}</div></div>
+    <div class="metric-card"><div class="metric-lbl">🟢 Cash In (Other)</div><div class="metric-val" style="color:var(--green-m);font-size:20px">₱${cashInOther.toLocaleString()}</div></div>
+    <div class="metric-card"><div class="metric-lbl">🔴 Cash Out (Expenses)</div><div class="metric-val" style="color:var(--red);font-size:20px">₱${cashOutOther.toLocaleString()}</div></div>
+    <div class="metric-card"><div class="metric-lbl">Net Profit</div><div class="metric-val" style="color:var(--green);font-size:20px">₱${netProfit.toLocaleString()}</div><div style="font-size:9px;color:var(--text3);margin-top:2px">Revenue − Cash Out</div></div>
+    <div class="metric-card"><div class="metric-lbl">Gross Profit (Est.)</div><div class="metric-val" style="font-size:20px">₱${grossProfit.toLocaleString()}</div><div style="font-size:9px;color:var(--text3);margin-top:2px">${costCoverage}% of revenue has cost data on file</div></div>`;
   const sorted=Object.entries(itemCounts).sort((a,b)=>b[1]-a[1]).slice(0,7);
   const maxC=sorted[0]?sorted[0][1]:1;
   document.getElementById('top-items').innerHTML=sorted.length?sorted.map(([name,cnt],i)=>`
@@ -2473,9 +2523,100 @@ async function renderReports(){
       <div class="rank-bw"><div style="font-size:12px">${cat}</div><div class="rank-bar" style="width:${Math.round(rev/maxR*100)}%;background:var(--teal-m)"></div></div>
       <span class="rank-amt">₱${rev.toLocaleString()}</span>
     </div>`).join(''):'<div class="no-data">No sales yet</div>';
+  const cashSorted=[...cashMovements].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  document.getElementById('cash-log').innerHTML=cashSorted.length?cashSorted.map(m=>`
+    <div class="rank-item">
+      <span style="font-size:15px">${m.type==='in'?'🟢':'🔴'}</span>
+      <div class="rank-bw">
+        <div style="font-size:12px;font-weight:600">${m.type==='in'?'Cash In':'Cash Out'}${m.reason?' — '+esc(m.reason):''}</div>
+        <div style="font-size:10px;color:var(--text3)">${new Date(m.created_at).toLocaleString('en-PH',{dateStyle:'short',timeStyle:'short'})}${m.cashier_name?' · '+esc(m.cashier_name):''}</div>
+      </div>
+      <span style="font-weight:700;font-size:13px;color:${m.type==='in'?'var(--green-m)':'var(--red)'};white-space:nowrap">${m.type==='in'?'+':'−'}₱${Number(m.amount).toLocaleString()}</span>
+      <button class="clr-btn" title="Delete entry" onclick="deleteCashMovement('${m.id}')">✕</button>
+    </div>`).join(''):'<div class="no-data">No entries yet</div>';
   updateLowStockBadge();
 }
 
+
+// ── CASH IN/OUT LOG ──────────────────────────
+function openCashMovement(){
+  document.getElementById('modal-container').innerHTML=`
+    <div class="modal-bg" role="dialog" aria-modal="true"><div class="modal">
+      <h3>💵 Log Cash In/Out</h3>
+      <select class="mi" id="cm-type">
+        <option value="out">Cash Out — bought supplies / expenses</option>
+        <option value="in">Cash In — added float / deposit</option>
+      </select>
+      <input class="mi" id="cm-amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Amount ₱" style="margin-top:6px"/>
+      <input class="mi" id="cm-reason" placeholder="What for? (e.g. Bought coffee beans)" style="margin-top:6px"/>
+      <div class="mbtns">
+        <button class="mbtn ok" onclick="saveCashMovement()">Save</button>
+        <button class="mbtn" onclick="closeModal()">Cancel</button>
+      </div>
+    </div></div>`;
+  setTimeout(()=>document.getElementById('cm-amount')?.focus(),50);
+}
+async function saveCashMovement(){
+  const type=document.getElementById('cm-type').value;
+  const amount=parseFloat(document.getElementById('cm-amount').value);
+  if(!amount||amount<=0){ toast('Enter a valid amount'); return; }
+  const reason=(document.getElementById('cm-reason').value||'').trim()||null;
+  const cashierEmail=currentUser?.email||null;
+  const cashierName=cashierEmail?cashierEmail.split('@')[0]:null;
+  const {error}=await sb.from('cash_movements').insert({type,amount,reason,cashier_email:cashierEmail,cashier_name:cashierName});
+  if(error){ toast('Could not save — '+(error.message||'unknown error')); console.error(error); return; }
+  toast(type==='in'?'Cash in logged ✓':'Cash out logged ✓');
+  closeModal(); renderReports();
+}
+async function deleteCashMovement(id){
+  if(!confirm('Delete this cash entry?')) return;
+  const {error}=await sb.from('cash_movements').delete().eq('id',id);
+  if(error){ toast('Could not delete'); console.error(error); return; }
+  toast('Entry deleted');
+  renderReports();
+}
+
+// ── ITEM COSTS (for Gross Profit) ────────────
+function openItemCosts(){
+  const rows=MENU.filter(m=>!m.addon).map(m=>{
+    const c=getItemCost(m.id);
+    const sell=m.price!=null?m.price:(m.hotPrice!=null?m.hotPrice:m.coldPrice);
+    return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:0.5px solid #D3C3C0">
+      <div style="flex:1;font-size:12px">${m.name}<div style="font-size:10px;color:var(--text3)">${m.cat}${sell!=null?' · sells ₱'+sell:''}</div></div>
+      <input class="mi" style="width:88px" type="number" min="0" step="0.01" data-cost-id="${m.id}" placeholder="Cost ₱" value="${c!=null?c:''}"/>
+    </div>`;
+  }).join('');
+  document.getElementById('modal-container').innerHTML=`
+    <div class="modal-bg" role="dialog" aria-modal="true"><div class="modal" style="max-width:420px">
+      <h3>✎ Item Costs</h3>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Set what each item costs you to make (ingredients, packaging). Used to estimate Gross Profit in Reports. Leave blank if unknown.</div>
+      <div style="max-height:340px;overflow-y:auto">${rows}</div>
+      <div class="mbtns">
+        <button class="mbtn ok" onclick="saveItemCosts()">Save All</button>
+        <button class="mbtn" onclick="closeModal()">Cancel</button>
+      </div>
+    </div></div>`;
+}
+async function saveItemCosts(){
+  const inputs=document.querySelectorAll('[data-cost-id]');
+  const rows=[];
+  const updatedBy=currentUser?.email||null;
+  const nowIso=new Date().toISOString();
+  inputs.forEach(inp=>{
+    const v=inp.value;
+    if(v===''||v==null) return;
+    const cost=parseFloat(v);
+    if(isNaN(cost)||cost<0) return;
+    rows.push({item_id:+inp.dataset.costId,cost,updated_by:updatedBy,updated_at:nowIso});
+  });
+  if(!rows.length){ closeModal(); return; }
+  const {error}=await sb.from('menu_costs').upsert(rows,{onConflict:'item_id'});
+  if(error){ toast('Could not save costs — '+(error.message||'unknown error')); console.error(error); return; }
+  await loadMenuCosts();
+  toast('Item costs saved ✓');
+  closeModal();
+  renderReports();
+}
 
 function showZReport(){
   const active=orderHistory.filter(o=>!o.voided);
@@ -2486,6 +2627,8 @@ function showZReport(){
   const totalDisc=grossRev-totalRev;
   const n=active.length;
   const avg=n?Math.round(totalRev/n):0;
+  const cashOutOther=cashMovements.filter(m=>m.type==='out').reduce((s,m)=>s+Number(m.amount),0);
+  const netProfit=totalRev-cashOutOther;
   const filterLabels={today:'Today',yesterday:'Yesterday',week:'This Week',month:'This Month'};
   const now=new Date().toLocaleString('en-PH',{dateStyle:'medium',timeStyle:'short'});
   document.getElementById('modal-container').innerHTML=`
@@ -2505,6 +2648,9 @@ function showZReport(){
         <div style="border-top:0.5px dashed #827472;margin:8px 0"></div>
         <div style="display:flex;justify-content:space-between"><span>Avg Transaction</span><span>₱${avg.toLocaleString()}</span></div>
         <div style="display:flex;justify-content:space-between"><span>Voided Orders</span><span>${orderHistory.filter(o=>o.voided).length}</span></div>
+        <div style="border-top:0.5px dashed #827472;margin:8px 0"></div>
+        <div style="display:flex;justify-content:space-between;color:var(--red)"><span>Cash Out (Expenses)</span><span>−₱${cashOutOther.toLocaleString()}</span></div>
+        <div style="display:flex;justify-content:space-between;font-weight:700;border-top:0.5px solid #827472;margin-top:6px;padding-top:6px"><span>NET PROFIT</span><span style="color:var(--green-m)">₱${netProfit.toLocaleString()}</span></div>
       </div>
       <div class="mbtns">
         <button class="mbtn ok" onclick="printZReport()">🖨 Print</button>
@@ -3559,7 +3705,7 @@ const __busyOnline=new Set();
 async function acceptIncoming(id){
   if(__busyOnline.has(id)) return; __busyOnline.add(id);
   const o=onlineActive.find(x=>x.id===id); if(!o){ __busyOnline.delete(id); return; }
-  const itemsPayload=(o.items||[]).map(it=>({id:it.id,name:it.name,qty:it.qty,price:it.price,cat:it.cat,temp:it.temp?String(it.temp).toLowerCase():null,flavor:it.flavor||null}));
+  const itemsPayload=(o.items||[]).map(it=>({id:it.id,name:it.name,qty:it.qty,price:it.price,cat:it.cat,temp:it.temp?String(it.temp).toLowerCase():null,flavor:it.flavor||null,cost:getItemCost(it.id)}));
   // 1) Idempotent claim: incoming→preparing only if still incoming (prevents double-accept across taps/devices)
   let __claimed=false;
   try{ const {data:cl}=await sb.from('drive_thru_orders').update({status:'preparing'}).eq('id',id).eq('status','incoming').select('id'); __claimed=!!(cl&&cl.length); }catch(e){ console.error('status',e); __claimed=true; }
