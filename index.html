@@ -2213,10 +2213,11 @@ async function confirmOrder(){
   const now=new Date().toLocaleString('en-PH',{dateStyle:'short',timeStyle:'short'});
   orderHistory.unshift({id:orderNum,time:now,items:[...order],total,method:currentPayMethod,discountData:dd?{...dd}:null,loyaltyReward:loyReward?{...loyReward}:null,cashier:cashierName,tendered,change:changeGiven});
 
-  // Auto-print disabled — use the Print button manually.
-  // (Declared so the summary toast below doesn't throw. To auto-print on save,
-  //  replace the next line with:  let __printed=await printReceipt();)
+  // Auto-print on confirm: print customer + kitchen copies before clearing the order.
+  // Reads receipt data from the DOM (still rendered at this point), so it must run
+  // before order=[] / renderOrder() below.
   let __printed=false;
+  try{ __printed=await printReceipt(); }catch(e){ console.error('auto-print on confirm failed',e); }
 
   order=[];
   discountData=null;
