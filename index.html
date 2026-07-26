@@ -577,11 +577,32 @@ body{background:#FAF9F6;color:var(--text1);font-size:14px;font-family:var(--font
   .pay-btn,.checkout-btn{min-height:52px;font-size:16px}
 }
 
-/* portrait specifically: slightly narrower order panel so the menu keeps
-   a sensible number of columns at 1024px */
+/* ── iPad PORTRAIT (768–1100px) ─────────────────────────────────────────
+   Portrait is the tight case: a full 220px sidebar + full-width cart left the
+   menu — the thing cashiers actually tap — squeezed into ONE cramped column.
+   Fix: collapse the sidebar to a labeled icon rail and slim the cart, so the
+   menu gets two comfortable columns while the running order stays visible. */
 @media (min-width:701px) and (max-width:1100px) and (orientation:portrait){
-  .pos-wrap{grid-template-columns:1fr 320px}
-  .menu-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+  /* Icon rail — reclaims ~130px. Icons keep a label underneath so nav stays clear. */
+  .sidenav{width:88px}
+  .sidenav .logo{font-size:0;justify-content:center}
+  .sidenav .logo span{display:none}
+  .sidenav .tab{flex-direction:column;justify-content:center;gap:3px;padding:10px 4px;min-height:58px;font-size:10px;letter-spacing:0;text-align:center}
+  .sidenav .tab-icon{font-size:21px}
+  .sidenav .tab-label{display:block;font-size:10px;line-height:1.1;white-space:normal}
+  .sidenav > .topbar{padding:12px 6px;gap:10px}
+  .sidenav > .topbar > div:last-child button{text-align:center;padding:9px 2px;min-height:44px;font-size:10px;letter-spacing:0}
+
+  /* Two-column POS: roomy menu + slimmer always-visible cart */
+  .page{padding:12px}
+  .pos-wrap{grid-template-columns:1fr 300px;gap:12px}
+  .menu-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+
+  /* Category chips: one swipeable row instead of wrapping onto three lines.
+     flex-shrink:0 stops the parent flex column from crushing the row's height. */
+  .cat-bar{flex-wrap:nowrap;flex-shrink:0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:4px;margin-bottom:12px}
+  .cat-bar::-webkit-scrollbar{display:none}
+  .cat-btn{flex:0 0 auto;min-height:38px}
 }
 
 /* touch ergonomics for tablet use */
