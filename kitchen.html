@@ -375,6 +375,81 @@ async function pollForNewOrders() {
   } catch(e) { console.warn('Poll error:', e); }
 }
 
+// ── Auto-print incoming online orders (Kitchen View) ───────────
+// Shares the 'bl_autoprinted' dedupe key with the POS so an online order prints
+// only ONCE, whether the POS tab or this Kitchen View sees it first. For silent
+// printing (no dialog) launch Chrome with --kiosk-printing and set POS58 default.
+function __escHtml(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function receiptCopyHTML(receipt,copyLabel){
+  const money=v=>'₱'+v;
+  let h='<div class="copy">';
+  if(copyLabel) h+='<div class="c b">'+__escHtml(copyLabel)+'</div><div style="height:4px"></div>';
+  h+='<div class="c lg">YANNA\'S</div>';
+  h+='<div class="c b">VIETNAMESE COFFEE</div>';
+  h+='<div class="c small">Passi-San Rafael Rd. Brgy Quinolpan</div>';
+  h+='<div class="c small">San Enrique, Iloilo</div>';
+  h+='<div class="div"></div>';
+  h+='<div class="b">ORDER '+__escHtml(receipt.orderNum)+'</div>';
+  h+='<div>'+__escHtml(receipt.time)+'&nbsp;&nbsp;'+__escHtml(receipt.method)+'</div>';
+  if(receipt.extra && receipt.extra.length){ receipt.extra.filter(Boolean).forEach(l=>{ h+='<div>'+__escHtml(l)+'</div>'; }); }
+  h+='<div class="div"></div>';
+  (receipt.items||[]).forEach(o=>{
+    h+='<div class="row"><span>'+__escHtml(o.name)+'</span><span class="r">x'+__escHtml(o.qty)+'&nbsp;&nbsp;'+money(o.price*o.qty)+'</span></div>';
+    h+='<div class="small">&nbsp;&nbsp;@ '+money(o.price)+' each</div>';
+  });
+  h+='<div class="div"></div>';
+  h+='<div class="row"><span>SUBTOTAL</span><span class="r">'+money(receipt.subtotal)+'</span></div>';
+  if(receipt.discAmt>0) h+='<div class="row"><span>DISCOUNT</span><span class="r">-'+money(receipt.discAmt)+'</span></div>';
+  h+='<div class="row b"><span>TOTAL</span><span class="r">'+money(receipt.total)+'</span></div>';
+  h+='<div class="div"></div>';
+  h+='<div class="c">Thank you for your visit!</div>';
+  h+='<div class="c">Please come again</div>';
+  h+='</div>';
+  return h;
+}
+function printReceiptViaBrowser(receipt){
+  const css='@page{size:58mm auto;margin:0;}html,body{margin:0;padding:0;}'
+    +'.copy{width:58mm;box-sizing:border-box;padding:2mm 2mm 5mm;font-family:\'Courier New\',Consolas,monospace;font-size:11px;line-height:1.35;color:#000;}'
+    +'.copy+.copy{page-break-before:always;}'
+    +'.c{text-align:center;}.b{font-weight:bold;}.lg{font-size:16px;font-weight:bold;}.small{font-size:10px;}'
+    +'.div{border-top:1px dashed #000;margin:3px 0;}'
+    +'.row{display:flex;justify-content:space-between;gap:6px;}.row .r{text-align:right;white-space:nowrap;}';
+  const html='<!doctype html><html><head><meta charset="utf-8"><title>Receipt</title><style>'+css+'</style></head><body>'
+    +receiptCopyHTML(receipt,'*** CUSTOMER COPY ***')
+    +receiptCopyHTML(receipt,'*** KITCHEN COPY ***')
+    +'</body></html>';
+  const ifr=document.createElement('iframe');
+  ifr.setAttribute('aria-hidden','true');
+  ifr.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+  document.body.appendChild(ifr);
+  let printed=false;
+  const cleanup=()=>{ setTimeout(()=>{ try{ifr.remove();}catch(_){}} ,1500); };
+  const go=()=>{ if(printed) return; printed=true; try{ const w=ifr.contentWindow; w.focus(); w.print(); }catch(e){ console.error('browser print failed',e); } cleanup(); };
+  ifr.onload=go;
+  const doc=ifr.contentWindow.document; doc.open(); doc.write(html); doc.close();
+  setTimeout(go,700);
+  return true;
+}
+function __blPrinted(){ try{ return JSON.parse(localStorage.getItem('bl_autoprinted')||'[]'); }catch(_){ return []; } }
+function blAlreadyPrinted(id){ return __blPrinted().includes(String(id)); }
+function blMarkPrinted(id){ try{ const a=__blPrinted(); if(!a.includes(String(id))){ a.push(String(id)); while(a.length>300) a.shift(); localStorage.setItem('bl_autoprinted',JSON.stringify(a)); } }catch(_){ } }
+function buildOnlineReceipt(o){
+  const sub=(o.items||[]).reduce((sm,it)=>sm+((it.price*it.qty)||0),0);
+  return {
+    orderNum:o.order_number,
+    time:new Date(o.created_at||Date.now()).toLocaleString('en-PH',{dateStyle:'short',timeStyle:'short'}),
+    method:(o.payment_method||'Online')+' PAID',
+    items:(o.items||[]).map(it=>({name:(it.name||'')+(it.temp?' '+it.temp:''),qty:it.qty,price:it.price})),
+    subtotal:sub,total:o.total,discAmt:0,cash:null,
+    extra:['** DRIVE-THRU / ONLINE **', o.customer_name||'', o.customer_phone||'', 'Pickup ETA '+(o.eta_minutes!=null?o.eta_minutes+' min':'-')+(o.arrival_time?' @ '+o.arrival_time:'')]
+  };
+}
+function autoPrintIncoming(o){
+  if(!o || o.id==null || blAlreadyPrinted(o.id)) return;
+  blMarkPrinted(o.id);
+  try{ printReceiptViaBrowser(buildOnlineReceipt(o)); }catch(e){ console.error('kitchen auto-print failed',e); }
+}
+
 function subscribeRealtime() {
   // New orders
   sb.channel('kitchen-new')
@@ -384,6 +459,7 @@ function subscribeRealtime() {
         orders.unshift(o);
         if (o.status === 'incoming') chime();
       }
+      if (o.status === 'incoming') autoPrintIncoming(payload.new); // auto-print new online orders
       render();
     }).subscribe();
 
