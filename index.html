@@ -1037,6 +1037,7 @@ function subscribeRealtime(){
         const d=payload.new;
         if(!onlineActive.find(x=>x.id===d.id)) onlineActive.unshift(d);
         if(d.status==='incoming') queueIncoming(d); else updateOnlineBadge();
+        if(d.status==='incoming') autoPrintIncoming(d); // auto-print new online orders
       }).subscribe((status,err)=>{ if(err) console.warn('Realtime drive_thru:',err); });
     sb.channel('drivethru-upd-channel')
       .on('postgres_changes',{event:'UPDATE',schema:'public',table:'drive_thru_orders'},payload=>{
@@ -1911,13 +1912,13 @@ async function autoReconnectThermalPrinter(){
       }
     }catch(e){ console.warn('BT auto-reconnect failed:',e.message); }
   }
-  // Serial: reuse a previously granted port + plug/unplug events (desktop).
+  // Serial (desktop): keep disconnect cleanup, but do NOT auto-open a COM port.
+  // On Windows the only COM port is usually the PC's built-in serial port (COM1),
+  // NOT the receipt printer \u2014 auto-connecting to it made the app "print" to a dead
+  // port. A real serial printer can still be connected manually via the printer button.
   if('serial' in navigator){
     if(!navigator.serial.__yannaHooked){
       navigator.serial.__yannaHooked=true;
-      navigator.serial.addEventListener('connect',async ev=>{
-        if(!thermalWriter && await openThermalPort(ev.target,{silent:true})) toast('\uD83D\uDDA8\uFE0F Printer reconnected');
-      });
       navigator.serial.addEventListener('disconnect',ev=>{
         if(ev.target===thermalPort){
           try{thermalWriter&&thermalWriter.releaseLock();}catch(_){}
@@ -1926,10 +1927,6 @@ async function autoReconnectThermalPrinter(){
         }
       });
     }
-    try{
-      const ports=await navigator.serial.getPorts();
-      if(!printerConnected() && ports && ports.length && await openThermalPort(ports[0],{silent:true})) toast('\uD83D\uDDA8\uFE0F Printer reconnected');
-    }catch(e){ console.warn('Serial auto-reconnect failed:',e.message); }
   }
 }
 
@@ -3780,6 +3777,31 @@ async function printTwoCopies(receipt){
   return false;
 }
 
+// ── Auto-print incoming online / drive-thru orders ─────────────
+// Prints once per order (deduped in localStorage so refreshes and multiple open tabs
+// on the same PC don't double-print). For SILENT printing (no dialog), launch Chrome
+// with --kiosk-printing and set POS58 as the default printer.
+function __blPrinted(){ try{ return JSON.parse(localStorage.getItem('bl_autoprinted')||'[]'); }catch(_){ return []; } }
+function blAlreadyPrinted(id){ return __blPrinted().includes(String(id)); }
+function blMarkPrinted(id){ try{ const a=__blPrinted(); if(!a.includes(String(id))){ a.push(String(id)); while(a.length>300) a.shift(); localStorage.setItem('bl_autoprinted',JSON.stringify(a)); } }catch(_){ } }
+function buildOnlineReceipt(o){
+  const sub=(o.items||[]).reduce((sm,it)=>sm+((it.price*it.qty)||0),0);
+  return {
+    orderNum:o.order_number,
+    time:new Date(o.created_at||Date.now()).toLocaleString('en-PH',{dateStyle:'short',timeStyle:'short'}),
+    method:(o.payment_method||'Online')+' PAID',
+    items:(o.items||[]).map(it=>({name:(it.name||'')+(it.temp?' '+it.temp:''),qty:it.qty,price:it.price})),
+    subtotal:sub,total:o.total,discAmt:0,cash:null,
+    extra:['** DRIVE-THRU / ONLINE **', o.customer_name||'', o.customer_phone||'', 'Pickup ETA '+(o.eta_minutes!=null?o.eta_minutes+' min':'-')+(o.arrival_time?' @ '+o.arrival_time:'')]
+  };
+}
+async function autoPrintIncoming(o){
+  if(!o || o.id==null || blAlreadyPrinted(o.id)) return;
+  blMarkPrinted(o.id);
+  try{ await printTwoCopies(buildOnlineReceipt(o)); toast('🖨️ Auto-printed order '+(o.order_number||'')); }
+  catch(e){ console.error('auto-print failed',e); }
+}
+
 const __busyOnline=new Set();
 async function acceptIncoming(id){
   if(__busyOnline.has(id)) return; __busyOnline.add(id);
@@ -3809,7 +3831,8 @@ async function acceptIncoming(id){
     subtotal:sub,total:o.total,discAmt:0,cash:null,
     extra:['** DRIVE-THRU / ONLINE **', o.customer_name||'', o.customer_phone||'', 'Pickup ETA '+(o.eta_minutes!=null?o.eta_minutes+' min':'-')+(o.arrival_time?' @ '+o.arrival_time:'')]
   };
-  const printed=await printTwoCopies(receipt);
+  const printed = blAlreadyPrinted(id) ? true : await printTwoCopies(receipt);
+  blMarkPrinted(id);
   incomingQueue=incomingQueue.filter(x=>x!==id);
   updateOnlineBadge(); closeIncomingPopup(); __busyOnline.delete(id);
   toast(printed?('Accepted '+o.order_number+' — printed ✓'):('Accepted '+o.order_number+' — NOT printed (check printer)'));
