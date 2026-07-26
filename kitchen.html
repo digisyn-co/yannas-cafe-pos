@@ -381,11 +381,11 @@ async function pollForNewOrders() {
 // printing (no dialog) launch Chrome with --kiosk-printing and set POS58 default.
 function __escHtml(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function receiptCopyHTML(receipt,copyLabel){
-  const money=v=>'₱'+v;
+  const money=v=>'P'+Number(v||0).toLocaleString('en-PH');
   let h='<div class="copy">';
   if(copyLabel) h+='<div class="c b">'+__escHtml(copyLabel)+'</div><div style="height:4px"></div>';
   h+='<div class="c lg">YANNA\'S</div>';
-  h+='<div class="c b">VIETNAMESE COFFEE</div>';
+  h+='<div class="c md">VIETNAMESE COFFEE</div>';
   h+='<div class="c small">Passi-San Rafael Rd. Brgy Quinolpan</div>';
   h+='<div class="c small">San Enrique, Iloilo</div>';
   h+='<div class="div"></div>';
@@ -394,13 +394,13 @@ function receiptCopyHTML(receipt,copyLabel){
   if(receipt.extra && receipt.extra.length){ receipt.extra.filter(Boolean).forEach(l=>{ h+='<div>'+__escHtml(l)+'</div>'; }); }
   h+='<div class="div"></div>';
   (receipt.items||[]).forEach(o=>{
-    h+='<div class="row"><span>'+__escHtml(o.name)+'</span><span class="r">x'+__escHtml(o.qty)+'&nbsp;&nbsp;'+money(o.price*o.qty)+'</span></div>';
-    h+='<div class="small">&nbsp;&nbsp;@ '+money(o.price)+' each</div>';
+    h+='<div class="item">'+__escHtml(o.qty)+' x '+__escHtml(o.name)+'</div>';
+    h+='<div class="row small"><span>@ '+money(o.price)+' each</span><span class="r">'+money(o.price*o.qty)+'</span></div>';
   });
   h+='<div class="div"></div>';
   h+='<div class="row"><span>SUBTOTAL</span><span class="r">'+money(receipt.subtotal)+'</span></div>';
   if(receipt.discAmt>0) h+='<div class="row"><span>DISCOUNT</span><span class="r">-'+money(receipt.discAmt)+'</span></div>';
-  h+='<div class="row b"><span>TOTAL</span><span class="r">'+money(receipt.total)+'</span></div>';
+  h+='<div class="row tot"><span>TOTAL</span><span class="r">'+money(receipt.total)+'</span></div>';
   h+='<div class="div"></div>';
   h+='<div class="c">Thank you for your visit!</div>';
   h+='<div class="c">Please come again</div>';
@@ -409,11 +409,12 @@ function receiptCopyHTML(receipt,copyLabel){
 }
 function printReceiptViaBrowser(receipt){
   const css='@page{size:58mm auto;margin:0;}html,body{margin:0;padding:0;}'
-    +'.copy{width:58mm;box-sizing:border-box;padding:2mm 2mm 5mm;font-family:\'Courier New\',Consolas,monospace;font-size:11px;line-height:1.35;color:#000;}'
+    +'.copy{width:58mm;box-sizing:border-box;padding:2mm 2.5mm 6mm;font-family:\'Courier New\',Consolas,monospace;font-size:13px;line-height:1.5;color:#000;font-weight:700;}'
     +'.copy+.copy{page-break-before:always;}'
-    +'.c{text-align:center;}.b{font-weight:bold;}.lg{font-size:16px;font-weight:bold;}.small{font-size:10px;}'
-    +'.div{border-top:1px dashed #000;margin:3px 0;}'
-    +'.row{display:flex;justify-content:space-between;gap:6px;}.row .r{text-align:right;white-space:nowrap;}';
+    +'.c{text-align:center;}.b{font-weight:800;}.lg{font-size:21px;font-weight:800;letter-spacing:1px;}.md{font-size:15px;font-weight:800;}.small{font-size:12px;font-weight:600;}'
+    +'.div{border-top:1px dashed #000;margin:4px 0;}'
+    +'.item{font-weight:800;margin-top:4px;word-break:break-word;}.tot{font-size:16px;font-weight:800;}'
+    +'.row{display:flex;justify-content:space-between;gap:8px;}.row .r{text-align:right;white-space:nowrap;}';
   const html='<!doctype html><html><head><meta charset="utf-8"><title>Receipt</title><style>'+css+'</style></head><body>'
     +receiptCopyHTML(receipt,'*** CUSTOMER COPY ***')
     +receiptCopyHTML(receipt,'*** KITCHEN COPY ***')
