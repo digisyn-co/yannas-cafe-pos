@@ -450,6 +450,32 @@ function autoPrintIncoming(o){
   blMarkPrinted(o.id);
   try{ printReceiptViaBrowser(buildOnlineReceipt(o)); }catch(e){ console.error('kitchen auto-print failed',e); }
 }
+// iPad terminals stay silent; only a desktop drives the POS58 printer.
+function isIOSDevice(){ const ua=navigator.userAgent||''; return /iPad|iPhone|iPod/.test(ua) || (/Macintosh/i.test(ua) && (navigator.maxTouchPoints||0)>1); }
+function isPrintStation(){ return !isIOSDevice(); }
+function buildPOSReceipt(o){
+  let items=o.items; if(typeof items==='string'){ try{ items=JSON.parse(items); }catch(_){ items=[]; } }
+  items=Array.isArray(items)?items:[];
+  const sub=items.reduce((sm,it)=>sm+((it.price*it.qty)||0),0);
+  return {
+    orderNum:o.order_number,
+    time:new Date(o.created_at||Date.now()).toLocaleString('en-PH',{dateStyle:'short',timeStyle:'short'}),
+    method:o.payment_method||'',
+    items:items.map(it=>({name:(it.name||'')+(it.temp?' '+it.temp:''),qty:it.qty,price:it.price})),
+    subtotal:sub, total:o.total, discAmt:Number(o.discount_amount||0),
+    cash:(o.cash_tendered!=null?o.cash_tendered:null)
+  };
+}
+// Desktop auto-print for a POS dine-in order arriving over realtime (e.g. confirmed on the iPad).
+// Shares 'bl_autoprinted' (posnum-<orderNumber>) with the POS so an order prints only ONCE
+// even when the POS tab and this Kitchen View are both open on the same desktop.
+function autoPrintPOSDesktop(o){
+  if(!o || o.order_number==null || !isPrintStation()) return;
+  const key='posnum-'+o.order_number;
+  if(blAlreadyPrinted(key)) return;
+  blMarkPrinted(key);
+  try{ printReceiptViaBrowser(buildPOSReceipt(o)); }catch(e){ console.error('kitchen POS auto-print failed',e); }
+}
 
 function subscribeRealtime() {
   // New orders
@@ -496,6 +522,7 @@ function subscribeRealtime() {
         });
         chime();
       }
+      if ((o.status || 'incoming') === 'incoming') autoPrintPOSDesktop(o); // desktop prints POS orders (e.g. from iPad)
       render();
     }).subscribe();
 

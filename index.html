@@ -1029,6 +1029,8 @@ function subscribeRealtime(){
           if(document.getElementById('page-reports').classList.contains('active')) renderReports();
           toast('New order '+entry.id);
         }
+        // Desktop prints POS orders confirmed anywhere (incl. the iPad terminal). No-op on iPad.
+        if((d.status||'incoming')==='incoming') autoPrintPOSDesktop(d);
       }).subscribe((status,err)=>{
         if(err) console.warn('Realtime orders:',err);
       });
@@ -1754,6 +1756,11 @@ const BT_PRINTER_SERVICES=[
 ];
 
 function isAndroid(){ return /Android/i.test(navigator.userAgent); }
+// iPad / iPhone (incl. iPadOS which reports as "Macintosh" but has touch points).
+function isIOSDevice(){ const ua=navigator.userAgent||''; return /iPad|iPhone|iPod/.test(ua) || (/Macintosh/i.test(ua) && (navigator.maxTouchPoints||0)>1); }
+// Only a real desktop/PC drives the receipt printer. iPad terminals stay silent —
+// the desktop by the POS58 printer picks the order up over realtime and prints it.
+function isPrintStation(){ return !isIOSDevice(); }
 
 // Classic-Bluetooth printers (POS-5890) cannot be reached by the browser directly.
 // The free RawBT Android app bridges the gap: it receives raw ESC/POS bytes via the
@@ -2213,11 +2220,15 @@ async function confirmOrder(){
   const now=new Date().toLocaleString('en-PH',{dateStyle:'short',timeStyle:'short'});
   orderHistory.unshift({id:orderNum,time:now,items:[...order],total,method:currentPayMethod,discountData:dd?{...dd}:null,loyaltyReward:loyReward?{...loyReward}:null,cashier:cashierName,tendered,change:changeGiven});
 
-  // Auto-print on confirm: print customer + kitchen copies before clearing the order.
-  // Reads receipt data from the DOM (still rendered at this point), so it must run
-  // before order=[] / renderOrder() below.
+  // Auto-print on confirm — DESKTOP ONLY. On an iPad terminal we stay silent (no print
+  // dialog); the desktop by the POS58 printer receives this order over realtime and prints
+  // it there. Mark it printed first (shared 'bl_autoprinted' key) so this desktop's own
+  // realtime INSERT event doesn't print a second copy.
   let __printed=false;
-  try{ __printed=await printReceipt(); }catch(e){ console.error('auto-print on confirm failed',e); }
+  if(isPrintStation()){
+    blMarkPrinted('posnum-'+orderNum);
+    try{ __printed=await printReceipt(); }catch(e){ console.error('auto-print on confirm failed',e); }
+  }
 
   order=[];
   discountData=null;
@@ -3802,6 +3813,33 @@ async function autoPrintIncoming(o){
   blMarkPrinted(o.id);
   try{ await printTwoCopies(buildOnlineReceipt(o)); toast('🖨️ Auto-printed order '+(o.order_number||'')); }
   catch(e){ console.error('auto-print failed',e); }
+}
+
+// Build a receipt from a saved POS (dine-in) order row for desktop auto-printing.
+function buildPOSReceipt(o){
+  let items=o.items; if(typeof items==='string'){ try{ items=JSON.parse(items); }catch(_){ items=[]; } }
+  items=Array.isArray(items)?items:[];
+  const sub=items.reduce((sm,it)=>sm+((it.price*it.qty)||0),0);
+  return {
+    orderNum:o.order_number,
+    time:new Date(o.created_at||Date.now()).toLocaleString('en-PH',{dateStyle:'short',timeStyle:'short'}),
+    method:o.payment_method||'',
+    items:items.map(it=>({name:(it.name||'')+(it.temp?' '+it.temp:''),qty:it.qty,price:it.price})),
+    subtotal:sub, total:o.total, discAmt:Number(o.discount_amount||0),
+    cash:(o.cash_tendered!=null?o.cash_tendered:null)
+  };
+}
+// Desktop-only auto-print for a POS order arriving over realtime (e.g. confirmed on the iPad).
+// iPad/tablet terminals never enter here; shared dedupe key stops double prints when the
+// POS and Kitchen View are both open on the same desktop.
+async function autoPrintPOSDesktop(o){
+  if(!o || o.order_number==null) return;
+  if(!isPrintStation()) return;
+  const key='posnum-'+o.order_number;
+  if(blAlreadyPrinted(key)) return;
+  blMarkPrinted(key);
+  try{ await printTwoCopies(buildPOSReceipt(o)); toast('🖨️ Auto-printed order '+(o.order_number||'')); }
+  catch(e){ console.error('POS desktop auto-print failed',e); }
 }
 
 const __busyOnline=new Set();
