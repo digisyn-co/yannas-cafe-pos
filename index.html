@@ -1872,10 +1872,18 @@ async function connectPrinter(){
       +'(First print may ask which app to use — pick RawBT and tick Always.)');
     return;
   }
-  if('bluetooth' in navigator){
-    if(await connectBluetoothPrinter()) toast('\uD83D\uDDA8\uFE0F Printer connected');
-  } else if('serial' in navigator){
+  const __hasSerial=('serial' in navigator), __hasBT=('bluetooth' in navigator);
+  if(__hasSerial && __hasBT){
+    // Desktop Chrome/Edge exposes BOTH APIs. A wired POS58 (USB/COM) is reached via
+    // Web Serial; a BLE printer via Web Bluetooth. Ask which one this printer uses \u2014
+    // otherwise a USB printer never appears in the Bluetooth chooser (the old bug).
+    const useUSB=confirm('Connect your receipt printer:\n\nOK  =  USB / cable printer (e.g. POS58)\nCancel  =  Bluetooth printer');
+    if(useUSB){ if(await connectSerialPrinter()) toast('\uD83D\uDDA8\uFE0F Printer connected'); }
+    else{ if(await connectBluetoothPrinter()) toast('\uD83D\uDDA8\uFE0F Printer connected'); }
+  } else if(__hasSerial){
     if(await connectSerialPrinter()) toast('\uD83D\uDDA8\uFE0F Printer connected');
+  } else if(__hasBT){
+    if(await connectBluetoothPrinter()) toast('\uD83D\uDDA8\uFE0F Printer connected');
   } else {
     toast('Printing needs Chrome on Android, or Chrome/Edge on desktop');
   }
@@ -2000,6 +2008,68 @@ function escpos(receipt,copyLabel){
   return new Uint8Array(bytes);
 }
 
+// ── OS / browser print fallback ─────────────────────────────
+// For a printer whose Windows driver works (the PC "sees" it) but which is NOT exposed
+// as a Web Serial COM port or a BLE device, we can't send raw ESC/POS. Instead render a
+// 58mm-wide receipt and use the normal print dialog, which prints through the OS driver.
+// Chrome remembers the chosen printer, so after the first time it's effectively one tap.
+function __escHtml(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function receiptCopyHTML(receipt,copyLabel){
+  const money=v=>'₱'+v;
+  let h='<div class="copy">';
+  if(copyLabel) h+='<div class="c b">'+__escHtml(copyLabel)+'</div><div style="height:4px"></div>';
+  h+='<div class="c lg">YANNA\'S</div>';
+  h+='<div class="c b">VIETNAMESE COFFEE</div>';
+  h+='<div class="c small">Passi-San Rafael Rd. Brgy Quinolpan</div>';
+  h+='<div class="c small">San Enrique, Iloilo</div>';
+  h+='<div class="div"></div>';
+  h+='<div class="b">ORDER '+__escHtml(receipt.orderNum)+'</div>';
+  h+='<div>'+__escHtml(receipt.time)+'&nbsp;&nbsp;'+__escHtml(receipt.method)+'</div>';
+  if(receipt.extra && receipt.extra.length){ receipt.extra.filter(Boolean).forEach(l=>{ h+='<div>'+__escHtml(l)+'</div>'; }); }
+  h+='<div class="div"></div>';
+  (receipt.items||[]).forEach(o=>{
+    h+='<div class="row"><span>'+__escHtml(o.name)+'</span><span class="r">x'+__escHtml(o.qty)+'&nbsp;&nbsp;'+money(o.price*o.qty)+'</span></div>';
+    h+='<div class="small">&nbsp;&nbsp;@ '+money(o.price)+' each</div>';
+  });
+  h+='<div class="div"></div>';
+  h+='<div class="row"><span>SUBTOTAL</span><span class="r">'+money(receipt.subtotal)+'</span></div>';
+  if(receipt.discAmt>0) h+='<div class="row"><span>DISCOUNT</span><span class="r">-'+money(receipt.discAmt)+'</span></div>';
+  h+='<div class="row b"><span>TOTAL</span><span class="r">'+money(receipt.total)+'</span></div>';
+  if(receipt.method && String(receipt.method).indexOf('Cash')===0 && receipt.cash){
+    h+='<div class="row"><span>CASH</span><span class="r">'+money(receipt.cash)+'</span></div>';
+    const ch=receipt.cash-receipt.total;
+    h+='<div class="row"><span>CHANGE</span><span class="r">'+(ch>=0?money(ch):'(SHORT '+money(Math.abs(ch))+')')+'</span></div>';
+  }
+  h+='<div class="div"></div>';
+  h+='<div class="c">Thank you for your visit!</div>';
+  h+='<div class="c">Please come again</div>';
+  h+='</div>';
+  return h;
+}
+function printReceiptViaBrowser(receipt){
+  const css='@page{size:58mm auto;margin:0;}html,body{margin:0;padding:0;}'
+    +'.copy{width:58mm;box-sizing:border-box;padding:2mm 2mm 5mm;font-family:\'Courier New\',Consolas,monospace;font-size:11px;line-height:1.35;color:#000;}'
+    +'.copy+.copy{page-break-before:always;}'
+    +'.c{text-align:center;}.b{font-weight:bold;}.lg{font-size:16px;font-weight:bold;}.small{font-size:10px;}'
+    +'.div{border-top:1px dashed #000;margin:3px 0;}'
+    +'.row{display:flex;justify-content:space-between;gap:6px;}.row .r{text-align:right;white-space:nowrap;}';
+  const html='<!doctype html><html><head><meta charset="utf-8"><title>Receipt</title><style>'+css+'</style></head><body>'
+    +receiptCopyHTML(receipt,'*** CUSTOMER COPY ***')
+    +receiptCopyHTML(receipt,'*** KITCHEN COPY ***')
+    +'</body></html>';
+  const ifr=document.createElement('iframe');
+  ifr.setAttribute('aria-hidden','true');
+  ifr.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+  document.body.appendChild(ifr);
+  let printed=false;
+  const cleanup=()=>{ setTimeout(()=>{ try{ifr.remove();}catch(_){}} ,1500); };
+  const go=()=>{ if(printed) return; printed=true; try{ const w=ifr.contentWindow; w.focus(); w.print(); }catch(e){ console.error('browser print failed',e); } cleanup(); };
+  ifr.onload=go;
+  const doc=ifr.contentWindow.document; doc.open(); doc.write(html); doc.close();
+  setTimeout(go,700); // fallback in case onload doesn't fire after document.write
+  return true;
+}
+
 async function printReceipt(){
   // Gather receipt data from DOM
   const rc=document.getElementById('receipt-content');
@@ -2048,7 +2118,13 @@ async function printReceipt(){
       return true;
     }catch(e){ console.error(e); }
   }
-  // 3) Nothing available
+  // 3) Desktop / no direct transport connected: print through the browser to the
+  //    OS-installed printer (uses the Windows POS58 driver via the normal print dialog).
+  if(!isAndroid()){
+    try{ printReceiptViaBrowser(receipt); toast('🖨️ Opening print dialog — pick your POS58 printer'); return true; }
+    catch(e){ console.error(e); }
+  }
+  // 4) Nothing available
   toast('Printer not connected — install RawBT (Android) or tap 🖨️ Connect Printer');
   return false;
 }
@@ -2139,8 +2215,10 @@ async function confirmOrder(){
   const now=new Date().toLocaleString('en-PH',{dateStyle:'short',timeStyle:'short'});
   orderHistory.unshift({id:orderNum,time:now,items:[...order],total,method:currentPayMethod,discountData:dd?{...dd}:null,loyaltyReward:loyReward?{...loyReward}:null,cashier:cashierName,tendered,change:changeGiven});
 
-  // Auto-print disabled — use the Print button manually
-  // const __printed=await printReceipt();
+  // Auto-print disabled — use the Print button manually.
+  // (Declared so the summary toast below doesn't throw. To auto-print on save,
+  //  replace the next line with:  let __printed=await printReceipt();)
+  let __printed=false;
 
   order=[];
   discountData=null;
@@ -3698,6 +3776,7 @@ async function printTwoCopies(receipt){
   const data=concatBytes(escpos(receipt,'*** CUSTOMER COPY ***'),escpos(receipt,'*** KITCHEN COPY ***'));
   if(printerConnected()){ try{ await sendToPrinter(data); return true; }catch(e){ console.error(e); return false; } }
   if(isAndroid()){ try{ sendViaRawBT(data); return true; }catch(e){ console.error(e); } }
+  if(!isAndroid()){ try{ printReceiptViaBrowser(receipt); return true; }catch(e){ console.error(e); } }
   return false;
 }
 
