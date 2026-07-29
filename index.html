@@ -480,6 +480,18 @@ body{background:#FAF9F6;color:var(--text1);font-size:14px;font-family:var(--font
 .metric-card{background:var(--bg2);border-radius:var(--r);padding:14px;border:0.5px solid #D3C3C0}
 .metric-lbl{font-size:10px;color:var(--text3);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.5px}
 .metric-val{font-size:24px;font-weight:700;color:var(--gold);font-family:var(--font-display)}
+/* Search + custom date range controls (Order History and Reports) */
+.search-row{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.search-input{flex:1;min-width:200px;padding:9px 13px;border-radius:var(--r);border:0.5px solid #827472;background:var(--bg2);color:var(--text1);font-size:13px;font-family:var(--font-body);outline:none}
+.search-input:focus{border-color:var(--gold)}
+.search-input::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none}
+.clear-search{padding:6px 12px;border-radius:var(--r);border:0.5px solid #827472;background:transparent;color:var(--text2);font-size:11px;font-weight:600;font-family:var(--font-body);cursor:pointer}
+.range-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px;padding:10px 12px;border:0.5px dashed #827472;border-radius:var(--r);background:var(--bg2)}
+.range-lbl{font-size:11px;font-weight:600;color:var(--text2)}
+.range-date{padding:6px 10px;border-radius:var(--r);border:0.5px solid #827472;background:var(--bg2);color:var(--text1);font-size:12px;font-family:var(--font-body);outline:none}
+.search-hits{font-size:11px;color:var(--gold);font-weight:600}
+.log-cust{font-size:12px;font-weight:700;color:var(--text1);margin:-2px 0 5px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.log-cust .ph{font-weight:400;color:var(--text2)}
 .rep-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media(max-width:600px){.rep-row{grid-template-columns:1fr}}
 .rep-card{border:0.5px solid #D3C3C0;border-radius:var(--rl);padding:16px;background:var(--bg2)}
@@ -768,6 +780,18 @@ body{background:#FAF9F6;color:var(--text1);font-size:14px;font-family:var(--font
       <button class="df-btn" onclick="setOrdersFilter('yesterday',this)">Yesterday</button>
       <button class="df-btn" onclick="setOrdersFilter('week',this)">This Week</button>
       <button class="df-btn" onclick="setOrdersFilter('month',this)">This Month</button>
+      <button class="df-btn" onclick="setOrdersFilter('custom',this)">📅 Pick date</button>
+    </div>
+    <div class="range-row" id="orders-range" style="display:none">
+      <label class="range-lbl">From</label>
+      <input type="date" class="range-date" id="orders-from" onchange="applyOrdersRange()">
+      <label class="range-lbl">To</label>
+      <input type="date" class="range-date" id="orders-to" onchange="applyOrdersRange()">
+      <button class="df-btn" onclick="ordersSingleDay()">Just this one day</button>
+    </div>
+    <div class="search-row">
+      <input type="search" class="search-input" id="orders-search" placeholder="🔍 Search name, order #, item, phone, Cash / GCash…" oninput="onOrdersSearch(this.value)" autocomplete="off">
+      <button class="clear-search" id="orders-search-clear" style="display:none" onclick="clearOrdersSearch()">✕ Clear</button>
     </div>
     <div class="orders-wrap" id="orders-log">
       <div class="no-data">No orders yet today</div>
@@ -782,6 +806,7 @@ body{background:#FAF9F6;color:var(--text1);font-size:14px;font-family:var(--font
         <button class="df-btn" onclick="setReportFilter('yesterday',this)">Yesterday</button>
         <button class="df-btn" onclick="setReportFilter('week',this)">This Week</button>
         <button class="df-btn" onclick="setReportFilter('month',this)">This Month</button>
+        <button class="df-btn" onclick="setReportFilter('custom',this)">📅 Pick date</button>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="zrpt-btn" onclick="openCashMovement()">＋ Log Cash In/Out</button>
@@ -789,10 +814,26 @@ body{background:#FAF9F6;color:var(--text1);font-size:14px;font-family:var(--font
         <button class="zrpt-btn" onclick="showZReport()">🖨 End-of-Day Z-Report</button>
       </div>
     </div>
+    <div class="range-row" id="rep-range" style="display:none">
+      <label class="range-lbl">From</label>
+      <input type="date" class="range-date" id="rep-from" onchange="applyRepRange()">
+      <label class="range-lbl">To</label>
+      <input type="date" class="range-date" id="rep-to" onchange="applyRepRange()">
+      <button class="df-btn" onclick="repSingleDay()">Just this one day</button>
+    </div>
+    <div class="search-row">
+      <input type="search" class="search-input" id="rep-search" placeholder="🔍 Narrow the report — customer, item, phone, Cash / GCash…" oninput="onRepSearch(this.value)" autocomplete="off">
+      <button class="clear-search" id="rep-search-clear" style="display:none" onclick="clearRepSearch()">✕ Clear</button>
+      <span class="search-hits" id="rep-scope"></span>
+    </div>
     <div class="metrics-grid" id="metrics-grid"></div>
     <div class="rep-row">
       <div class="rep-card"><h4>🏆 Top Selling Items</h4><div id="top-items"><div class="no-data">No sales yet</div></div></div>
       <div class="rep-card"><h4>💰 Revenue by Category</h4><div id="rev-cat"><div class="no-data">No sales yet</div></div></div>
+    </div>
+    <div class="rep-card" style="margin-top:12px">
+      <h4>👥 Top Customers</h4>
+      <div id="top-customers"><div class="no-data">No named customers yet</div></div>
     </div>
     <div class="rep-card" style="margin-top:12px">
       <h4>💵 Cash In/Out Log</h4>
@@ -917,6 +958,11 @@ const MENU=[
 
 
 let sb,order=[],activeCategory='All',currentPayMethod='Cash',currentOrderType='Dine-in',reportFilter='today',ordersFilter='today';
+// Custom date ranges (used when the filter is 'custom') and free-text search terms
+// for Order History and Reports. Search is applied client-side to whatever the
+// current date range already loaded, so typing never re-hits Supabase.
+let ordersRange={from:'',to:''}, repRange={from:'',to:''};
+let ordersSearch='', repSearch='';
 let invData=[],orderHistory=[];
 let currentUser=null;
 // Reports: manual cash-drawer log (cash taken out for supplies/expenses, or added back in)
@@ -1012,20 +1058,31 @@ async function setupInventory(){
   invData=(data||[]).map(mapInvRow);
 }
 
-function getDateRange(filter){
+function todayStr(){
+  const d=new Date(),pad=n=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+// filter: 'today' | 'yesterday' | 'week' | 'month' | 'custom'
+// custom: {from,to} — a single specific day is just from===to (or an empty 'to').
+function getDateRange(filter,custom){
   const now=new Date();
   const pad=n=>String(n).padStart(2,'0');
   const fmt=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
   const today=fmt(now);
+  if(filter==='custom'){
+    const f=(custom&&custom.from)||(custom&&custom.to)||today;
+    const t=(custom&&custom.to)||(custom&&custom.from)||today;
+    return f<=t?{from:f,to:t}:{from:t,to:f}; // tolerate a backwards range
+  }
   if(filter==='today') return {from:today,to:today};
   if(filter==='yesterday'){const y=new Date(now);y.setDate(y.getDate()-1);const yd=fmt(y);return{from:yd,to:yd};}
   if(filter==='week'){const w=new Date(now);w.setDate(w.getDate()-6);return{from:fmt(w),to:today};}
   if(filter==='month'){const m=new Date(now);m.setDate(1);return{from:fmt(m),to:today};}
   return{from:today,to:today};
 }
-async function loadOrders(filter){
+async function loadOrders(filter,custom){
   filter=filter||'today';
-  const {from,to}=getDateRange(filter);
+  const {from,to}=getDateRange(filter,custom);
   const {data}=await sb.from('orders').select('*').gte('created_at',from+'T00:00:00+08:00').lte('created_at',to+'T23:59:59+08:00').order('created_at',{ascending:false});
   if(data) orderHistory=data.map(d=>({
     id:d.order_number,
@@ -1035,15 +1092,46 @@ async function loadOrders(filter){
     voided:d.voided||false,
     status:d.status||'incoming',
     created_at:d.created_at,
-    order_type:d.order_type||'Dine-in'
+    order_type:d.order_type||'Dine-in',
+    customer_name:d.customer_name||'',
+    customer_phone:d.customer_phone||''
   }));
+}
+
+// ── SEARCH ────────────────────────────────────
+// One matcher shared by Order History and Reports. Every whitespace-separated
+// term must match somewhere (AND), so "maria gcash" narrows instead of widening.
+// Searchable: customer name, phone, order number, item names + notes,
+// payment method (Cash / GCash) and order type (Dine-in / Takeout).
+function orderSearchBlob(o){
+  return [
+    o.id, o.customer_name, o.customer_phone, o.method, o.order_type, o.time,
+    (o.items||[]).map(i=>`${i.name} ${i.note||''} ${i.cat||''}`).join(' ')
+  ].join(' ').toLowerCase();
+}
+function orderMatches(o,q){
+  q=(q||'').trim().toLowerCase();
+  if(!q) return true;
+  const blob=orderSearchBlob(o);
+  return q.split(/\s+/).every(t=>blob.includes(t));
+}
+// Human label for the active range, used in metric cards and the Z-Report header.
+function filterLabel(filter,custom){
+  const names={today:'Today',yesterday:'Yesterday',week:'This Week',month:'This Month'};
+  if(filter!=='custom') return names[filter]||'Today';
+  const {from,to}=getDateRange('custom',custom);
+  // Format the YYYY-MM-DD string directly. Going through Date() would re-interpret
+  // it in the device's timezone and can shift the label by a day.
+  const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const pretty=s=>{ const [y,m,d]=String(s).split('-'); return `${MON[Number(m)-1]||m} ${Number(d)}, ${y}`; };
+  return from===to?pretty(from):`${pretty(from)} – ${pretty(to)}`;
 }
 
 // Manual cash-drawer log for the selected Reports date range (cash taken out
 // for supplies/expenses = 'out', cash added back into the drawer = 'in').
-async function loadCashMovements(filter){
+async function loadCashMovements(filter,custom){
   filter=filter||'today';
-  const {from,to}=getDateRange(filter);
+  const {from,to}=getDateRange(filter,custom);
   const {data,error}=await sb.from('cash_movements').select('*')
     .gte('created_at',from+'T00:00:00+08:00').lte('created_at',to+'T23:59:59+08:00')
     .order('created_at',{ascending:false});
@@ -1069,7 +1157,7 @@ function subscribeRealtime(){
     sb.channel('orders-channel')
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'orders'},payload=>{
         const d=payload.new;
-        const entry={id:d.order_number,time:new Date(d.created_at).toLocaleString('en-PH',{dateStyle:'short',timeStyle:'short'}),items:d.items,total:d.total,method:d.payment_method,voided:d.voided||false,status:d.status||'incoming',order_type:d.order_type||'Dine-in',created_at:d.created_at,discountData:d.discount_ids?{type:d.discount_type,ids:d.discount_ids,pax:d.discount_pax||1,discAmt:d.discount_amount||0}:null,cashier:d.cashier_name||null,tendered:d.cash_tendered??null,change:d.change_given??null};
+        const entry={id:d.order_number,time:new Date(d.created_at).toLocaleString('en-PH',{dateStyle:'short',timeStyle:'short'}),items:d.items,total:d.total,method:d.payment_method,voided:d.voided||false,status:d.status||'incoming',order_type:d.order_type||'Dine-in',created_at:d.created_at,customer_name:d.customer_name||'',customer_phone:d.customer_phone||'',discountData:d.discount_ids?{type:d.discount_type,ids:d.discount_ids,pax:d.discount_pax||1,discAmt:d.discount_amount||0}:null,cashier:d.cashier_name||null,tendered:d.cash_tendered??null,change:d.change_given??null};
         if(!orderHistory.find(o=>o.id===entry.id)){
           orderHistory.unshift(entry);
           if(document.getElementById('page-orders').classList.contains('active')) renderOrders();
@@ -1706,6 +1794,16 @@ function showReceiptModal(items,method,savedOrder){
   const orderNum=savedOrder?savedOrder.id:'NEW';
   const isCash=method==='Cash';
   const isNew=!savedOrder;
+  // A reprint has to show the order type that was SAVED, not whatever the POS
+  // happens to be set to right now.
+  const receiptOrderType=savedOrder?(savedOrder.order_type||currentOrderType):currentOrderType;
+  // Customer name/phone: from the saved order on a reprint, from the loyalty
+  // fields on a new sale. Blank for walk-ins, in which case no line is printed.
+  const custName=(savedOrder?(savedOrder.customer_name||'')
+    :(document.getElementById('pos-loyalty-name')?.value||'')).trim();
+  const custPhone=(savedOrder?(savedOrder.customer_phone||'')
+    :(document.getElementById('pos-loyalty-phone')?.value||'')).trim();
+  const custLine=custName?('Customer: '+custName+(custPhone?' · '+custPhone:'')):(custPhone?('Customer: '+custPhone):'');
 
   const discTypeLabel=dd?(dd.type==='PWD'?'PWD':dd.type==='SC'?'SENIOR CITIZEN':'FRIENDLY / EMPLOYEE'):'';
   const discIdInfo=dd?(dd.type==='FRIENDLY'?dd.ids[0].name:`${dd.ids.length} ID${dd.ids.length>1?'s':''}`):'';  
@@ -1732,7 +1830,8 @@ function showReceiptModal(items,method,savedOrder){
           <hr class="r-divider">
           <div class="r-order-num">ORDER ${orderNum}</div>
           ${currentUser?`<div class="r-meta" style="justify-content:center"><span>Cashier: ${(currentUser.email||'').split('@')[0]}</span></div>`:''}
-          <div class="r-meta"><span>${now} · ${currentOrderType}</span><span>${method}</span></div>
+          ${custLine?`<div class="r-meta" id="r-customer" style="justify-content:center"><span>${esc(custLine)}</span></div>`:''}
+          <div class="r-meta" id="r-timemeta"><span>${now} · ${receiptOrderType}</span><span>${method}</span></div>
           <hr class="r-divider">
           <div class="r-items-head"><span>ITEM</span><span style="width:28px;text-align:center">QTY</span><span style="width:52px;text-align:right">AMOUNT</span></div>
           ${items.map(o=>`
@@ -2126,7 +2225,10 @@ async function printReceipt(){
   // Gather receipt data from DOM
   const rc=document.getElementById('receipt-content');
   const orderNum=(rc?.querySelector('.r-order-num')?.textContent||'').replace('ORDER ','').trim();
-  const metaSpans=rc?.querySelectorAll('.r-meta span');
+  // Read the time/method row by id. (Selecting all `.r-meta span` picked up the
+  // Cashier row first once a user was logged in, so the printed copy showed the
+  // cashier where the time should be.)
+  const metaSpans=(rc?.querySelector('#r-timemeta')||rc)?.querySelectorAll('span');
   const time=metaSpans?.[0]?.textContent||'';
   const method=metaSpans?.[1]?.textContent||'';
   const items=[];
@@ -2146,7 +2248,9 @@ async function printReceipt(){
   const cashVal=rc?.querySelector('#r-cash-val')?.textContent||'';
   const cash=cashVal&&cashVal!=='—'?parseFloat(cashVal.replace('₱',''))||0:null;
 
-  const receipt={orderNum,time,method,items,subtotal,total,discAmt,cash};
+  // Customer line, when the order captured one — printed on both copies.
+  const customer=(rc?.querySelector('#r-customer span')?.textContent||'').trim();
+  const receipt={orderNum,time,method,items,subtotal,total,discAmt,cash,extra:customer?[customer]:[]};
   // Two copies in a single print job: one for the customer, one for the kitchen.
   const data=concatBytes(escpos(receipt,'*** CUSTOMER COPY ***'),escpos(receipt,'*** KITCHEN COPY ***'));
 
@@ -2522,22 +2626,71 @@ function setOrdersFilter(f,el){
   ordersFilter=f;
   document.querySelectorAll('#orders-date-filter .df-btn').forEach(b=>b.classList.remove('active'));
   el.classList.add('active');
+  const box=document.getElementById('orders-range');
+  if(f==='custom'){
+    // Default both ends to today so the picker opens on a valid single day.
+    if(!ordersRange.from) ordersRange={from:todayStr(),to:todayStr()};
+    document.getElementById('orders-from').value=ordersRange.from;
+    document.getElementById('orders-to').value=ordersRange.to||ordersRange.from;
+    box.style.display='flex';
+  }else{
+    box.style.display='none';
+  }
   renderOrders();
 }
+function applyOrdersRange(){
+  ordersRange={
+    from:document.getElementById('orders-from').value||'',
+    to:document.getElementById('orders-to').value||''
+  };
+  if(!ordersRange.from&&!ordersRange.to) return;
+  ordersFilter='custom';
+  renderOrders();
+}
+// Convenience: collapse the range to the single day in "From".
+function ordersSingleDay(){
+  const f=document.getElementById('orders-from').value||todayStr();
+  document.getElementById('orders-from').value=f;
+  document.getElementById('orders-to').value=f;
+  applyOrdersRange();
+}
+function onOrdersSearch(v){
+  ordersSearch=v;
+  document.getElementById('orders-search-clear').style.display=v?'':'none';
+  paintOrders(); // no refetch — filters the range already in memory
+}
+function clearOrdersSearch(){
+  const el=document.getElementById('orders-search');
+  if(el) el.value='';
+  onOrdersSearch('');
+}
 async function renderOrders(){
-  await loadOrders(ordersFilter);
+  await loadOrders(ordersFilter,ordersRange);
+  paintOrders();
+}
+function paintOrders(){
   const log=document.getElementById('orders-log');
   const sum=document.getElementById('orders-summary');
-  if(!orderHistory.length){log.innerHTML='<div class="no-data">No orders for this period</div>';sum.textContent='';return;}
-  const activeOrders=orderHistory.filter(o=>!o.voided);
+  const q=ordersSearch;
+  const rows=orderHistory.filter(o=>orderMatches(o,q));
+  if(!rows.length){
+    log.innerHTML=q
+      ? `<div class="no-data">No orders match “${esc(q)}” in ${esc(filterLabel(ordersFilter,ordersRange))}</div>`
+      : '<div class="no-data">No orders for this period</div>';
+    sum.textContent='';
+    return;
+  }
+  const activeOrders=rows.filter(o=>!o.voided);
   const total=activeOrders.reduce((s,o)=>s+o.total,0);
-  sum.textContent=`${activeOrders.length} orders · ₱${total.toLocaleString()} total`;
-  log.innerHTML=orderHistory.map(o=>`
+  sum.innerHTML=`${activeOrders.length} orders · ₱${total.toLocaleString()} total · ${esc(filterLabel(ordersFilter,ordersRange))}`
+    +(q?` <span class="search-hits">· matching “${esc(q)}”</span>`:'');
+  log.innerHTML=rows.map(o=>`
     <div class="log-entry" style="${o.voided?'opacity:0.5':''}">
       <div class="log-head">
         <span class="log-id">${o.id}</span>
         <span class="log-time">${o.time}${o.order_type?' · '+o.order_type:''}</span>
       </div>
+      ${(o.customer_name||o.customer_phone)?`<div class="log-cust">👤 ${esc(o.customer_name||'Walk-in')}${o.customer_phone?`<span class="ph">· ${esc(o.customer_phone)}</span>`:''}</div>`:''}
       <div class="log-items-text">${o.items.map(i=>`<div style="padding:2px 0">• ${i.qty}× ${i.name}${i.note?' ('+i.note+')':''}</div>`).join('')}</div>
       <div class="log-foot">
         <span class="log-total" style="${o.voided?'text-decoration:line-through':''}">₱${o.total}</span>
@@ -2601,11 +2754,54 @@ function setReportFilter(f,el){
   reportFilter=f;
   document.querySelectorAll('#rep-date-filter .df-btn').forEach(b=>b.classList.remove('active'));
   el.classList.add('active');
+  const box=document.getElementById('rep-range');
+  if(f==='custom'){
+    if(!repRange.from) repRange={from:todayStr(),to:todayStr()};
+    document.getElementById('rep-from').value=repRange.from;
+    document.getElementById('rep-to').value=repRange.to||repRange.from;
+    box.style.display='flex';
+  }else{
+    box.style.display='none';
+  }
   renderReports();
 }
+function applyRepRange(){
+  repRange={
+    from:document.getElementById('rep-from').value||'',
+    to:document.getElementById('rep-to').value||''
+  };
+  if(!repRange.from&&!repRange.to) return;
+  reportFilter='custom';
+  renderReports();
+}
+function repSingleDay(){
+  const f=document.getElementById('rep-from').value||todayStr();
+  document.getElementById('rep-from').value=f;
+  document.getElementById('rep-to').value=f;
+  applyRepRange();
+}
+function onRepSearch(v){
+  repSearch=v;
+  document.getElementById('rep-search-clear').style.display=v?'':'none';
+  paintReports(); // recompute the metrics from the in-memory range, no refetch
+}
+function clearRepSearch(){
+  const el=document.getElementById('rep-search');
+  if(el) el.value='';
+  onRepSearch('');
+}
 async function renderReports(){
-  await Promise.all([loadOrders(reportFilter), loadCashMovements(reportFilter)]);
-  const active=orderHistory.filter(o=>!o.voided);
+  await Promise.all([loadOrders(reportFilter,repRange), loadCashMovements(reportFilter,repRange)]);
+  paintReports();
+}
+function paintReports(){
+  // When a search term is present the whole report is scoped to the matching
+  // orders — revenue, top items, top customers, everything except the cash
+  // in/out log, which isn't tied to an order.
+  const scoped=orderHistory.filter(o=>orderMatches(o,repSearch));
+  const scopeEl=document.getElementById('rep-scope');
+  if(scopeEl) scopeEl.textContent=repSearch?`scoped to ${scoped.length} matching order${scoped.length===1?'':'s'}`:'';
+  const active=scoped.filter(o=>!o.voided);
   const totalRev=active.reduce((s,o)=>s+o.total,0);
   const grossRev=active.reduce((s,o)=>s+o.items.reduce((x,i)=>x+i.price*i.qty,0),0);
   const totalDisc=grossRev-totalRev;
@@ -2613,7 +2809,16 @@ async function renderReports(){
   const avg=n?Math.round(totalRev/n):0;
   const cashTotal=active.filter(o=>o.method==='Cash').reduce((s,o)=>s+o.total,0);
   const gcashTotal=active.filter(o=>o.method==='GCash').reduce((s,o)=>s+o.total,0);
-  const itemCounts={},catRev={};
+  const itemCounts={},catRev={},custSpend={};
+  active.forEach(o=>{
+    const nm=(o.customer_name||'').trim();
+    if(!nm) return;
+    const key=(o.customer_phone||nm).toLowerCase(); // same phone = same person
+    if(!custSpend[key]) custSpend[key]={name:nm,phone:o.customer_phone||'',orders:0,total:0};
+    custSpend[key].orders++;
+    custSpend[key].total+=o.total;
+    if(nm.length>custSpend[key].name.length) custSpend[key].name=nm;
+  });
   // Cost-of-goods coverage: only items with a recorded cost (see menu_costs /
   // ✎ Item Costs) count toward Gross Profit, so it stays honest instead of
   // silently treating unknown-cost items as zero cost.
@@ -2630,16 +2835,15 @@ async function renderReports(){
   const netProfit=totalRev-cashOutOther;
   const grossProfit=coveredRev-totalCOGS;
   const costCoverage=grossRev?Math.round(coveredRev/grossRev*100):0;
-  const filterLabels={today:'Today',yesterday:'Yesterday',week:'This Week',month:'This Month'};
   document.getElementById('metrics-grid').innerHTML=`
-    <div class="metric-card"><div class="metric-lbl">Revenue · ${filterLabels[reportFilter]}</div><div class="metric-val" style="color:var(--green)">₱${totalRev.toLocaleString()}</div></div>
+    <div class="metric-card"><div class="metric-lbl">Revenue · ${esc(filterLabel(reportFilter,repRange))}</div><div class="metric-val" style="color:var(--green)">₱${totalRev.toLocaleString()}</div></div>
     <div class="metric-card"><div class="metric-lbl">Total Orders</div><div class="metric-val">${n}</div></div>
     <div class="metric-card"><div class="metric-lbl">Avg Order</div><div class="metric-val">₱${avg}</div></div>
     <div class="metric-card"><div class="metric-lbl">Top Category</div><div class="metric-val" style="font-size:18px">${topCat}</div></div>
     <div class="metric-card"><div class="metric-lbl">💵 Cash Collected</div><div class="metric-val">₱${cashTotal.toLocaleString()}</div></div>
     <div class="metric-card"><div class="metric-lbl">📱 GCash Collected</div><div class="metric-val">₱${gcashTotal.toLocaleString()}</div></div>
     <div class="metric-card"><div class="metric-lbl">Discounts Given</div><div class="metric-val" style="color:#E07050">₱${totalDisc.toLocaleString()}</div></div>
-    <div class="metric-card"><div class="metric-lbl">Voided Orders</div><div class="metric-val">${orderHistory.filter(o=>o.voided).length}</div></div>
+    <div class="metric-card"><div class="metric-lbl">Voided Orders</div><div class="metric-val">${scoped.filter(o=>o.voided).length}</div></div>
     <div class="metric-card"><div class="metric-lbl">🟢 Cash In (Other)</div><div class="metric-val" style="color:var(--green-m);font-size:20px">₱${cashInOther.toLocaleString()}</div></div>
     <div class="metric-card"><div class="metric-lbl">🔴 Cash Out (Expenses)</div><div class="metric-val" style="color:var(--red);font-size:20px">₱${cashOutOther.toLocaleString()}</div></div>
     <div class="metric-card"><div class="metric-lbl">Net Profit</div><div class="metric-val" style="color:var(--green);font-size:20px">₱${netProfit.toLocaleString()}</div><div style="font-size:9px;color:var(--text3);margin-top:2px">Revenue − Cash Out</div></div>
@@ -2658,6 +2862,18 @@ async function renderReports(){
       <div class="rank-bw"><div style="font-size:12px">${cat}</div><div class="rank-bar" style="width:${Math.round(rev/maxR*100)}%;background:var(--teal-m)"></div></div>
       <span class="rank-amt">₱${rev.toLocaleString()}</span>
     </div>`).join(''):'<div class="no-data">No sales yet</div>';
+  // Top Customers — only orders that captured a name (loyalty phone/name at checkout).
+  const custS=Object.values(custSpend).sort((a,b)=>b.total-a.total).slice(0,7);
+  const maxCust=custS[0]?custS[0].total:1;
+  document.getElementById('top-customers').innerHTML=custS.length?custS.map((c,i)=>`
+    <div class="rank-item"><span class="rank-n">${i+1}</span>
+      <div class="rank-bw">
+        <div style="font-size:12px;font-weight:600">${esc(c.name)}${c.phone?` <span style="font-weight:400;color:var(--text3)">· ${esc(c.phone)}</span>`:''}</div>
+        <div style="font-size:10px;color:var(--text3)">${c.orders} order${c.orders===1?'':'s'}</div>
+        <div class="rank-bar" style="width:${Math.round(c.total/maxCust*100)}%;background:var(--gold)"></div>
+      </div>
+      <span class="rank-amt">₱${c.total.toLocaleString()}</span>
+    </div>`).join(''):'<div class="no-data">No named customers in this period</div>';
   const cashSorted=[...cashMovements].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
   document.getElementById('cash-log').innerHTML=cashSorted.length?cashSorted.map(m=>`
     <div class="rank-item">
@@ -2764,11 +2980,13 @@ function showZReport(){
   const avg=n?Math.round(totalRev/n):0;
   const cashOutOther=cashMovements.filter(m=>m.type==='out').reduce((s,m)=>s+Number(m.amount),0);
   const netProfit=totalRev-cashOutOther;
-  const filterLabels={today:'Today',yesterday:'Yesterday',week:'This Week',month:'This Month'};
+  // Deliberately NOT scoped by the Reports search box — a Z-Report has to
+  // reconcile the whole drawer for the period, not a filtered slice of it.
   const now=new Date().toLocaleString('en-PH',{dateStyle:'medium',timeStyle:'short'});
   document.getElementById('modal-container').innerHTML=`
     <div class="modal-bg"><div class="modal" style="max-width:340px">
-      <h3>🖨 Z-Report · ${filterLabels[reportFilter]}</h3>
+      <h3>🖨 Z-Report · ${esc(filterLabel(reportFilter,repRange))}</h3>
+      ${repSearch?`<div style="font-size:11px;color:var(--text3);margin:-6px 0 4px">Covers all orders in this period — the search box above does not narrow the Z-Report.</div>`:''}
       <div style="font-family:monospace;font-size:12px;background:var(--bg3);border-radius:var(--r);padding:12px 14px;margin:12px 0;line-height:1.9">
         <div style="text-align:center;font-weight:700;margin-bottom:6px">YANNA'S VIETNAMESE CAFE</div>
         <div style="text-align:center;font-size:10px;color:var(--text2);margin-bottom:10px">Z-REPORT · ${now}</div>
